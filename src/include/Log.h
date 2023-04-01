@@ -19,16 +19,12 @@
  * Enumeration
  * ************************************************************************************************
  */
-enum class Log_t{
-    
-};
+
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
-void log (std::string tag, Log_t logType);
-
 /* ERROR */
 inline void log_E (std::string tag, std::string logInfo)
 {
@@ -74,6 +70,7 @@ inline void log_V (std::string tag, std::string logInfo)
  * ************************************************************************************************
  */
 #define GET_FUNCTION( _1, _2, function, ... ) function 
+/* Exit when condition == false */
 #define ASSERT( ... )   GET_FUNCTION( __VA_ARGS__, ASSERT_2, ASSERT_1 ) (__VA_ARGS__)
 // #define DEBUG( ... )    GET_FUNCTION( __VA_ARGS__, DEBUG_2, DEBUG_1 )   (__VA_ARGS__)
 

@@ -1,5 +1,5 @@
 /**
- * \name    Layer.hpp
+ * \name    Layers.hpp
  * 
  * \brief   Declare the layer API 
  *          
@@ -13,8 +13,8 @@
  * \date    Mar 31, 2023
  */
 
-#ifndef _LAYER_HPP_
-#define _LAYER_HPP_
+#ifndef _LAYERS_HPP_
+#define _LAYERS_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -33,6 +33,10 @@
 #define FILTER_CHANNEL_I    0
 #define FILTER_CHANNEL_O    1
 
+/* The index for "stride" and "padding" */
+#define STRIDE_PADDING_HEIGHT    0
+#define STRIDE_PADDING_WIDTH    1
+
 /* The index for "iFMapSize" and "oFMapSize" */
 #define BATCH               0
 #define CHANNEL             1
@@ -41,19 +45,19 @@
 
 /* All avaliable layer type*/
 enum class Layer_t{
-    None        = -1,
-    Conv2D      =  0,
-    Dense       =  1,
-    Flatten     =  2,
-    Pooling     =  3,
-    Inception   =  4,
+    None,
+    Conv2D,
+    Dense,
+    Flatten,
+    Inception,
+    Pooling,
 };
 
 /* All avaliable activation type*/
 enum class Activation_t{
-    None        = -1,
-    ReLU        =  0,
-    Sigmoid     =  1,
+    None,
+    ReLU,
+    Sigmoid1,
 };
 
 
@@ -73,11 +77,7 @@ class Layer
  */ 
 public:
 
-    Layer(Layer_t = Layer_t::None, int* = NULL, int* = NULL, int* = NULL, Activation_t = Activation_t::None);
-
-    // Layer(Layer_t, int*, int, int, int, Activation_t = Activation_t::None);
-    
-    // Layer(Layer_t, int, int, int, int, Activation_t = Activation_t::None);
+    Layer(char* = (char*)"None", int* = nullptr, int* = nullptr, int* = nullptr, char* = (char*)"None");
 
    ~Layer();
 
@@ -87,8 +87,8 @@ public:
  */
 public:
     /* pure virtual function */
+    virtual void printInfo();
     virtual void issueLayer() = 0;
-    virtual void printInfo() = 0;
 
 private:
     /* pure virtual function */
@@ -100,16 +100,18 @@ private:
  */
 public:
     /* basic parameter I/O */
-    void setLayerIndex (int index) {layerIndex = index;}
     int  getLayerIndex (void) {return layerIndex;}
 
     /* Layer data I/O */
-    void setiFMap  (unsigned char* data) {iFMap = data;}
-    void setoFMap  (unsigned char* data) {oFMap = data;}
+    void setIFMap  (unsigned char* data) {iFMap = data;}
+    void setOFMap  (unsigned char* data) {oFMap = data;}
     void setFilter (unsigned char* data) {filter = data;}
 
-    unsigned char* getiFMap (void) {return iFMap;}
-    unsigned char* getoFMap (void) {return oFMap;}
+    int* getIFMapSize (void) {return iFMapSize;}
+    int* getOFMapSize (void) {return oFMapSize;}
+    int* getFilterSize (void) {return filterSize;}
+    unsigned char* getIFMap (void) {return iFMap;}
+    unsigned char* getOFMap (void) {return oFMap;}
     unsigned char* getFilter (void) {return filter;}
 
     /* layer stats */
@@ -122,24 +124,28 @@ public:
  * ************************************************************************************************
  */
 public:
+    /* The index of layer. Each layer have a unique index */
+    const int layerIndex;
+
     /* Type of layer */
-    const Layer_t layerType;
+    char* layerType;
     
     /* The activation type */
-    const Activation_t activationType;
-
-    /* The dimensions of feature map and filter */
-    int* oFMapSize;           // In order "batch", "channel", "height", and "width"
-    const int* iFMapSize;     // In order "batch", "channel", "height", and "width"
-    const int* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
+    char* activationType;
 
 protected:
-    /* The index of layer. Each layer have a unique index */
-    int layerIndex;
+
+    /* Number of layer be created */
+    static int layerCount;
 
     /* Layer stats flags */
     bool flagExecuting;
     bool flagFinish;
+
+    /* The dimensions of feature map and filter */
+    int* iFMapSize;     // In order "batch", "channel", "height", and "width"
+    int* oFMapSize;     // In order "batch", "channel", "height", and "width"
+    int* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
     unsigned char* iFMap;
@@ -165,17 +171,11 @@ class Conv2D: public Layer
  */ 
 public:
 
-    Conv2D(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+    Conv2D(char*, int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
 
-    Conv2D(Layer_t, int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+    Conv2D(int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
 
-    // Conv2D(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
-
-    // Conv2D(int, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
-
-    // Conv2D(Layer*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
-
-    // Conv2D(Layer*, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
+    Conv2D(int*, int*, char* = (char*)"None", int = 1, int = 0);
 
     ~Conv2D();
 
@@ -184,8 +184,8 @@ public:
  * ************************************************************************************************
  */
 public:
-    void issueLayer() override;
     void printInfo() override;
+    void issueLayer() override;
     
 private:
     int* calculateOFMapSize() override;
@@ -194,9 +194,9 @@ private:
  * Parameter
  * ************************************************************************************************
  */
-private:
-    const int* stride;
-    const int* padding;
+protected:
+    int* stride;
+    int* padding;
 };
 
 
@@ -217,11 +217,55 @@ class Pooling: public Conv2D
  */ 
 public:
 
-    Pooling(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+    Pooling(int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
+
+    Pooling(int*, int*, char* = (char*)"None", int = 0, int = 0);
+
 
     // Pooling(Layer*, int*, int* = NULL, int* = NULL);
 
     // Pooling(Layer*, int, int = 0, int = 0);
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+public:
+    void issueLayer() override;
+
+};
+
+
+
+/** ===============================================================================================
+ * \name    Flatten
+ * 
+ * \brief   A flatten layer inherits the \b "Layer" class. 
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+class Flatten: public Layer
+{
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+
+    Flatten(int*);
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+public:
+    void printInfo() override;
+    void issueLayer() override;
+    
+private:
+    int* calculateOFMapSize() override;
+
 };
 
 
@@ -242,11 +286,11 @@ class Dense: public Layer
  */ 
 public:
 
-    Dense(int*, int*, Activation_t = Activation_t::None);
+    Dense(int*, int*, char* = (char*)"None");
 
-    // Dense(Layer*, int, Activation_t = Activation_t::None);
+    Dense(int*, int);
 
-    // Dense(int, int, Activation_t = Activation_t::None);
+    // Dense(int, int, char* = (char*)"None");
 
 
 /* ************************************************************************************************
@@ -254,8 +298,8 @@ public:
  * ************************************************************************************************
  */
 public:
-    void issueLayer() override;
     void printInfo() override;
+    void issueLayer() override;
     
 private:
     int* calculateOFMapSize() override;

@@ -1,0 +1,94 @@
+/**
+ * \name    LayerGroup.hpp
+ * 
+ * \brief   Use to contain a sequential of layer
+ *          
+ * \date    Apr 1, 2023
+ */
+
+#ifndef _LAYERGROUP_HPP_
+#define _LAYERGROUP_HPP_
+
+/* ************************************************************************************************
+ * Include Library
+ * ************************************************************************************************
+ */
+#include "App_config.h"
+#include "Layers.hpp"
+#include "Log.h"
+
+
+/* ************************************************************************************************
+ * Enumeration
+ * ************************************************************************************************
+ */
+
+/* The type of this group */
+enum class Group_t{
+    CaseCade,
+    CaseCode,
+};
+
+
+/** ===============================================================================================
+ * \name    LayerGroup
+ * 
+ * \brief   The layer container to keep a sequential layer. You can add the layer or layerGroup into 
+ *          this container.
+ * \endcond
+ * ================================================================================================
+ */
+class LayerGroup: public Layer
+{
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+
+    LayerGroup(Group_t);
+
+   ~LayerGroup();
+
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+public:
+    // struct layerNode{
+    //     Layer* layer = NULL;
+    //     vector<layerNode*> prevNode;
+    //     vector<layerNode*> nextNode;
+    // };
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+public:
+    void addLayer (Layer*);
+
+    void printInfo() override;
+    void issueLayer() override;
+    
+private:
+    void addCaseCade (Layer*);
+    void addCaseCode (Layer*);
+
+    int* calculateOFMapSize() override {return NULL;}
+
+
+/* ************************************************************************************************
+ * Parameter
+ * ************************************************************************************************
+ */
+public:
+    const Group_t groupType;
+
+private:
+    /* The container of the layers */
+    vector<Layer*> layers;
+};
+
+
+#endif
