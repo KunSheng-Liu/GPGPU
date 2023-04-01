@@ -1,5 +1,5 @@
 /**
- * \name    Layer.h
+ * \name    Layer.hpp
  * 
  * \brief   Declare the layer API 
  *          
@@ -13,8 +13,8 @@
  * \date    Mar 31, 2023
  */
 
-#ifndef _LAYER_H_
-#define _LAYER_H_
+#ifndef _LAYER_HPP_
+#define _LAYER_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -29,15 +29,15 @@
  * ************************************************************************************************
  */
 
+/* The index for "filterSize" */
+#define FILTER_CHANNEL_I    0
+#define FILTER_CHANNEL_O    1
+
 /* The index for "iFMapSize" and "oFMapSize" */
 #define BATCH               0
 #define CHANNEL             1
 #define HEIGHT              2
 #define WIDTH               3
-
-/* The index for "filterSize" */
-#define FILTER_CHANNEL_I    0
-#define FILTER_CHANNEL_O    1
 
 /* All avaliable layer type*/
 enum class Layer_t{
@@ -73,47 +73,48 @@ class Layer
  */ 
 public:
 
-    Layer(Layer*, Layer_t, int*, int*, Activation_t = Activation_t::None);
+    Layer(Layer_t = Layer_t::None, int* = NULL, int* = NULL, int* = NULL, Activation_t = Activation_t::None);
 
-    Layer(Layer*, Layer_t, int*, int, int, int, Activation_t = Activation_t::None);
+    // Layer(Layer_t, int*, int, int, int, Activation_t = Activation_t::None);
     
-    Layer(Layer*, Layer_t, int, int, int, int, Activation_t = Activation_t::None);
+    // Layer(Layer_t, int, int, int, int, Activation_t = Activation_t::None);
 
-    // Layer(Layer_t, int, int); 
-    
-    ~Layer();
-
-/* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-
+   ~Layer();
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
 public:
-    /* basic parameter functions */
-    void setLayerIndex (int index) {layerIndex = index;}
+    /* pure virtual function */
+    virtual void issueLayer() = 0;
+    virtual void printInfo() = 0;
 
+private:
+    /* pure virtual function */
+    virtual int* calculateOFMapSize() = 0;
+
+/* ************************************************************************************************
+ * Basic parameter I/O
+ * ************************************************************************************************
+ */
+public:
+    /* basic parameter I/O */
+    void setLayerIndex (int index) {layerIndex = index;}
     int  getLayerIndex (void) {return layerIndex;}
 
-    /* setup layer dependency */
-    void addPrevLayer (Layer*);
-    void addNextLayer (Layer*);
-    void setUpConnection (Layer*);
+    /* Layer data I/O */
+    void setiFMap  (unsigned char* data) {iFMap = data;}
+    void setoFMap  (unsigned char* data) {oFMap = data;}
+    void setFilter (unsigned char* data) {filter = data;}
+
+    unsigned char* getiFMap (void) {return iFMap;}
+    unsigned char* getoFMap (void) {return oFMap;}
+    unsigned char* getFilter (void) {return filter;}
 
     /* layer stats */
     bool isExecuting   (void) {return flagExecuting;}
     bool isFinish      (void) {return flagFinish;}
-
-    /*  */
-    virtual void PrintInfo();
-
-private:
-    /* Initial layer */
-    void init ();
 
 
 /* ************************************************************************************************
@@ -121,32 +122,29 @@ private:
  * ************************************************************************************************
  */
 public:
-    /* The index of layer. Each layer have a unique index */
-    int layerIndex;
-
     /* Type of layer */
-    Layer_t layerType;
+    const Layer_t layerType;
     
     /* The activation type */
-    Activation_t activationType;
+    const Activation_t activationType;
+
+    /* The dimensions of feature map and filter */
+    int* oFMapSize;           // In order "batch", "channel", "height", and "width"
+    const int* iFMapSize;     // In order "batch", "channel", "height", and "width"
+    const int* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
+
+protected:
+    /* The index of layer. Each layer have a unique index */
+    int layerIndex;
 
     /* Layer stats flags */
     bool flagExecuting;
     bool flagFinish;
 
-    /* The dimensions of feature map and filter */
-    int* iFMapSize;     // In order "batch", "channel", "width", and "height"
-    int* oFMapSize;     // In order "width", "height", "channel", and "batch"
-    int* filterSize;    // In order "width", "height", "channel depth", and "number of channel"
-
-    /* The feature map and filter */
+    /* The array of feature map and filter in byte format */
     unsigned char* iFMap;
     unsigned char* oFMap;
     unsigned char* filter;
-
-    /* Record the merge in and branch out layers */
-    std::vector <Layer*> prevLayer;
-    std::vector <Layer*> nextLayer;
 };
 
 
@@ -167,15 +165,17 @@ class Conv2D: public Layer
  */ 
 public:
 
-    Conv2D(Layer*, int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
-
     Conv2D(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
 
-    Conv2D(int, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
+    Conv2D(Layer_t, int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
 
-    Conv2D(Layer*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+    // Conv2D(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
 
-    Conv2D(Layer*, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
+    // Conv2D(int, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
+
+    // Conv2D(Layer*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+
+    // Conv2D(Layer*, int, int ,int , Activation_t = Activation_t::None, int = 1, int = 0);
 
     ~Conv2D();
 
@@ -183,16 +183,20 @@ public:
  * Functions
  * ************************************************************************************************
  */
+public:
+    void issueLayer() override;
+    void printInfo() override;
+    
 private:
-    void init ();
+    int* calculateOFMapSize() override;
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 private:
-    int* stride;
-    int* padding;
+    const int* stride;
+    const int* padding;
 };
 
 
@@ -213,11 +217,11 @@ class Pooling: public Conv2D
  */ 
 public:
 
-    Pooling(Layer*, int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
+    Pooling(int*, int*, Activation_t = Activation_t::None, int* = NULL, int* = NULL);
 
-    Pooling(Layer*, int*, int* = NULL, int* = NULL);
+    // Pooling(Layer*, int*, int* = NULL, int* = NULL);
 
-    Pooling(Layer*, int, int = 0, int = 0);
+    // Pooling(Layer*, int, int = 0, int = 0);
 };
 
 
@@ -238,18 +242,24 @@ class Dense: public Layer
  */ 
 public:
 
-    Dense(Layer*, int*, int*, Activation_t = Activation_t::None);
+    Dense(int*, int*, Activation_t = Activation_t::None);
 
-    Dense(Layer*, int, Activation_t = Activation_t::None);
+    // Dense(Layer*, int, Activation_t = Activation_t::None);
 
-    Dense(int, int, Activation_t = Activation_t::None);
+    // Dense(int, int, Activation_t = Activation_t::None);
+
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
+public:
+    void issueLayer() override;
+    void printInfo() override;
+    
 private:
-    void init ();
+    int* calculateOFMapSize() override;
+
 };
 
 
