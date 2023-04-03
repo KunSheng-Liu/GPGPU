@@ -82,7 +82,7 @@ LayerGroup::addCaseCade (Layer* layer)
         /* Dimension check */
         int* nextIFMapSize = layer->getIFMapSize();
         bool check = (oFMapSize[BATCH] == nextIFMapSize[BATCH]) && (oFMapSize[CHANNEL] == nextIFMapSize[CHANNEL]) && (oFMapSize[HEIGHT] == nextIFMapSize[HEIGHT]) && (oFMapSize[WIDTH] == nextIFMapSize[WIDTH]);
-        ASSERT(check, "Casecaded layer has error iFMapSize to the existing oFMapSize");
+        ASSERT(check, "Layer " + to_string(layer->layerIndex) + " has error iFMapSize to the existing oFMapSize.");
 
         layer->setIFMap(oFMap);
         oFMapSize = layer->getOFMapSize();
@@ -138,9 +138,27 @@ LayerGroup::addCaseCode (Layer* layer)
 void::
 LayerGroup::printInfo ()
 {
+#if PRINT_MODEL_DETIAL
+    cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " start -------------" << std::endl;
     for (auto layer: layers){
         layer->printInfo();
     }
+    cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
+#else
+    std::cout << "(" 
+              << std::right << std::setw(3)  << iFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(3)  << iFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << iFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]                     \
+              << std::left  << std::setw(10) << ")" << "("                           \
+              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(3)  << oFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << oFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
+              << std::left  << std::setw(10) << ")"; 
+              
+    std::cout << std::endl;
+#endif
 }
 
 

@@ -1,5 +1,5 @@
 /** 
- * \name    APP_config.hpp
+ * \name    APP_config.h
  * 
  * \brief   Declare all configure
  * 
@@ -13,6 +13,7 @@
  * Include Library
  * ************************************************************************************************
  */
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -49,6 +50,7 @@ using namespace std;
  * ************************************************************************************************
  */
 #define LOG_LEVEL               DEBUG
+#define PRINT_MODEL_DETIAL      true
 
 
 #endif

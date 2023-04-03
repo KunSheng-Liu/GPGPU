@@ -1,5 +1,5 @@
 /**
- * \name    Models.h
+ * \name    Models.hpp
  * 
  * \brief   Declare the model API 
  *          
@@ -9,16 +9,17 @@
  * \date    Mar 31, 2023
  */
 
-#ifndef _MODLES_H_
-#define _MODLES_H_
+#ifndef _MODLES_HPP_
+#define _MODLES_HPP_
 
 /* ************************************************************************************************
  * Include Library
  * ************************************************************************************************
  */
 #include "App_config.h"
-#include "Layers.hpp"
 #include "Log.h"
+#include "Layers.hpp"
+#include "LayerGroup.hpp"
 
 /** ===============================================================================================
  * \name    Model
@@ -48,18 +49,39 @@ public:
 public:
 
     void printSummary (void);
-
+    
+/* ************************************************************************************************
+ * Benchmark
+ * ************************************************************************************************
+ */
+public:
+    // void LeNet();
+    void VGG16();
+    // void VGG19();
+    void ResNet18();
+    // void GoogLeNet();
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
-protected:
+public:
     /* The index of model. Each model have a unique index */
-    int modelIndex;
+    const int modelIndex;
+
+    /* Name of model */
+    const char* modelName;
 
     /* Number of layer */
     int numOfLayer;
+
+
+protected:
+
+    /* Number of layer be created */
+    static int ModelCount;
+
+    LayerGroup* layerGroup;
 
     /* Pointer of first/last layer */
     Layer* inputLayer;

@@ -194,7 +194,7 @@ Conv2D::calculateOFMapSize()
     shape[CHANNEL] = filterSize[FILTER_CHANNEL_O];
     shape[HEIGHT]  = (double) (iFMapSize[HEIGHT] + 2 * padding[STRIDE_PADDING_HEIGHT] - filterSize[HEIGHT]) / (double) (stride[STRIDE_PADDING_HEIGHT]) + 1;
     shape[WIDTH]   = (double) (iFMapSize[WIDTH]  + 2 * padding[STRIDE_PADDING_WIDTH]  - filterSize[WIDTH])  / (double) (stride[STRIDE_PADDING_WIDTH])  + 1;
-
+    
     return move(shape);
 }
 

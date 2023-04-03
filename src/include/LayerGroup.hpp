@@ -14,8 +14,8 @@
  * ************************************************************************************************
  */
 #include "App_config.h"
-#include "Layers.hpp"
 #include "Log.h"
+#include "Layers.hpp"
 
 
 /* ************************************************************************************************
@@ -46,7 +46,7 @@ class LayerGroup: public Layer
  */ 
 public:
 
-    LayerGroup(Group_t);
+    LayerGroup(Group_t = Group_t::CaseCade);
 
    ~LayerGroup();
 
@@ -85,7 +85,6 @@ private:
 public:
     const Group_t groupType;
 
-private:
     /* The container of the layers */
     vector<Layer*> layers;
 };
