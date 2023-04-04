@@ -6,7 +6,7 @@
  * \note    Available model type:
  *          - \b RESNET18
  * 
- * \date    Mar 31, 2023
+ * \date    APR 4, 2023
  */
 
 #ifndef _MODLES_HPP_
@@ -18,8 +18,15 @@
  */
 #include "App_config.h"
 #include "Log.h"
+
 #include "Layers.hpp"
 #include "LayerGroup.hpp"
+
+/* ************************************************************************************************
+ * Macro
+ * ************************************************************************************************
+ */
+#define BENCHMARK( obj, model ) obj.model()
 
 /** ===============================================================================================
  * \name    Model
@@ -48,7 +55,8 @@ public:
  */
 public:
 
-    void printSummary (void);
+    void memoryAllocate (MMU* mmu);
+    void printSummary ();
     
 /* ************************************************************************************************
  * Benchmark

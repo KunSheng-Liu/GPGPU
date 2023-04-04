@@ -21,22 +21,18 @@ int Layer::layerCount = 0;
  * 
  * \param   layer_type          the layer type
  * \param   input_size          [batch, channel, height, width]
- * \param   output_size         [batch, channel, height, width]
  * \param   filter_size         [channel, height, width]
  * \param   activation_type     the activation type
  * 
  * \endcond
  * ================================================================================================
  */
-Layer::Layer(char* layer_type, int* input_size, int* output_size, int* filter_size, char* activation_type)
-        : layerType(layer_type), iFMapSize(input_size), oFMapSize(output_size), filterSize(filter_size), activationType(activation_type)
-        , layerIndex(++layerCount), flagExecuting(false), flagFinish(false)
+Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type)
+        : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
+        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerIndex(++layerCount), flagExecuting(false), flagFinish(false)
 {
-    /* Seems no need to initial the data, due to it come from previous layer */
-    iFMap  = (iFMapSize  == NULL)  ? NULL : new unsigned char[iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]];
-    oFMap  = (oFMapSize  == NULL)  ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
-    filter = (filterSize  == NULL) ? NULL : new unsigned char[filterSize[FILTER_CHANNEL_I] * filterSize[FILTER_CHANNEL_O] * filterSize[HEIGHT] * filterSize[WIDTH]];
-    
+    if (iFMapSize  != nullptr)  iFMap = new vector<unsigned char> ((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
+    if (filterSize != nullptr) filter = new vector<unsigned char> ((*filterSize)[BATCH] * (*filterSize)[CHANNEL] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH]);
 }
 
 
@@ -50,16 +46,70 @@ Layer::Layer(char* layer_type, int* input_size, int* output_size, int* filter_si
  */
 Layer::~Layer()
 {
-    if (strcmp (layerType, "None") != 0)
-    {
-        (iFMap  == NULL) ? void(0) : delete [] iFMap;
-        (oFMap  == NULL) ? void(0) : delete [] oFMap;
-        (filter == NULL) ? void(0) : delete [] filter;
 
-        (iFMapSize  == NULL) ? void(0) : delete [] iFMapSize;
-        (oFMapSize  == NULL) ? void(0) : delete [] oFMapSize;
-        (filterSize == NULL) ? void(0) : delete [] filterSize;
-    }
+}
+
+
+/** ===============================================================================================
+ * \name    setIFMap
+ *
+ * \brief   Set the input feature map
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::setIFMap(vector<unsigned char>* data)
+{
+    if (iFMap != nullptr) delete iFMap;
+    iFMap  = data;
+}
+
+
+/** ===============================================================================================
+ * \name    setFilter
+ *
+ * \brief   Set the output feature map
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::setFilter(vector<unsigned char>* data)
+{
+    if (filter != nullptr) delete filter;
+    filter = data;    
+}
+
+
+/** ===============================================================================================
+ * \name    memoryAllocate
+ *
+ * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::memoryAllocate(MMU* mmu)
+{
+    int numOfByte = 0;
+    
+
+    log_D("memoryAllocate", "ID: " + to_string(layerIndex) + "  " + layerType);
+    // cout << "iFMapSize ";
+    if(iFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMapSize)),  iFMapSize->size()  * sizeof(int));
+    // cout << "oFMapSize ";
+    if(oFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMapSize)),  oFMapSize->size()  * sizeof(int));
+    // cout << "filterSize ";
+    if(filterSize) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filterSize)), filterSize->size() * sizeof(int));
+    // cout << "iFMap ";
+    if(iFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMap)),  iFMap->size()  * sizeof(unsigned char));
+    // cout << "oFMap ";
+    if(oFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMap)),  oFMap->size()  * sizeof(unsigned char));
+    // cout << "filter ";
+    if(filter) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filter)), filter->size() * sizeof(unsigned char));
+
 }
 
 
@@ -75,15 +125,15 @@ void
 Layer::printInfo()
 {
     std::cout << "(" 
-              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_I] << ", " \
-              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_O] << ", " \
-              << std::right << std::setw(3)  << filterSize[HEIGHT]           << ", " \
-              << std::right << std::setw(3)  << filterSize[WIDTH]                    \
+              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_I] << ", " \
+              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_O] << ", " \
+              << std::right << std::setw(3)  << (*filterSize)[HEIGHT]           << ", " \
+              << std::right << std::setw(3)  << (*filterSize)[WIDTH]                    \
               << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(4)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(4)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(3)  << oFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
+              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]             << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
 }
 
@@ -104,13 +154,14 @@ Layer::printInfo()
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(char* layer_type, int* input_size, int* filter_size, char* activation_type, int* _stride, int* _padding)
-        : Layer(layer_type, move(input_size), NULL, move(filter_size), activation_type)
+Conv2D::Conv2D(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+        : Layer(layer_type, input_size, filter_size, activation_type)
         , stride(_stride), padding(_padding)
 {
-    ASSERT(iFMapSize != NULL, "error input");
-    oFMapSize = calculateOFMapSize();
-    oFMap  = (oFMapSize  == NULL)  ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+    calculateOFMapSize();
+    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    oFMap = new vector<unsigned char>();
+    oFMap->resize(size);
 }
 
 
@@ -128,10 +179,8 @@ Conv2D::Conv2D(char* layer_type, int* input_size, int* filter_size, char* activa
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(int* input_size, int* filter_size, char* activation_type, int* _stride, int* _padding)
-        : Conv2D((char*)"Conv2D"
-        , move(input_size), move(filter_size)
-        , activation_type, move(_stride), move(_padding))
+Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, _stride, _padding)
 {
 
 }
@@ -151,10 +200,8 @@ Conv2D::Conv2D(int* input_size, int* filter_size, char* activation_type, int* _s
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(int* input_size, int* filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Conv2D"
-        , move(input_size), move(filter_size), activation_type
-        , move(new int[2]{_stride,_stride}), move(new int[2]{_padding, _padding}))
+Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, move(new vector<int>{_stride,_stride}), move(new vector<int>{_padding, _padding}))
 {
     
 }
@@ -170,8 +217,7 @@ Conv2D::Conv2D(int* input_size, int* filter_size, char* activation_type, int _st
  */
 Conv2D::~Conv2D()
 {
-    (stride  == NULL) ? void(0) : delete [] stride;
-    (padding  == NULL) ? void(0) : delete [] padding;
+    
 }
 
 
@@ -183,19 +229,37 @@ Conv2D::~Conv2D()
  * \endcond
  * ================================================================================================
  */
-int*
+void
 Conv2D::calculateOFMapSize()
 {
-    bool check = (iFMapSize != NULL) && (filterSize != NULL) && (stride != NULL) && (padding != NULL);
+    bool check = (!iFMapSize->empty()) && (!filterSize->empty()) && (!stride->empty()) && (!padding->empty());
     ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
 
-    int* shape = new int[4];
-    shape[BATCH]   = iFMapSize[BATCH];
-    shape[CHANNEL] = filterSize[FILTER_CHANNEL_O];
-    shape[HEIGHT]  = (double) (iFMapSize[HEIGHT] + 2 * padding[STRIDE_PADDING_HEIGHT] - filterSize[HEIGHT]) / (double) (stride[STRIDE_PADDING_HEIGHT]) + 1;
-    shape[WIDTH]   = (double) (iFMapSize[WIDTH]  + 2 * padding[STRIDE_PADDING_WIDTH]  - filterSize[WIDTH])  / (double) (stride[STRIDE_PADDING_WIDTH])  + 1;
+    oFMapSize = new vector<int>();
+    oFMapSize->emplace_back((*iFMapSize)[BATCH]);
+    oFMapSize->emplace_back((*filterSize)[FILTER_CHANNEL_O]);
+    oFMapSize->emplace_back((double) ((*iFMapSize)[HEIGHT] + 2 * (*padding)[STRIDE_PADDING_HEIGHT] - (*filterSize)[HEIGHT]) / (double) ((*stride)[STRIDE_PADDING_HEIGHT]) + 1);
+    oFMapSize->emplace_back((double) ((*iFMapSize)[WIDTH]  + 2 * (*padding)[STRIDE_PADDING_WIDTH]  - (*filterSize)[WIDTH])  / (double) ((*stride)[STRIDE_PADDING_WIDTH])  + 1);
+}
+
+
+/** ===============================================================================================
+ * \name    memoryAllocate
+ *
+ * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Conv2D::memoryAllocate(MMU* mmu)
+{
+    int numOfByte = 0;
     
-    return move(shape);
+    Layer::memoryAllocate(mmu);
+    if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(int));
+    if(padding) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)), padding->size() * sizeof(int));
+
 }
 
 
@@ -214,11 +278,11 @@ Conv2D::printInfo()
     std::cout << std::left << std::setw(10) << layerType; 
     std::cout << std::left << std::setw(10) << activationType;
     Layer::printInfo();
-    std::cout << "(" << std::right << std::setw(2)  << stride[STRIDE_PADDING_HEIGHT]  << ", " \
-                     << std::right << std::setw(2)  << stride[STRIDE_PADDING_WIDTH]           \
+    std::cout << "(" << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_HEIGHT]  << ", " \
+                     << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_WIDTH]           \
                      << std::left  << std::setw(10) << ")" << "("                             \
-                     << std::right << std::setw(2)  << padding[STRIDE_PADDING_HEIGHT] << ", " \
-                     << std::right << std::setw(2)  << padding[STRIDE_PADDING_WIDTH]  << ")" << std::endl;
+                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_HEIGHT] << ", " \
+                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_WIDTH]  << ")" << std::endl;
 }
 
 
@@ -233,7 +297,7 @@ Conv2D::printInfo()
 void
 Conv2D::issueLayer()
 {
-
+    
 }
 
 
@@ -252,8 +316,8 @@ Conv2D::issueLayer()
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(int* input_size, int* filter_size, char* activation_type, int* _stride, int* _padding)
-        : Conv2D((char*)"Pooling", move(input_size), move(filter_size), activation_type, move(_stride), move(_padding))
+Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, _stride, _padding)
 {
     
 }
@@ -273,10 +337,8 @@ Pooling::Pooling(int* input_size, int* filter_size, char* activation_type, int* 
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(int* input_size, int* filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Pooling"
-        , move(input_size), move(filter_size), activation_type
-        , move(new int[2]{_stride,_stride}), move(new int[2]{_padding, _padding}))
+Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, move(new vector<int>{_stride,_stride}), move(new vector<int>{_padding, _padding}))
 {
     
 }
@@ -308,11 +370,13 @@ Pooling::issueLayer()
  * \endcond
  * ================================================================================================
  */
-Flatten::Flatten(int* input_size)
-        : Layer((char*)"Flatten", move(input_size), NULL, NULL, (char*)"None")
+Flatten::Flatten(vector<int>* input_size)
+        : Layer((char*)"Flatten", input_size)
 {
-    oFMapSize = calculateOFMapSize();
-    oFMap  = (oFMapSize  == NULL) ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+    calculateOFMapSize();
+    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    oFMap = new vector<unsigned char>();
+    oFMap->resize(size);
 }
 
 /** ===============================================================================================
@@ -324,19 +388,17 @@ Flatten::Flatten(int* input_size)
  * 
  * ================================================================================================
  */
-int*
+void
 Flatten::calculateOFMapSize()
 {
-    bool check = (iFMapSize != NULL);
+    bool check = (!iFMapSize->empty());
     ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
 
-    int* shape = new int[4];
-    shape[BATCH]   = iFMapSize[BATCH];
-    shape[CHANNEL] = iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH];
-    shape[HEIGHT]  = 1;
-    shape[WIDTH]   = 1;
-
-    return move(shape);
+    oFMapSize = new vector<int>();
+    (*oFMapSize).emplace_back((*iFMapSize)[BATCH]);
+    (*oFMapSize).emplace_back((*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH]);
+    (*oFMapSize).emplace_back(1);
+    (*oFMapSize).emplace_back(1);
 }
 
 
@@ -358,10 +420,10 @@ Flatten::printInfo()
 
     std::cout << std::right << std::setw(22) << "None"                \
               << std::right << setw(10) << "("
-              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " \
-              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]           \
+              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
               << std::left  << std::setw(10) << ")";  
 
     std::cout << std::endl;
@@ -394,11 +456,11 @@ Flatten::issueLayer()
  * \endcond
  * ================================================================================================
  */
-ByPass::ByPass(int* input_size)
-        : Layer((char*)"ByPass", move(input_size), NULL, NULL, (char*)"None")
+ByPass::ByPass(vector<int>* input_size)
+        : Layer((char*)"ByPass", input_size)
 {
-    oFMapSize = calculateOFMapSize();
-    oFMap  = (oFMapSize  == NULL) ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+    calculateOFMapSize();
+    oFMap = iFMap;
 }
 
 /** ===============================================================================================
@@ -410,19 +472,12 @@ ByPass::ByPass(int* input_size)
  * 
  * ================================================================================================
  */
-int*
+void
 ByPass::calculateOFMapSize()
 {
-    bool check = (iFMapSize != NULL);
+    bool check = (!iFMapSize->empty());
     ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
-
-    int* shape = new int[4];
-    shape[BATCH]   = iFMapSize[BATCH];
-    shape[CHANNEL] = iFMapSize[CHANNEL];
-    shape[HEIGHT]  = iFMapSize[HEIGHT];
-    shape[WIDTH]   = iFMapSize[WIDTH];
-
-    return move(shape);
+    oFMapSize = iFMapSize;
 }
 
 
@@ -444,10 +499,10 @@ ByPass::printInfo()
 
     std::cout << std::right << std::setw(22) << "None"                \
               << std::right << setw(10) << "("
-              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " \
-              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]           \
+              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
               << std::left  << std::setw(10) << ")";  
 
     std::cout << std::endl;
@@ -482,11 +537,10 @@ ByPass::issueLayer()
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(int* input_size, int* filter_size, char* activation_type)
-        : Layer((char*)"Dense", move(input_size), NULL, move(filter_size), activation_type)
+Dense::Dense(vector<int>* input_size, vector<int>* filter_size, char* activation_type)
+        : Layer((char*)"Dense", input_size, filter_size, activation_type)
 {
-    oFMapSize = calculateOFMapSize();
-    oFMap  = (oFMapSize  == NULL) ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+    calculateOFMapSize();
 }
 
 
@@ -501,11 +555,13 @@ Dense::Dense(int* input_size, int* filter_size, char* activation_type)
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(int* input_size, int output_width)
-        : Layer((char*)"Dense", move(input_size), NULL, new int[4]{input_size[CHANNEL], output_width, 1, 1})
+Dense::Dense(vector<int>* input_size, int output_width)
+        : Layer((char*)"Dense", input_size), outWidth(output_width)
 {
-    oFMapSize = calculateOFMapSize();
-    oFMap  = (oFMapSize  == NULL) ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+    calculateOFMapSize();
+    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    oFMap = new vector<unsigned char>();
+    oFMap->resize(size);
 }
 
 
@@ -518,19 +574,17 @@ Dense::Dense(int* input_size, int output_width)
  * 
  * ================================================================================================
  */
-int*
+void
 Dense::calculateOFMapSize()
 {
-    bool check = (iFMapSize != NULL) && (filterSize != NULL);
+    bool check = (!iFMapSize->empty());
     ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
 
-    int* shape = new int[4];
-    shape[BATCH]   = iFMapSize[BATCH];
-    shape[CHANNEL] = filterSize[FILTER_CHANNEL_O];
-    shape[HEIGHT]  = 1;
-    shape[WIDTH]   = 1;
-
-    return move(shape);
+    oFMapSize = new vector<int>();
+    (*oFMapSize).emplace_back((*iFMapSize)[BATCH]);
+    (*oFMapSize).emplace_back(outWidth);
+    (*oFMapSize).emplace_back(1);
+    (*oFMapSize).emplace_back(1);
 }
 
 
@@ -550,16 +604,12 @@ Dense::printInfo()
               << std::left << std::setw(10) << layerType  \
               << std::left << std::setw(10) << activationType;
 
-    std::cout << "("                        
-              << std::right << std::setw(4)  << iFMapSize[BATCH] << ", " \
-              << std::right << std::setw(4)  << iFMapSize[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << iFMapSize[HEIGHT]           << ", " \
-              << std::right << std::setw(3)  << iFMapSize[WIDTH]                    \
-              << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(4)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(4)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(3)  << oFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
+    std::cout << std::right << std::setw(22) << "None"                \
+              << std::right << setw(10) << "("                      \
+              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]             << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
 
     std::cout << std::endl;

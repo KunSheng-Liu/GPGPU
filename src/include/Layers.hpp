@@ -23,6 +23,8 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "MemoryControl.hpp"
+#include "MMU.hpp"
 
 /* ************************************************************************************************
  * Enumeration
@@ -78,7 +80,7 @@ class Layer
  */ 
 public:
 
-    Layer(char* = (char*)"None", int* = nullptr, int* = nullptr, int* = nullptr, char* = (char*)"None");
+    Layer(char* = (char*)"None", vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None");
 
    ~Layer();
 
@@ -89,11 +91,12 @@ public:
 public:
     /* pure virtual function */
     virtual void printInfo();
+    virtual void memoryAllocate (MMU* mmu);
     virtual void issueLayer() = 0;
 
 private:
     /* pure virtual function */
-    virtual int* calculateOFMapSize() = 0;
+    virtual void calculateOFMapSize() = 0;
 
 /* ************************************************************************************************
  * Basic parameter I/O
@@ -104,16 +107,15 @@ public:
     int  getLayerIndex (void) {return layerIndex;}
 
     /* Layer data I/O */
-    void setIFMap  (unsigned char* data) {iFMap = data;}
-    void setOFMap  (unsigned char* data) {oFMap = data;}
-    void setFilter (unsigned char* data) {filter = data;}
+    virtual void setIFMap  (vector<unsigned char>* data);
+    virtual void setFilter (vector<unsigned char>* data);
 
-    int* getIFMapSize (void) {return iFMapSize;}
-    int* getOFMapSize (void) {return oFMapSize;}
-    int* getFilterSize (void) {return filterSize;}
-    unsigned char* getIFMap (void) {return iFMap;}
-    unsigned char* getOFMap (void) {return oFMap;}
-    unsigned char* getFilter (void) {return filter;}
+    vector<int>* getOFMapSize  (void) {return oFMapSize;}
+    vector<int>* getIFMapSize  (void) {return iFMapSize;}
+    vector<int>* getFilterSize (void) {return filterSize;}
+    vector<unsigned char>* getOFMap  (void) {return oFMap;}
+    vector<unsigned char>* getIFMap  (void) {return iFMap;}
+    vector<unsigned char>* getFilter (void) {return filter;}
 
     /* layer stats */
     bool isExecuting   (void) {return flagExecuting;}
@@ -144,14 +146,14 @@ protected:
     bool flagFinish;
 
     /* The dimensions of feature map and filter */
-    int* iFMapSize;     // In order "batch", "channel", "height", and "width"
-    int* oFMapSize;     // In order "batch", "channel", "height", and "width"
-    int* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
+    vector<int>* oFMapSize;     // In order "batch", "channel", "height", and "width"
+    vector<int>* iFMapSize;     // In order "batch", "channel", "height", and "width"
+    vector<int>* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
-    unsigned char* iFMap;
-    unsigned char* oFMap;
-    unsigned char* filter;
+    vector<unsigned char>* oFMap;       // Output data, create by instanced layer
+    vector<unsigned char>* iFMap;       // Reference to input data
+    vector<unsigned char>* filter;      // Reference to filter data
 };
 
 
@@ -172,11 +174,11 @@ class Conv2D: public Layer
  */ 
 public:
 
-    Conv2D(char*, int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
+    Conv2D(char*, vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
 
-    Conv2D(int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
+    Conv2D(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
 
-    Conv2D(int*, int*, char* = (char*)"None", int = 1, int = 0);
+    Conv2D(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", int = 1, int = 0);
 
     ~Conv2D();
 
@@ -185,19 +187,20 @@ public:
  * ************************************************************************************************
  */
 public:
+    void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
     void issueLayer() override;
     
 private:
-    int* calculateOFMapSize() override;
+    void calculateOFMapSize() override;
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 protected:
-    int* stride;
-    int* padding;
+    vector<int>* stride;
+    vector<int>* padding;
 };
 
 
@@ -218,9 +221,9 @@ class Pooling: public Conv2D
  */ 
 public:
 
-    Pooling(int*, int*, char* = (char*)"None", int* = nullptr, int* = nullptr);
+    Pooling(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
 
-    Pooling(int*, int*, char* = (char*)"None", int = 0, int = 0);
+    Pooling(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", int = 0, int = 0);
 
 
     // Pooling(Layer*, int*, int* = NULL, int* = NULL);
@@ -254,7 +257,7 @@ class Flatten: public Layer
  */ 
 public:
 
-    Flatten(int*);
+    Flatten(vector<int>*);
 
 /* ************************************************************************************************
  * Functions
@@ -265,7 +268,7 @@ public:
     void issueLayer() override;
     
 private:
-    int* calculateOFMapSize() override;
+    void calculateOFMapSize() override;
 
 };
 
@@ -287,7 +290,7 @@ class ByPass: public Layer
  */ 
 public:
 
-    ByPass(int*);
+    ByPass(vector<int>*);
 
 /* ************************************************************************************************
  * Functions
@@ -298,7 +301,7 @@ public:
     void issueLayer() override;
     
 private:
-    int* calculateOFMapSize() override;
+    void calculateOFMapSize() override;
 
 };
 
@@ -320,9 +323,9 @@ class Dense: public Layer
  */ 
 public:
 
-    Dense(int*, int*, char* = (char*)"None");
+    Dense(vector<int>*, vector<int>*, char* = (char*)"None");
 
-    Dense(int*, int);
+    Dense(vector<int>*, int);
 
     // Dense(int, int, char* = (char*)"None");
 
@@ -336,7 +339,14 @@ public:
     void issueLayer() override;
     
 private:
-    int* calculateOFMapSize() override;
+    void calculateOFMapSize() override;
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+private:
+    int outWidth;
 
 };
 

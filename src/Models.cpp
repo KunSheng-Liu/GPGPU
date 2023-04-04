@@ -3,7 +3,7 @@
  * 
  * \brief   Implement the API
  * 
- * \date    Mar 31, 2023
+ * \date    APR 4, 2023
  */
 
 #include "include/Models.hpp"
@@ -48,6 +48,37 @@ Model::~Model()
 
 
 /** ===============================================================================================
+ * \name    memoryAllocate
+ * 
+ * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Model::memoryAllocate(MMU* mmu)
+{
+    layerGroup->memoryAllocate(mmu);
+}
+
+
+/** ===============================================================================================
+ * \name    printSummary
+ * 
+ * \brief   Construct a model
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Model::printSummary()
+{
+    std::cout << modelName << " summary:" << endl;
+    layerGroup->printInfo();
+}
+
+
+/** ===============================================================================================
  * \name    VGG16
  * 
  * \brief   Build the VGG16 layer graph
@@ -87,34 +118,34 @@ Model::VGG16()
 {
     modelName = (char*)"VGG16";
     
-    layerGroup->addLayer(new Conv2D (new int[4]{1,  3, 224, 224}, new int[4]{ 1, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 64, 224, 224}, new int[4]{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 64, 224, 224}, new int[4]{64, 64, 2, 2}, (char*)"None", 2, 0));
-    
-    layerGroup->addLayer(new Conv2D (new int[4]{1,  64, 112, 112}, new int[4]{64,  128, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 128, 112, 112}, new int[4]{128, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 128, 112, 112}, new int[4]{128, 128, 2, 2}, (char*)"None", 2, 0));
-
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 128, 56, 56}, new int[4]{128, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 256, 56, 56}, new int[4]{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 256, 56, 56}, new int[4]{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 256, 56, 56}, new int[4]{256, 256, 2, 2}, (char*)"None", 2, 0));
-
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 256, 28, 28}, new int[4]{256, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 512, 28, 28}, new int[4]{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 512, 28, 28}, new int[4]{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 512, 28, 28}, new int[4]{512, 512, 2, 2}, (char*)"None", 2, 0));
-
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 512, 14, 14}, new int[4]{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 512, 14, 14}, new int[4]{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 512, 14, 14}, new int[4]{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 512, 14, 14}, new int[4]{512, 512, 2, 2}, (char*)"None", 2, 0));
-
-    layerGroup->addLayer(new Flatten(new int[4]{1, 512, 7, 7}));
-
-    layerGroup->addLayer(new Dense(new int[4]{1, 25088, 1, 1}, 4096));
-    layerGroup->addLayer(new Dense(new int[4]{1,  4096, 1, 1}, 4096));
-    layerGroup->addLayer(new Dense(new int[4]{1,  4096, 1, 1}, 1000));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1,  3, 224, 224}, new vector<int>{ 1, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
+                                                        
+    layerGroup->addLayer(new Conv2D (new vector<int>{1,  64, 112, 112}, new vector<int>{64,  128, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 128, 112, 112}, new vector<int>{128, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 128, 112, 112}, new vector<int>{128, 128, 2, 2}, (char*)"None", 2, 0));
+                                                        
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 128, 56, 56}, new vector<int>{128, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 256, 56, 56}, new vector<int>{256, 256, 2, 2}, (char*)"None", 2, 0));
+                                                        
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 256, 28, 28}, new vector<int>{256, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 512, 28, 28}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+                                                        
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+                                                        
+    layerGroup->addLayer(new Flatten(new vector<int>{1, 512, 7, 7}));
+                                                        
+    layerGroup->addLayer(new Dense(new vector<int>{1, 25088, 1, 1}, 4096));
+    layerGroup->addLayer(new Dense(new vector<int>{1,  4096, 1, 1}, 4096));
+    layerGroup->addLayer(new Dense(new vector<int>{1,  4096, 1, 1}, 1000));
 
     numOfLayer  =  22;
     inputLayer  = *layerGroup->layers.begin();
@@ -193,18 +224,18 @@ Model::ResNet18()
     modelName = (char*)"ResNet18";
     LayerGroup resnet18;
 
-    layerGroup->addLayer(new Conv2D (new int[4]{1, 3, 224, 224}, new int[4]{3, 64, 7, 7}, (char*)"ReLU", 2, 3));
-    layerGroup->addLayer(new Pooling(new int[4]{1, 64, 112, 112}, new int[4]{64, 64, 3, 3}, (char*)"None", 2, 1));
+    layerGroup->addLayer(new Conv2D (new vector<int>{1, 3, 224, 224}, new vector<int>{3, 64, 7, 7}, (char*)"ReLU", 2, 3));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 64, 112, 112}, new vector<int>{64, 64, 3, 3}, (char*)"None", 2, 1));
 
     /* Stage 1_1 */
     LayerGroup* sequential_1_1 = new LayerGroup();
     LayerGroup* branch_1_1     = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_1_1->addLayer(new Conv2D(new int[4]{1, 64, 56, 56}, new int[4]{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_1->addLayer(new Conv2D(new int[4]{1, 64, 56, 56}, new int[4]{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_1->addLayer(new Conv2D(new vector<int>{1, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_1->addLayer(new Conv2D(new vector<int>{1, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_1_1->addLayer(sequential_1_1);
-    branch_1_1->addLayer(new ByPass(new int[4]{1, 64, 56, 56}));
+    branch_1_1->addLayer(new ByPass(new vector<int>{1, 64, 56, 56}));
 
     layerGroup->addLayer(branch_1_1);
 
@@ -213,11 +244,11 @@ Model::ResNet18()
     LayerGroup* sequential_1_2 = new LayerGroup();
     LayerGroup* branch_1_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_1_2->addLayer(new Conv2D(new int[4]{1, 64, 56, 56}, new int[4]{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_2->addLayer(new Conv2D(new int[4]{1, 64, 56, 56}, new int[4]{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_2->addLayer(new Conv2D(new vector<int>{1, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_2->addLayer(new Conv2D(new vector<int>{1, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_1_2->addLayer(sequential_1_2);
-    branch_1_2->addLayer(new ByPass(new int[4]{1, 64, 56, 56}));
+    branch_1_2->addLayer(new ByPass(new vector<int>{1, 64, 56, 56}));
 
     layerGroup->addLayer(branch_1_2);
 
@@ -226,11 +257,11 @@ Model::ResNet18()
     LayerGroup* sequential_2_1 = new LayerGroup();
     LayerGroup* branch_2_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_2_1->addLayer(new Conv2D(new int[4]{1,  64, 56, 56}, new int[4]{ 64, 128, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_2_1->addLayer(new Conv2D(new int[4]{1, 128, 28, 28}, new int[4]{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_1->addLayer(new Conv2D(new vector<int>{1,  64, 56, 56}, new vector<int>{ 64, 128, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential_2_1->addLayer(new Conv2D(new vector<int>{1, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_2_1->addLayer(sequential_2_1);
-    branch_2_1->addLayer(new Conv2D(new int[4]{1, 64, 56, 56}, new int[4]{64, 128, 3, 3},  (char*)"ReLU", 2, 1));
+    branch_2_1->addLayer(new Conv2D(new vector<int>{1, 64, 56, 56}, new vector<int>{64, 128, 3, 3},  (char*)"ReLU", 2, 1));
 
     layerGroup->addLayer(branch_2_1);
     
@@ -238,11 +269,11 @@ Model::ResNet18()
     LayerGroup* sequential_2_2 = new LayerGroup();
     LayerGroup* branch_2_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_2_2->addLayer(new Conv2D(new int[4]{1, 128, 28, 28}, new int[4]{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_2_2->addLayer(new Conv2D(new int[4]{1, 128, 28, 28}, new int[4]{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_2->addLayer(new Conv2D(new vector<int>{1, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_2->addLayer(new Conv2D(new vector<int>{1, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_2_2->addLayer(sequential_2_2);
-    branch_2_2->addLayer(new ByPass(new int[4]{1, 128, 28, 28}));
+    branch_2_2->addLayer(new ByPass(new vector<int>{1, 128, 28, 28}));
 
     layerGroup->addLayer(branch_2_2);
 
@@ -251,11 +282,11 @@ Model::ResNet18()
     LayerGroup* sequential_3_1 = new LayerGroup();
     LayerGroup* branch_3_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_3_1->addLayer(new Conv2D(new int[4]{1, 128, 28, 28}, new int[4]{128, 256, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_3_1->addLayer(new Conv2D(new int[4]{1, 256, 14, 14}, new int[4]{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_1->addLayer(new Conv2D(new vector<int>{1, 128, 28, 28}, new vector<int>{128, 256, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential_3_1->addLayer(new Conv2D(new vector<int>{1, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_3_1->addLayer(sequential_3_1);
-    branch_3_1->addLayer(new Conv2D(new int[4]{1, 128, 28, 28}, new int[4]{128, 256, 3, 3},  (char*)"ReLU", 2, 1));
+    branch_3_1->addLayer(new Conv2D(new vector<int>{1, 128, 28, 28}, new vector<int>{128, 256, 3, 3},  (char*)"ReLU", 2, 1));
 
     layerGroup->addLayer(branch_3_1);
     
@@ -263,11 +294,11 @@ Model::ResNet18()
     LayerGroup* sequential_3_2 = new LayerGroup();
     LayerGroup* branch_3_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_3_2->addLayer(new Conv2D(new int[4]{1, 256, 14, 14}, new int[4]{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_3_2->addLayer(new Conv2D(new int[4]{1, 256, 14, 14}, new int[4]{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_2->addLayer(new Conv2D(new vector<int>{1, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_2->addLayer(new Conv2D(new vector<int>{1, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_3_2->addLayer(sequential_3_2);
-    branch_3_2->addLayer(new ByPass(new int[4]{1, 256, 14, 14}));
+    branch_3_2->addLayer(new ByPass(new vector<int>{1, 256, 14, 14}));
 
     layerGroup->addLayer(branch_3_2);
 
@@ -276,11 +307,11 @@ Model::ResNet18()
     LayerGroup* sequential__4_1 = new LayerGroup();
     LayerGroup* branch__4_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential__4_1->addLayer(new Conv2D(new int[4]{1, 256, 14, 14}, new int[4]{256, 512, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential__4_1->addLayer(new Conv2D(new int[4]{1, 512, 7, 7}, new int[4]{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_1->addLayer(new Conv2D(new vector<int>{1, 256, 14, 14}, new vector<int>{256, 512, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential__4_1->addLayer(new Conv2D(new vector<int>{1, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch__4_1->addLayer(sequential__4_1);
-    branch__4_1->addLayer(new Conv2D(new int[4]{1, 256, 14, 14}, new int[4]{256, 512, 3, 3},  (char*)"ReLU", 2, 1));
+    branch__4_1->addLayer(new Conv2D(new vector<int>{1, 256, 14, 14}, new vector<int>{256, 512, 3, 3},  (char*)"ReLU", 2, 1));
 
     layerGroup->addLayer(branch__4_1);
     
@@ -288,31 +319,15 @@ Model::ResNet18()
     LayerGroup* sequential__4_2 = new LayerGroup();
     LayerGroup* branch__4_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential__4_2->addLayer(new Conv2D(new int[4]{1, 512, 7, 7}, new int[4]{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential__4_2->addLayer(new Conv2D(new int[4]{1, 512, 7, 7}, new int[4]{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_2->addLayer(new Conv2D(new vector<int>{1, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_2->addLayer(new Conv2D(new vector<int>{1, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch__4_2->addLayer(sequential__4_2);
-    branch__4_2->addLayer(new ByPass(new int[4]{1, 512, 7, 7}));
+    branch__4_2->addLayer(new ByPass(new vector<int>{1, 512, 7, 7}));
 
     layerGroup->addLayer(branch__4_2);
 
-    layerGroup->addLayer(new Pooling(new int[4]{1, 512, 7, 7}, new int[4]{512, 1024, 7, 7}, (char*)"None", 2, 0));
-    layerGroup->addLayer(new Dense(new int[4]{1, 1024, 1, 1}, 1000));
+    layerGroup->addLayer(new Pooling(new vector<int>{1, 512, 7, 7}, new vector<int>{512, 1024, 7, 7}, (char*)"None", 2, 0));
+    layerGroup->addLayer(new Dense(new vector<int>{1, 1024, 1, 1}, 1000));
 
-}
-
-
-/** ===============================================================================================
- * \name    printSummary
- * 
- * \brief   Construct a model
- * 
- * \endcond
- * ================================================================================================
- */
-void
-Model::printSummary()
-{
-    std::cout << modelName << " summary:" << endl;
-    layerGroup->printInfo();
 }

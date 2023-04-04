@@ -1,15 +1,13 @@
 /**
- * \name    CPU.hpp
+ * \name    Memory.hpp
  * 
- * \brief   Declare the structure of CPU
+ * \brief   Declare the memory API 
  * 
- * \note    In this simulator, the VA is the pointer of the data.
- * 
- * \date    APR 6, 2023
+ * \date    APR 4, 2023
  */
 
-#ifndef _CPU_HPP_
-#define _CPU_HPP_
+#ifndef _MEMORY_HPP_
+#define _MEMORY_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -17,19 +15,18 @@
  */
 #include "App_config.h"
 #include "Log.h"
-#include "MemoryControl.hpp"
-#include "MMU.hpp"
-#include "Models.hpp"
+
+
 
 /** ===============================================================================================
- * \name    CPU
+ * \name    Memory
  * 
- * \brief   The class of the CPU, contains MMU, TLB.
- * 
+ * \brief   The base class of the memory hierarchy. You can implement the cache, RAM by inheritance 
+ *          this class.
  * \endcond
  * ================================================================================================
  */
-class CPU
+class Memory
 {
 /* ************************************************************************************************
  * Class Constructor
@@ -37,27 +34,42 @@ class CPU
  */ 
 public:
 
-    CPU(MemoryControl* mc);
+    Memory(int size); // size in Byte
 
-   ~CPU();
+   ~Memory();
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
 public:
+    int dataWrite (int PA, int8_t data);
+    int8_t dataRead (int PA);
+
+
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
+public:
 
-    MMU* mMMU;
-    MemoryControl* mMC;
+    /* The storage size of memory */
+    int storageSize;        // basic unit in Byte
 
-    /* a table for tanslating the data pointer to this virtual address */
-    unordered_map<void*, vector<int>> VATable;
+    /* The throughput size  */
+    int dataWidth_I;
+    int dataWidth_O;
 
+    /* The clock speed */
+    int clockSpeed;
+
+    /* The actually storaged data */
+    unordered_map<int, int8_t> data; // first is PA, second is data
+
+    /* Recorder */
+    int numOfRead;
+    int numOfWrite;
 
 };
 

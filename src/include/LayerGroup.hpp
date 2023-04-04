@@ -67,7 +67,10 @@ public:
  */
 public:
     void addLayer (Layer*);
+    void setIFMap  (vector<unsigned char>* data) override;
+    void setFilter (vector<unsigned char>* data) override;
 
+    void memoryAllocate (MMU* mmu) override;
     void printInfo() override;
     void issueLayer() override;
     
@@ -75,7 +78,7 @@ private:
     void addCaseCade (Layer*);
     void addCaseCode (Layer*);
 
-    int* calculateOFMapSize() override {return NULL;}
+    void calculateOFMapSize() override;
 
 
 /* ************************************************************************************************

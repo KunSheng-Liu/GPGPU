@@ -80,8 +80,8 @@ LayerGroup::addCaseCade (Layer* layer)
     } else {
 
         /* Dimension check */
-        int* nextIFMapSize = layer->getIFMapSize();
-        bool check = (oFMapSize[BATCH] == nextIFMapSize[BATCH]) && (oFMapSize[CHANNEL] == nextIFMapSize[CHANNEL]) && (oFMapSize[HEIGHT] == nextIFMapSize[HEIGHT]) && (oFMapSize[WIDTH] == nextIFMapSize[WIDTH]);
+        vector<int>* nextIFMapSize = layer->getIFMapSize();
+        bool check = ((*oFMapSize)[BATCH] == (*nextIFMapSize)[BATCH]) && ((*oFMapSize)[CHANNEL] == (*nextIFMapSize)[CHANNEL]) && ((*oFMapSize)[HEIGHT] == (*nextIFMapSize)[HEIGHT]) && ((*oFMapSize)[WIDTH] == (*nextIFMapSize)[WIDTH]);
         ASSERT(check, "Layer " + to_string(layer->layerIndex) + " has error iFMapSize to the existing oFMapSize.");
 
         layer->setIFMap(oFMap);
@@ -109,21 +109,91 @@ LayerGroup::addCaseCode (Layer* layer)
     {
         iFMapSize = layer->getIFMapSize();
         oFMapSize = layer->getOFMapSize();
-        oFMap     = layer->getOFMap();
 
     } else {
 
         /* Dimension check */
-        int* nextIFMapSize = layer->getIFMapSize();
-        int* nextOFMapSize = layer->getOFMapSize();
-        bool check  = (iFMapSize[BATCH] == nextIFMapSize[BATCH]) && (iFMapSize[CHANNEL] == nextIFMapSize[CHANNEL]) && (iFMapSize[HEIGHT] == nextIFMapSize[HEIGHT]) && (iFMapSize[WIDTH] == nextIFMapSize[WIDTH])
-                   && (oFMapSize[BATCH] == nextOFMapSize[BATCH]) && (oFMapSize[CHANNEL] == nextOFMapSize[CHANNEL]) && (oFMapSize[HEIGHT] == nextOFMapSize[HEIGHT]) && (oFMapSize[WIDTH] == nextOFMapSize[WIDTH]);
+        vector<int>* nextIFMapSize = layer->getIFMapSize();
+        vector<int>* nextOFMapSize = layer->getOFMapSize();
+        bool check  = ((*iFMapSize)[BATCH] == (*nextIFMapSize)[BATCH]) && ((*iFMapSize)[CHANNEL] == (*nextIFMapSize)[CHANNEL]) && ((*iFMapSize)[HEIGHT] == (*nextIFMapSize)[HEIGHT]) && ((*iFMapSize)[WIDTH] == (*nextIFMapSize)[WIDTH])
+                   && ((*oFMapSize)[BATCH] == (*nextOFMapSize)[BATCH]) && ((*oFMapSize)[CHANNEL] == (*nextOFMapSize)[CHANNEL]) && ((*oFMapSize)[HEIGHT] == (*nextOFMapSize)[HEIGHT]) && ((*oFMapSize)[WIDTH] == (*nextOFMapSize)[WIDTH]);
         ASSERT(check, "Casecoded layer has error iFMapSize or oFMapSize to the existing layer");
 
         layer->setIFMap(iFMap);
     }
 
     layers.emplace_back(layer);
+}
+
+
+/** ===============================================================================================
+ * \name    setIFMap
+ *
+ * \brief   Set the input feature map
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::setIFMap(vector<unsigned char>* data)
+{
+    if (iFMap != nullptr) delete iFMap;
+    iFMap  = data;
+
+    if (groupType == Group_t::CaseCade) 
+    {
+        auto layer = layers.front();
+        layer->setIFMap(data);
+
+    } else {
+        for (auto layer: layers) {
+            layer->setIFMap(data);
+        }
+    }
+}
+
+
+/** ===============================================================================================
+ * \name    setFilter
+ *
+ * \brief   Set the output feature map
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::setFilter(vector<unsigned char>* data)
+{
+    if (filter != nullptr) delete filter;
+    filter = data;
+
+    if (groupType == Group_t::CaseCade) 
+    {
+        auto layer = layers.front();
+        layer->setFilter(data);
+
+    } else {
+        for (auto layer: layers) {
+            layer->setFilter(data);
+        }
+    }
+}
+
+
+/** ===============================================================================================
+ * \name    memoryAllocate
+ *
+ * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::memoryAllocate(MMU* mmu)
+{
+    for (auto layer: layers){
+        layer->memoryAllocate(mmu);
+    }
 }
 
 
@@ -178,4 +248,20 @@ LayerGroup::issueLayer ()
     }
 
 
+}
+
+
+/** ===============================================================================================
+ * \name    init
+ *
+ * \brief   Initial the oFMapSize, defualt height and width is "1"
+ * 
+ * \endcond
+ * 
+ * ================================================================================================
+ */
+void
+LayerGroup::calculateOFMapSize()
+{
+    
 }
