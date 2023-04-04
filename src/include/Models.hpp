@@ -70,7 +70,7 @@ public:
     const int modelIndex;
 
     /* Name of model */
-    const char* modelName;
+    char* modelName;
 
     /* Number of layer */
     int numOfLayer;

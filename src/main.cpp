@@ -16,7 +16,7 @@ int main (int argc, char** argv)
     std::cout << "Hello GPGPU" << std::endl;
     
     Model model;
-    BENCHMARK( model, VGG16 );
+    BENCHMARK( model, ResNet18 );
     model.printSummary();
 
     return 0;

@@ -48,7 +48,7 @@ Layer::Layer(char* layer_type, int* input_size, int* output_size, int* filter_si
  * \endcond
  * ================================================================================================
  */
-Layer::Layer::~Layer()
+Layer::~Layer()
 {
     if (strcmp (layerType, "None") != 0)
     {
@@ -75,14 +75,14 @@ void
 Layer::printInfo()
 {
     std::cout << "(" 
-              << std::right << std::setw(3)  << filterSize[FILTER_CHANNEL_I] << ", " \
-              << std::right << std::setw(3)  << filterSize[FILTER_CHANNEL_O] << ", " \
-              << std::right << std::setw(4)  << filterSize[HEIGHT]           << ", " \
-              << std::right << std::setw(4)  << filterSize[WIDTH]                    \
+              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_I] << ", " \
+              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_O] << ", " \
+              << std::right << std::setw(3)  << filterSize[HEIGHT]           << ", " \
+              << std::right << std::setw(3)  << filterSize[WIDTH]                    \
               << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(3)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << oFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]            << ", " \
               << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
 }
@@ -358,9 +358,9 @@ Flatten::printInfo()
 
     std::cout << std::right << std::setw(22) << "None"                \
               << std::right << setw(10) << "("
-              << std::right << std::setw(3)  << oFMapSize[BATCH]   << ", " \
-              << std::right << std::setw(5)  << oFMapSize[CHANNEL] << ", " \
-              << std::right << std::setw(2)  << oFMapSize[HEIGHT]  << ", " \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " \
               << std::right << std::setw(3)  << oFMapSize[WIDTH]           \
               << std::left  << std::setw(10) << ")";  
 
@@ -378,6 +378,92 @@ Flatten::printInfo()
  */
 void
 Flatten::issueLayer()
+{
+
+}
+
+
+
+/** ===============================================================================================
+ * \name    ByPass
+ *
+ * \brief   Construct a flatten layer
+ * 
+ * \param   input_size          [batch, channel, height, width]
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+ByPass::ByPass(int* input_size)
+        : Layer((char*)"ByPass", move(input_size), NULL, NULL, (char*)"None")
+{
+    oFMapSize = calculateOFMapSize();
+    oFMap  = (oFMapSize  == NULL) ? NULL : new unsigned char[oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]];
+}
+
+/** ===============================================================================================
+ * \name    init
+ *
+ * \brief   Initial the oFMapSize, defualt height and width is "1"
+ * 
+ * \endcond
+ * 
+ * ================================================================================================
+ */
+int*
+ByPass::calculateOFMapSize()
+{
+    bool check = (iFMapSize != NULL);
+    ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
+
+    int* shape = new int[4];
+    shape[BATCH]   = iFMapSize[BATCH];
+    shape[CHANNEL] = iFMapSize[CHANNEL];
+    shape[HEIGHT]  = iFMapSize[HEIGHT];
+    shape[WIDTH]   = iFMapSize[WIDTH];
+
+    return move(shape);
+}
+
+
+/** ===============================================================================================
+ * \name    printInfo
+ *
+ * \brief   Print the layer information
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+ByPass::printInfo()
+{
+
+    std::cout << std::left << std::setw(10) << layerIndex \
+              << std::left << std::setw(10) << layerType  \
+              << std::left << std::setw(10) << activationType;
+
+    std::cout << std::right << std::setw(22) << "None"                \
+              << std::right << setw(10) << "("
+              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]           \
+              << std::left  << std::setw(10) << ")";  
+
+    std::cout << std::endl;
+}
+
+
+/** ===============================================================================================
+ * \name    issueLayer
+ *
+ * \brief   Print the layer information
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+ByPass::issueLayer()
 {
 
 }
@@ -465,14 +551,14 @@ Dense::printInfo()
               << std::left << std::setw(10) << activationType;
 
     std::cout << "("                        
-              << std::right << std::setw(3)  << iFMapSize[BATCH] << ", " \
-              << std::right << std::setw(5)  << iFMapSize[CHANNEL] << ", " \
-              << std::right << std::setw(2)  << iFMapSize[HEIGHT]           << ", " \
-              << std::right << std::setw(4)  << iFMapSize[WIDTH]                    \
+              << std::right << std::setw(4)  << iFMapSize[BATCH] << ", " \
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]           << ", " \
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]                    \
               << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(5)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(2)  << oFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]            << ", " \
               << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
 
