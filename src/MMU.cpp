@@ -3,7 +3,7 @@
  * 
  * \brief   Implement the MMU and TLB.
  * 
- * \date    APR 6, 2023
+ * \date    APR 10, 2023
  */
 
 #include "include/MMU.hpp"
@@ -29,9 +29,10 @@ MMU::MMU(MemoryControl* mc): mMC(mc)
 /** ===============================================================================================
  * \name    memoryAllocate
  * 
- * \brief   The memory manage unit for handling the CPU virtual address to physical address.
+ * \brief   Allocate memory for CPU virtual address to physical address.
  * 
- * \param   
+ * \param   va          the virtual address going to allcate
+ * \param   numOfByte   the number of Bytes needs to allocate
  * 
  * \endcond
  * ================================================================================================

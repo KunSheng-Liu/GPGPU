@@ -49,14 +49,18 @@ MemoryControl::init()
  * 
  * \brief   Pre-build some page frame for the DRAM needed.
  * 
+ * \param   numOfByte     number of byte needs to be allocated.
+ * 
+ * \return  pair<int, int>, a pair of PA [start, end]
+ * 
  * \endcond
  * ================================================================================================
  */
 pair<int, int>
-MemoryControl::memoryAllocate (int numByte)
+MemoryControl::memoryAllocate (int numOfByte)
 {
     int startAddr = physicalAddressCount;
-    physicalAddressCount += numByte - 1;
+    physicalAddressCount += numOfByte - 1;
 
     return make_pair(startAddr, physicalAddressCount);
 }

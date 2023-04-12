@@ -13,6 +13,8 @@
  *
  * \brief   Construct a layerGroup
  * 
+ * \param   group_type      Group_t::CaseCade / Group_t::CaseCode
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -184,6 +186,8 @@ LayerGroup::setFilter(vector<unsigned char>* data)
  * \name    memoryAllocate
  *
  * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \param   mmu     the memory manager unit
  * 
  * \endcond
  * ================================================================================================

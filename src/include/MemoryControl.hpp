@@ -3,7 +3,7 @@
  * 
  * \brief   Declare the memory API 
  * 
- * \date    APR 5, 2023
+ * \date    APR 7, 2023
  */
 
 #ifndef _MEMORYCONTROL_HPP_
@@ -61,7 +61,6 @@ private:
     int physicalAddressCount = 0;       // unit in Byte
 
     queue<int> availablePageList;
-
 
 };
 

@@ -32,18 +32,18 @@
  */
 
 /* The index for "filterSize" */
-#define FILTER_CHANNEL_I    0
-#define FILTER_CHANNEL_O    1
+#define FILTER_CHANNEL_I        0
+#define FILTER_CHANNEL_O        1
 
 /* The index for "stride" and "padding" */
-#define STRIDE_PADDING_HEIGHT    0
+#define STRIDE_PADDING_HEIGHT   0
 #define STRIDE_PADDING_WIDTH    1
 
 /* The index for "iFMapSize" and "oFMapSize" */
-#define BATCH               0
-#define CHANNEL             1
-#define HEIGHT              2
-#define WIDTH               3
+#define BATCH                   0
+#define CHANNEL                 1
+#define HEIGHT                  2
+#define WIDTH                   3
 
 /* All avaliable layer type*/
 enum class Layer_t{
@@ -225,11 +225,6 @@ public:
 
     Pooling(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", int = 0, int = 0);
 
-
-    // Pooling(Layer*, int*, int* = NULL, int* = NULL);
-
-    // Pooling(Layer*, int, int = 0, int = 0);
-
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
@@ -349,7 +344,6 @@ private:
     int outWidth;
 
 };
-
 
 
 #endif

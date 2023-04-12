@@ -52,6 +52,8 @@ Model::~Model()
  * 
  * \brief   Allocate physical address to the model virtual address.
  * 
+ * \param   mmu     the pointer of memory manager unit from CPU
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -106,10 +108,10 @@ Model::printSummary()
  *   15     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
  *   16     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
  *   17       Pool    2 x 2     512         7 x 7      2          0
- *         Flatten            25088         1 x 1
- *   18      Dense    1 x 1    4096         1 x 1                            ReLU
- *   19      Dense    1 x 1    4096         1 x 1                            ReLU 
- *   20      Dense    1 x 1    1000         1 x 1    
+ *   18    Flatten            25088         1 x 1
+ *   19      Dense    1 x 1    4096         1 x 1                            ReLU
+ *   20      Dense    1 x 1    4096         1 x 1                            ReLU 
+ *   21      Dense    1 x 1    1000         1 x 1    
  * 
  * ================================================================================================
  */

@@ -55,6 +55,8 @@ Layer::~Layer()
  *
  * \brief   Set the input feature map
  * 
+ * \param   data        the pointer of vector
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -71,6 +73,8 @@ Layer::setIFMap(vector<unsigned char>* data)
  *
  * \brief   Set the output feature map
  * 
+ * \param   data        the pointer of vector
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -86,6 +90,8 @@ Layer::setFilter(vector<unsigned char>* data)
  * \name    memoryAllocate
  *
  * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \param   mmu     the memory manager unit
  * 
  * \endcond
  * ================================================================================================
@@ -247,6 +253,8 @@ Conv2D::calculateOFMapSize()
  * \name    memoryAllocate
  *
  * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \param   mmu     the memory manager unit
  * 
  * \endcond
  * ================================================================================================

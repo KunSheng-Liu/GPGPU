@@ -5,7 +5,7 @@
  * 
  * \note    In this simulator, the VA is the pointer of the data.
  * 
- * \date    APR 6, 2023
+ * \date    APR 10, 2023
  */
 
 #ifndef _MMU_HPP_
@@ -68,7 +68,8 @@ private:
  * 
  * \brief   The class of translation lookaside table for translating the VA to PA by hash table.
  * 
- * \note    This TLB use the Least Recently Used (LRU) algorithm.
+ * \note    This TLB use the Least Recently Used (LRU) algorithm. The table hold the pair of start 
+ *          and end physical address.
  * 
  * \endcond
  * ================================================================================================
