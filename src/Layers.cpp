@@ -87,6 +87,26 @@ Layer::setFilter(vector<unsigned char>* data)
 
 
 /** ===============================================================================================
+ * \name    changeBatch
+ *
+ * \brief   Change the batch size of model
+ * 
+ * \param   new_batch_size      the size of new batch
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::changeBatch(int new_batch_size)
+{
+    (*iFMapSize)[BATCH] = new_batch_size;
+    (*oFMapSize)[BATCH] = new_batch_size;
+    if (iFMap  != nullptr)  iFMap->resize((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
+    if (oFMap  != nullptr)  oFMap->resize((*oFMapSize)[BATCH]  * (*oFMapSize)[CHANNEL]  * (*oFMapSize)[HEIGHT]  * (*oFMapSize)[WIDTH]);
+}
+
+
+/** ===============================================================================================
  * \name    memoryAllocate
  *
  * \brief   Allocate physical address to the model virtual address.
@@ -100,20 +120,19 @@ void
 Layer::memoryAllocate(MMU* mmu)
 {
     int numOfByte = 0;
-    
 
     log_D("memoryAllocate", "ID: " + to_string(layerIndex) + "  " + layerType);
-    // cout << "iFMapSize ";
-    if(iFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMapSize)),  iFMapSize->size()  * sizeof(int));
-    // cout << "oFMapSize ";
-    if(oFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMapSize)),  oFMapSize->size()  * sizeof(int));
-    // cout << "filterSize ";
-    if(filterSize) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filterSize)), filterSize->size() * sizeof(int));
-    // cout << "iFMap ";
+    // if (LOG_LEVEL >= VERBOSE) cout << "iFMapSize ";
+    // if(iFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMapSize)),  iFMapSize->size()  * sizeof(int));
+    // if (LOG_LEVEL >= VERBOSE) cout << "oFMapSize ";
+    // if(oFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMapSize)),  oFMapSize->size()  * sizeof(int));
+    // if (LOG_LEVEL >= VERBOSE) cout << "filterSize ";
+    // if(filterSize) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filterSize)), filterSize->size() * sizeof(int));
+    if (LOG_LEVEL >= VERBOSE) cout << "iFMap ";
     if(iFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMap)),  iFMap->size()  * sizeof(unsigned char));
-    // cout << "oFMap ";
+    if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
     if(oFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMap)),  oFMap->size()  * sizeof(unsigned char));
-    // cout << "filter ";
+    if (LOG_LEVEL >= VERBOSE) cout << "filter ";
     if(filter) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filter)), filter->size() * sizeof(unsigned char));
 
 }
@@ -166,8 +185,7 @@ Conv2D::Conv2D(char* layer_type, vector<int>* input_size, vector<int>* filter_si
 {
     calculateOFMapSize();
     int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
-    oFMap = new vector<unsigned char>();
-    oFMap->resize(size);
+    oFMap = new vector<unsigned char>(size);
 }
 
 
@@ -259,16 +277,16 @@ Conv2D::calculateOFMapSize()
  * \endcond
  * ================================================================================================
  */
-void
-Conv2D::memoryAllocate(MMU* mmu)
-{
-    int numOfByte = 0;
+// void
+// Conv2D::memoryAllocate(MMU* mmu)
+// {
+//     int numOfByte = 0;
     
-    Layer::memoryAllocate(mmu);
-    if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(int));
-    if(padding) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)), padding->size() * sizeof(int));
+//     Layer::memoryAllocate(mmu);
+//     if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(int));
+//     if(padding) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)), padding->size() * sizeof(int));
 
-}
+// }
 
 
 /** ===============================================================================================
@@ -383,8 +401,7 @@ Flatten::Flatten(vector<int>* input_size)
 {
     calculateOFMapSize();
     int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
-    oFMap = new vector<unsigned char>();
-    oFMap->resize(size);
+    oFMap = new vector<unsigned char>(size);
 }
 
 /** ===============================================================================================
@@ -468,7 +485,8 @@ ByPass::ByPass(vector<int>* input_size)
         : Layer((char*)"ByPass", input_size)
 {
     calculateOFMapSize();
-    oFMap = iFMap;
+    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    oFMap = new vector<unsigned char>(size);
 }
 
 /** ===============================================================================================
@@ -568,8 +586,7 @@ Dense::Dense(vector<int>* input_size, int output_width)
 {
     calculateOFMapSize();
     int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
-    oFMap = new vector<unsigned char>();
-    oFMap->resize(size);
+    oFMap = new vector<unsigned char>(size);
 }
 
 

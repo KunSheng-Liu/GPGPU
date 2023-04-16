@@ -14,6 +14,7 @@
  * ************************************************************************************************
  */
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -53,13 +54,12 @@ using namespace std;
 #define LOG_LEVEL               DEBUG
 #define PRINT_MODEL_DETIAL      true
 
-#define HARDWARE_ARCHITECTURE   AGX_XAVIER
 
 /* ************************************************************************************************
  * BenchMark
  * ************************************************************************************************
  */
-
+#define HARDWARE_ARCHITECTURE   AGX_XAVIER
 
 /* ************************************************************************************************
  * Hardware Configuration
@@ -88,14 +88,15 @@ using namespace std;
 
     /* GPU */
     #define GPU_SM_NUM                  8 
-    #define GPU_WARP_PER_SM             32 
+    #define GPU_WARP_PER_SM             2 
     #define GPU_THREAD_PER_WARP         32 
-    #define GPU_MAX_THREAD_PER_SM       2048 
+    #define GPU_MAX_THREAD_PER_SM       GPU_SM_NUM *  GPU_WARP_PER_SM * GPU_THREAD_PER_WARP
     #define GPU_REGISTER_PER_SM         65536 
 
     #define GPU_L1_CACHE                192                     // unit (KB)
     #define GPU_L2_CACHE                512                     // unit (KB)
     #define GPU_SHARED_MEMORY_PER_SM    96  	                // unit (KB)
+    #define GPU_GDDR_SIZE               
 
     #define GPU_IDEL_POWER		        10    * pow(0.1, 3)      // unit (W) (Frequence=1377000000)
     #define GPU_EXEC_POWER		        19326 * pow(0.1, 3)      // unit (W) (Frequence=1377000000)

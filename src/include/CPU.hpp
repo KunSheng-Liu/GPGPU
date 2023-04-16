@@ -17,6 +17,7 @@
  */
 #include "App_config.h"
 #include "Log.h"
+#include "Application.hpp"
 #include "MemoryControl.hpp"
 #include "MMU.hpp"
 #include "Models.hpp"
@@ -55,9 +56,7 @@ public:
     MMU* mMMU;
     MemoryControl* mMC;
 
-    /* a table for tanslating the data pointer to this virtual address */
-    unordered_map<void*, vector<int>> VATable;
-
+    vector<Application*> APPs;
 
 };
 

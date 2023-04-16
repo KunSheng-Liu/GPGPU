@@ -112,6 +112,9 @@ LayerGroup::addCaseCode (Layer* layer)
         iFMapSize = layer->getIFMapSize();
         oFMapSize = layer->getOFMapSize();
 
+        int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+        oFMap = new vector<unsigned char>(size);
+
     } else {
 
         /* Dimension check */
@@ -123,8 +126,69 @@ LayerGroup::addCaseCode (Layer* layer)
 
         layer->setIFMap(iFMap);
     }
-
+    
     layers.emplace_back(layer);
+}
+
+
+/** ===============================================================================================
+ * \name    changeBatch
+ *
+ * \brief   Change the batch size of model
+ * 
+ * \param   new_batch_size      the size of new batch
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::changeBatch(int new_batch_size)
+{
+    for (auto layer: layers){
+        layer->changeBatch(new_batch_size);
+    }
+}
+
+
+/** ===============================================================================================
+ * \name    memoryAllocate
+ *
+ * \brief   Allocate physical address to the model virtual address.
+ * 
+ * \param   mmu     the memory manager unit
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::memoryAllocate(MMU* mmu)
+{
+    for (auto layer: layers){
+        layer->memoryAllocate(mmu);
+    }
+
+    /* The memory sapce for merge layer */
+    if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
+    if(oFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMap)),  oFMap->size()  * sizeof(unsigned char));
+}
+
+
+/** ===============================================================================================
+ * \name    issueLayer
+ *
+ * \brief   Print the group information.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void::
+LayerGroup::issueLayer ()
+{
+    for (auto layer: layers){
+        layer->issueLayer();
+    }
+
+
 }
 
 
@@ -183,25 +247,6 @@ LayerGroup::setFilter(vector<unsigned char>* data)
 
 
 /** ===============================================================================================
- * \name    memoryAllocate
- *
- * \brief   Allocate physical address to the model virtual address.
- * 
- * \param   mmu     the memory manager unit
- * 
- * \endcond
- * ================================================================================================
- */
-void
-LayerGroup::memoryAllocate(MMU* mmu)
-{
-    for (auto layer: layers){
-        layer->memoryAllocate(mmu);
-    }
-}
-
-
-/** ===============================================================================================
  * \name    printInfo
  *
  * \brief   Print the group information.
@@ -233,25 +278,6 @@ LayerGroup::printInfo ()
               
     std::cout << std::endl;
 #endif
-}
-
-
-/** ===============================================================================================
- * \name    issueLayer
- *
- * \brief   Print the group information.
- * 
- * \endcond
- * ================================================================================================
- */
-void::
-LayerGroup::issueLayer ()
-{
-    for (auto layer: layers){
-        layer->issueLayer();
-    }
-
-
 }
 
 

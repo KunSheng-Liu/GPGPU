@@ -22,11 +22,15 @@ CPU::CPU(MemoryControl* mc) : mMC(mc)
 {
     mMMU = new MMU(mc);
 
-    Model model;
-    BENCHMARK( model, ResNet18 );
-    model.memoryAllocate(mMMU);
-    model.printSummary();
-
+    APPs.push_back(new Application ((char*)"VGG16"));
+    APPs.push_back(new Application ((char*)"ResNet18"));
+    
+    for (auto app: APPs)
+    {
+        app->mModel->setBatchSize(1);
+        app->mModel->memoryAllocate(mMMU);
+    }
+    
 }
 
 

@@ -19,9 +19,6 @@ int main (int argc, char** argv)
     
     MemoryControl mMC(DISK_SPACE, PAGE_SIZE);
     CPU mCPU(&mMC);
-    // Model model;
-    // BENCHMARK( model, ResNet18 );
-    // model.printSummary();
 
 
     return 0;

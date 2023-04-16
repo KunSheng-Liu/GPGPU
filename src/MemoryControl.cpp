@@ -60,9 +60,9 @@ pair<int, int>
 MemoryControl::memoryAllocate (int numOfByte)
 {
     int startAddr = physicalAddressCount;
-    physicalAddressCount += numOfByte - 1;
+    physicalAddressCount += numOfByte;
 
-    return make_pair(startAddr, physicalAddressCount);
+    return make_pair(startAddr, physicalAddressCount - 1);
 }
 
 
@@ -78,7 +78,8 @@ void
 MemoryControl::printInfo()
 {
     std::cout << "Memory Controller:" << std::endl;
-    std::cout << std::right << std::setw(24) << "Storage Bound: " << storageLimit << std::endl;
-    std::cout << std::right << std::setw(24) << "PageFrame Offset: " << pageFrameOffset << std::endl;
+    std::cout << std::right << std::setw(24) << "Storage Bound: "      << storageLimit << std::endl;
+    std::cout << std::right << std::setw(24) << "PageFrame Offset: "   << pageFrameOffset << std::endl;
     std::cout << std::right << std::setw(24) << "AvailablePage Size: " << availablePageList.size() << std::endl;
+    std::cout << std::right << std::setw(24) << "Current Usage: "      << physicalAddressCount << std::endl;
 }

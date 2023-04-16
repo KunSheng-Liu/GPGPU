@@ -89,9 +89,11 @@ public:
  * ************************************************************************************************
  */
 public:
-    /* pure virtual function */
+    /* virtual function */
     virtual void printInfo();
     virtual void memoryAllocate (MMU* mmu);
+    virtual void changeBatch (int new_batch_size);
+    /* pure virtual function */
     virtual void issueLayer() = 0;
 
 private:
@@ -110,8 +112,8 @@ public:
     virtual void setIFMap  (vector<unsigned char>* data);
     virtual void setFilter (vector<unsigned char>* data);
 
-    vector<int>* getOFMapSize  (void) {return oFMapSize;}
     vector<int>* getIFMapSize  (void) {return iFMapSize;}
+    vector<int>* getOFMapSize  (void) {return oFMapSize;}
     vector<int>* getFilterSize (void) {return filterSize;}
     vector<unsigned char>* getOFMap  (void) {return oFMap;}
     vector<unsigned char>* getIFMap  (void) {return iFMap;}
@@ -146,13 +148,13 @@ protected:
     bool flagFinish;
 
     /* The dimensions of feature map and filter */
-    vector<int>* oFMapSize;     // In order "batch", "channel", "height", and "width"
     vector<int>* iFMapSize;     // In order "batch", "channel", "height", and "width"
+    vector<int>* oFMapSize;     // In order "batch", "channel", "height", and "width"
     vector<int>* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
-    vector<unsigned char>* oFMap;       // Output data, create by instanced layer
     vector<unsigned char>* iFMap;       // Reference to input data
+    vector<unsigned char>* oFMap;       // Output data, create by instanced layer
     vector<unsigned char>* filter;      // Reference to filter data
 };
 
@@ -187,7 +189,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void memoryAllocate(MMU* mmu) override;
+    // void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
     void issueLayer() override;
     

@@ -4,6 +4,7 @@
  * \brief   Declare the model API 
  *          
  * \note    Available model type:
+ *          - \b VGG16
  *          - \b RESNET18
  * 
  * \date    APR 4, 2023
@@ -22,11 +23,6 @@
 #include "Layers.hpp"
 #include "LayerGroup.hpp"
 
-/* ************************************************************************************************
- * Macro
- * ************************************************************************************************
- */
-#define BENCHMARK( obj, model ) obj.model()
 
 /** ===============================================================================================
  * \name    Model
@@ -57,12 +53,21 @@ public:
 
     void memoryAllocate (MMU* mmu);
     void printSummary ();
+
+    void setBatchSize (int batch_size);
+
+    char* getModelName (void) {return modelName;}
+    int   getNumOfLayer (void) {return numOfLayer;}
+
+    vector<int>* getIFMapSize  (void) {return layerGroup->getIFMapSize();}
+    vector<int>* getOFMapSize  (void) {return layerGroup->getOFMapSize();}
     
 /* ************************************************************************************************
  * Benchmark
  * ************************************************************************************************
  */
 public:
+    void None();
     // void LeNet();
     void VGG16();
     // void VGG19();
@@ -77,24 +82,25 @@ public:
     /* The index of model. Each model have a unique index */
     const int modelIndex;
 
+protected:
+
+    /* Number of layer be created */
+    static int modelCount;
+
     /* Name of model */
     char* modelName;
 
     /* Number of layer */
     int numOfLayer;
 
+    /* Batch size of model */
+    int batchSize = 0;
 
-protected:
-
-    /* Number of layer be created */
-    static int ModelCount;
+    /* Memory information of model */
+    int ioMemCount = 0;
+    int filterMemCount = 0;
 
     LayerGroup* layerGroup;
-
-    /* Pointer of first/last layer */
-    Layer* inputLayer;
-    Layer* outputLayer;
-
 };
 
 #endif

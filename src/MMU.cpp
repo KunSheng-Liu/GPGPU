@@ -40,7 +40,7 @@ MMU::MMU(MemoryControl* mc): mMC(mc)
 void 
 MMU::memoryAllocate (int va, int numOfByte)
 {
-    if (va == 0) return;
+    if (va == 0 || numOfByte == 0) return;
     
     pair<int, int> pa_pair = mTLB->lookup(va);
     if (pa_pair.first == -1 && pa_pair.second == -1) 

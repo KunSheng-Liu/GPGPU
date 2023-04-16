@@ -54,12 +54,7 @@ public:
  * Type Define
  * ************************************************************************************************
  */
-public:
-    // struct layerNode{
-    //     Layer* layer = NULL;
-    //     vector<layerNode*> prevNode;
-    //     vector<layerNode*> nextNode;
-    // };
+
 
 /* ************************************************************************************************
  * Functions
@@ -70,6 +65,7 @@ public:
     void setIFMap  (vector<unsigned char>* data) override;
     void setFilter (vector<unsigned char>* data) override;
 
+    void changeBatch (int new_batch_size) override;
     void memoryAllocate (MMU* mmu) override;
     void printInfo() override;
     void issueLayer() override;
