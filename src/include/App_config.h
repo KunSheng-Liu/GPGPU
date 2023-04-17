@@ -32,6 +32,19 @@
  */
 using namespace std;
 
+/* ************************************************************************************************
+ * Pre-declaration Class
+ * ************************************************************************************************
+ */
+class GPGPU;
+class CPU;
+class MMU;
+class TLB;
+class Application;
+class Model;
+class InferenceEngine;
+class MemoryControl;
+
 
 /* ************************************************************************************************
  * Enumeration
@@ -75,6 +88,12 @@ using namespace std;
     #define PAGE_FAULT_PENALTY          50 * pow(0.1, 6)		// unit (s)
 
     #define GPU_PREFETCH_SIZE           80
+
+    /* Frequency */
+    #define CPU_F                       1200000000.0            // unit (Hz)    1200 MHz
+    #define MC_F                        4266000000.0            // unit (Hz)    4266 MHz
+    #define GPU_F                       1377000000.0            // unit (Hz)    1377 MHz
+    #define GMMU_F                      1377000000.0            // unit (Hz)    1377 MHz
     
     /* CPU */
     #define CPU_CONSTANT_POWER	        1526 * pow(0.1, 3)      // unit (W) (8 core, Frequence=1200000000)
@@ -93,9 +112,9 @@ using namespace std;
     #define GPU_MAX_THREAD_PER_SM       GPU_SM_NUM *  GPU_WARP_PER_SM * GPU_THREAD_PER_WARP
     #define GPU_REGISTER_PER_SM         65536 
 
+    #define GPU_SHARED_MEMORY_PER_SM    96  	                // unit (KB)
     #define GPU_L1_CACHE                192                     // unit (KB)
     #define GPU_L2_CACHE                512                     // unit (KB)
-    #define GPU_SHARED_MEMORY_PER_SM    96  	                // unit (KB)
     #define GPU_GDDR_SIZE               
 
     #define GPU_IDEL_POWER		        10    * pow(0.1, 3)      // unit (W) (Frequence=1377000000)

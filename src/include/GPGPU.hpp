@@ -1,13 +1,15 @@
 /**
- * \name    LayerGroup.hpp
+ * \name    GPGPU.hpp
  * 
- * \brief   Use to contain a sequential of layer
- *          
- * \date    Apr 1, 2023
+ * \brief   Declare the structure of GPGPU
+ * 
+ * \note    It's a simulator for simulating the behavior of a GPGPU (General Porpose GPU).
+ * 
+ * \date    APR 18, 2023
  */
 
-#ifndef _LAYERGROUP_HPP_
-#define _LAYERGROUP_HPP_
+#ifndef _GPGPU_HPP_
+#define _GPGPU_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -15,72 +17,70 @@
  */
 #include "App_config.h"
 #include "Log.h"
-#include "Layers.hpp"
+#include "Math.h"
 
+#include "CPU.hpp"
+#include "MemoryControl.hpp"
 
 /* ************************************************************************************************
- * Enumeration
+ * Declaration
  * ************************************************************************************************
  */
+#define  CPU_MASK       0x01
+#define  MC_MASK        0x02 
+#define  GPU_MASK       0x04
+#define  GMMU_MASK      0x08
 
-/* The type of this group */
-enum class Group_t{
-    CaseCade,
-    CaseCode,
-};
-
+#define  cpu_period     double(1.0 / CPU_F);
+#define  mc_period      double(1.0 / MC_F);
+#define  gpu_period     double(1.0 / GPU_F);
+#define  gmmu_period    double(1.0 / GMMU_F);
 
 /** ===============================================================================================
- * \name    LayerGroup
+ * \name    GPGPU
  * 
- * \brief   The layer container to keep a sequential layer. You can add the layer or layerGroup into 
- *          this container.
+ * \brief   The class of the CPU, contains MMU, TLB.
+ * 
  * \endcond
  * ================================================================================================
  */
-class LayerGroup: public Layer
-{
+class GPGPU {
 /* ************************************************************************************************
  * Class Constructor
  * ************************************************************************************************
  */ 
 public:
 
-    LayerGroup(Group_t = Group_t::CaseCade);
+    GPGPU();
 
-   ~LayerGroup();
+   ~GPGPU();
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
 public:
-    void addLayer (Layer*);
-    void setIFMap  (vector<unsigned char>* data) override;
-    void setFilter (vector<unsigned char>* data) override;
+    void run ();
 
-    void changeBatch (int new_batch_size) override;
-    void memoryAllocate (MMU* mmu) override;
-    void printInfo() override;
-    void issueLayer() override;
-    
+    int next_clock_domain();
+
+/* ************************************************************************************************
+ * Module
+ * ************************************************************************************************
+ */
 private:
-    void addCaseCade (Layer*);
-    void addCaseCode (Layer*);
-
-    void calculateOFMapSize() override;
-
+    MemoryControl* mMC;
+    CPU* mCPU;
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
-public:
-    const Group_t groupType;
-
-    /* The container of the layers */
-    vector<Layer*> layers;
+private:
+    float cpu_time  = double(1.0 / CPU_F);
+    float mc_time   = double(1.0 / MC_F);
+    float gpu_time  = double(1.0 / GPU_F);
+    float gmmu_time = double(1.0 / GMMU_F);
 };
-
 
 #endif

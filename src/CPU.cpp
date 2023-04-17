@@ -21,15 +21,10 @@
 CPU::CPU(MemoryControl* mc) : mMC(mc)
 {
     mMMU = new MMU(mc);
+    mInferenceEngine = new InferenceEngine(mMMU, &mAPPs);
 
-    APPs.push_back(new Application ((char*)"VGG16"));
-    APPs.push_back(new Application ((char*)"ResNet18"));
-    
-    for (auto app: APPs)
-    {
-        app->mModel->setBatchSize(1);
-        app->mModel->memoryAllocate(mMMU);
-    }
+    mAPPs.push_back(new Application ((char*)"VGG16"));
+    mAPPs.push_back(new Application ((char*)"ResNet18"));
     
 }
 
@@ -37,9 +32,7 @@ CPU::CPU(MemoryControl* mc) : mMC(mc)
 /** ===============================================================================================
  * \name    CPU
  * 
- * \brief   The class of the CPU, contains MMU, TLB.
- * 
- * \param   mc      the pointer of memory controller
+ * \brief   Destruct CPU
  * 
  * \endcond
  * ================================================================================================
@@ -47,4 +40,24 @@ CPU::CPU(MemoryControl* mc) : mMC(mc)
 CPU::~CPU()
 {
 
+}
+
+
+/** ===============================================================================================
+ * \name    cycle
+ * 
+ * \brief   Handling the CPU in a period of cycle
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+CPU::cycle()
+{
+    for (auto app: mAPPs)
+    {
+        app->cycle();
+    }
+
+    mInferenceEngine->cycle();
 }

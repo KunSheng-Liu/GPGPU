@@ -25,26 +25,9 @@ int Application::appCount = 0;
  * \endcond
  * ================================================================================================
  */
-Application::Application(char* model_type): appID(++appCount)
+Application::Application(char* model_type)
+    : appID(appCount++), modelType(model_type), modelInfo(Model::getModelInfo(model_type))
 {
-    mModel = new Model();
-    if (strcmp(model_type, "None") == 0) {
-
-        mModel->None();
-
-    } else if (strcmp(model_type, "VGG16") == 0) {
-
-        mModel->VGG16();
-
-    } else if (strcmp(model_type, "ResNet18") == 0) {
-
-        mModel->ResNet18();
-
-    }
-    
-#if PRINT_MODEL_DETIAL
-    mModel->printSummary();
-#endif
 
 }
 
@@ -61,5 +44,22 @@ Application::Application(char* model_type): appID(++appCount)
  */
 Application::~Application()
 {
-    delete mModel;
+    // delete mModel;
+}
+
+
+/** ===============================================================================================
+ * \name    cycle
+ * 
+ * \brief   Handling the CPU in a period of cycle
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Application::cycle()
+{
+    /* Launch task into queue */
+    log_D("Application::cycle", modelInfo.modelName);
+    tasks.push(task(0, 0, appID, vector<unsigned char> (3*224*224)));
 }

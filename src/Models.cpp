@@ -20,14 +20,28 @@ int Model::modelCount = 0;
  * 
  * \brief   Construct a model
  * 
+ * \endcond
+ * ================================================================================================
+ */
+Model::Model(): modelIndex(modelCount++)
+{
+    modelGraph = new LayerGroup();
+}
+
+
+/** ===============================================================================================
+ * \name    Model
+ * 
+ * \brief   Construct a model
+ * 
  * \param   name    the model name
  * 
  * \endcond
  * ================================================================================================
  */
-Model::Model(): modelIndex(++modelCount)
+Model::Model(int batch_size): modelIndex(++modelCount), batchSize(batch_size)
 {
-    layerGroup = new LayerGroup();
+    modelGraph = new LayerGroup();
 }
 
 
@@ -43,7 +57,7 @@ Model::Model(): modelIndex(++modelCount)
  */
 Model::~Model()
 {
-    delete layerGroup;
+    delete modelGraph;
 }
 
 
@@ -61,7 +75,7 @@ void
 Model::setBatchSize (int batch_size) 
 {
     batchSize = batch_size;
-    layerGroup->changeBatch(batch_size);
+    modelGraph->changeBatch(batch_size);
 }
 
 
@@ -78,7 +92,7 @@ Model::setBatchSize (int batch_size)
 void
 Model::memoryAllocate(MMU* mmu)
 {
-    layerGroup->memoryAllocate(mmu);
+    modelGraph->memoryAllocate(mmu);
 }
 
 
@@ -94,7 +108,49 @@ void
 Model::printSummary()
 {
     std::cout << "Model " << modelIndex << ", " << modelName << " summary:" << endl;
-    layerGroup->printInfo();
+    modelGraph->printInfo();
+}
+
+
+/** ===============================================================================================
+ * \name    getModelInfo
+ * 
+ * \brief   Return the pre-collected model information
+ * 
+ * \return  Model::ModelInfo
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+Model::ModelInfo
+Model::getModelInfo(char* model_type)
+{
+    ModelInfo Info (model_type);
+
+    if (strcmp(model_type, "None") == 0) {
+        Info.numOfLayers    = 3;
+        Info.ioMemCount     = 7375872;
+        Info.filterMemCount = 54976;
+        Info.inputSize      = { 3, 224, 224};
+        Info.outputSize     = {64, 112, 112};
+
+    } else if (strcmp(model_type, "VGG16") == 0) {
+        Info.numOfLayers    = 22;
+        Info.ioMemCount     = 15262696;
+        Info.filterMemCount = 17151680;
+        Info.inputSize      = {3, 224, 224};
+        Info.inputSize      = {1000};
+
+    } else if (strcmp(model_type, "ResNet18") == 0) {
+        Info.numOfLayers    = 28;
+        Info.ioMemCount     = 4166632;
+        Info.filterMemCount = 38270144;
+        Info.inputSize      = {3, 224, 224};
+        Info.inputSize      = {1000};
+
+    }
+
+    return Info;
 }
 
 
@@ -113,19 +169,14 @@ Model::printSummary()
  *    3       Pool    2 x 2      64       112 x 112    2          0
  * ================================================================================================
  */
-void
+void 
 Model::None()
 {
-
     modelName = (char*)"None";
     
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{ 3, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
-
-    numOfLayer  =  3;
-    ioMemCount  =  7375872;  // unit (Byte)
-    filterMemCount = 54976;  // unit (Byte)
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{ 3, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
 }
 
 
@@ -169,38 +220,34 @@ Model::VGG16()
 {
     modelName = (char*)"VGG16";
     
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{ 3, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{ 3, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
                                                       
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize,  64, 112, 112}, new vector<int>{64,  128, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  64, 112, 112}, new vector<int>{64,  128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 2, 2}, (char*)"None", 2, 0));
                                                       
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 128, 56, 56}, new vector<int>{128, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 128, 56, 56}, new vector<int>{128, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 2, 2}, (char*)"None", 2, 0));
                                                       
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 256, 28, 28}, new vector<int>{256, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 28, 28}, new vector<int>{256, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    layerGroup->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
+    modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
                                                         
-    layerGroup->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
-    layerGroup->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 4096));
-    layerGroup->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
-
-    numOfLayer  =  22;
-    ioMemCount  =  15262696;    // unit (Byte)
-    filterMemCount = 17151680;  // unit (Byte)
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
 }
 
 
@@ -274,8 +321,8 @@ Model::ResNet18()
     modelName = (char*)"ResNet18";
     LayerGroup resnet18;
 
-    layerGroup->addLayer(new Conv2D (new vector<int>{batchSize, 3, 224, 224}, new vector<int>{3, 64, 7, 7}, (char*)"ReLU", 2, 3));
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 64, 112, 112}, new vector<int>{64, 64, 3, 3}, (char*)"None", 2, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 3, 224, 224}, new vector<int>{3, 64, 7, 7}, (char*)"ReLU", 2, 3));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 112, 112}, new vector<int>{64, 64, 3, 3}, (char*)"None", 2, 1));
 
     /* Stage 1_1 */
     LayerGroup* sequential_1_1 = new LayerGroup();
@@ -287,7 +334,7 @@ Model::ResNet18()
     branch_1_1->addLayer(sequential_1_1);
     branch_1_1->addLayer(new ByPass(new vector<int>{batchSize, 64, 56, 56}));
 
-    layerGroup->addLayer(branch_1_1);
+    modelGraph->addLayer(branch_1_1);
 
 
     /* Stage 1_2 */
@@ -300,7 +347,7 @@ Model::ResNet18()
     branch_1_2->addLayer(sequential_1_2);
     branch_1_2->addLayer(new ByPass(new vector<int>{batchSize, 64, 56, 56}));
 
-    layerGroup->addLayer(branch_1_2);
+    modelGraph->addLayer(branch_1_2);
 
     
     /* Stage 2_1 */
@@ -313,7 +360,7 @@ Model::ResNet18()
     branch_2_1->addLayer(sequential_2_1);
     branch_2_1->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{64, 128, 3, 3},  (char*)"ReLU", 2, 1));
 
-    layerGroup->addLayer(branch_2_1);
+    modelGraph->addLayer(branch_2_1);
     
     /* Stage 2_2 */
     LayerGroup* sequential_2_2 = new LayerGroup();
@@ -325,7 +372,7 @@ Model::ResNet18()
     branch_2_2->addLayer(sequential_2_2);
     branch_2_2->addLayer(new ByPass(new vector<int>{batchSize, 128, 28, 28}));
 
-    layerGroup->addLayer(branch_2_2);
+    modelGraph->addLayer(branch_2_2);
 
 
     /* Stage 3_1 */
@@ -338,7 +385,7 @@ Model::ResNet18()
     branch_3_1->addLayer(sequential_3_1);
     branch_3_1->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{128, 256, 3, 3},  (char*)"ReLU", 2, 1));
 
-    layerGroup->addLayer(branch_3_1);
+    modelGraph->addLayer(branch_3_1);
     
     /* Stage 3_2 */
     LayerGroup* sequential_3_2 = new LayerGroup();
@@ -350,7 +397,7 @@ Model::ResNet18()
     branch_3_2->addLayer(sequential_3_2);
     branch_3_2->addLayer(new ByPass(new vector<int>{batchSize, 256, 14, 14}));
 
-    layerGroup->addLayer(branch_3_2);
+    modelGraph->addLayer(branch_3_2);
 
 
     /* Stage _4_1 */
@@ -363,7 +410,7 @@ Model::ResNet18()
     branch__4_1->addLayer(sequential__4_1);
     branch__4_1->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{256, 512, 3, 3},  (char*)"ReLU", 2, 1));
 
-    layerGroup->addLayer(branch__4_1);
+    modelGraph->addLayer(branch__4_1);
     
     /* Stage _4_2 */
     LayerGroup* sequential__4_2 = new LayerGroup();
@@ -375,13 +422,8 @@ Model::ResNet18()
     branch__4_2->addLayer(sequential__4_2);
     branch__4_2->addLayer(new ByPass(new vector<int>{batchSize, 512, 7, 7}));
 
-    layerGroup->addLayer(branch__4_2);
+    modelGraph->addLayer(branch__4_2);
 
-    layerGroup->addLayer(new Pooling(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 1024, 7, 7}, (char*)"None", 2, 0));
-    layerGroup->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
-
-    numOfLayer  =  28;
-    ioMemCount  =  4166632;     // unit (Byte)
-    filterMemCount = 38270144;  // unit (Byte)
-
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 1024, 7, 7}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
 }

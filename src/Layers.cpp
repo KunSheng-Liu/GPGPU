@@ -29,7 +29,7 @@ int Layer::layerCount = 0;
  */
 Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerIndex(++layerCount), flagExecuting(false), flagFinish(false)
+        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerIndex(layerCount++), flagExecuting(false), flagFinish(false)
 {
     if (iFMapSize  != nullptr)  iFMap = new vector<unsigned char> ((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
     if (filterSize != nullptr) filter = new vector<unsigned char> ((*filterSize)[BATCH] * (*filterSize)[CHANNEL] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH]);

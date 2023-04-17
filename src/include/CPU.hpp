@@ -17,7 +17,9 @@
  */
 #include "App_config.h"
 #include "Log.h"
+
 #include "Application.hpp"
+#include "InferenceEngine.hpp"
 #include "MemoryControl.hpp"
 #include "MMU.hpp"
 #include "Models.hpp"
@@ -47,17 +49,18 @@ public:
  * ************************************************************************************************
  */
 public:
+    void cycle ();
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
-
+private:
     MMU* mMMU;
     MemoryControl* mMC;
 
-    vector<Application*> APPs;
-
+    vector<Application*> mAPPs;
+    InferenceEngine* mInferenceEngine;
 };
 
 #endif

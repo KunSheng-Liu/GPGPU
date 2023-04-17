@@ -41,9 +41,25 @@ class Model
 public:
 
     Model();
+    Model(int batch_size);
 
     ~Model();
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+public:
+    struct ModelInfo {
+        const char* modelName;
+        int numOfLayers;
+        int ioMemCount;         // unit (Byte)
+        int filterMemCount;     // unit (Byte)
+        vector<int> inputSize;  // [Channel, Height, Width]
+        vector<int> outputSize; // [Channel, Height, Width]
+
+        ModelInfo(char* model_name) : modelName(model_name) {}
+    };
 
 /* ************************************************************************************************
  * Functions
@@ -59,8 +75,10 @@ public:
     char* getModelName (void) {return modelName;}
     int   getNumOfLayer (void) {return numOfLayer;}
 
-    vector<int>* getIFMapSize  (void) {return layerGroup->getIFMapSize();}
-    vector<int>* getOFMapSize  (void) {return layerGroup->getOFMapSize();}
+    static ModelInfo getModelInfo (char* model_type);
+
+    vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
+    vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}
     
 /* ************************************************************************************************
  * Benchmark
@@ -96,11 +114,7 @@ protected:
     /* Batch size of model */
     int batchSize = 0;
 
-    /* Memory information of model */
-    int ioMemCount = 0;
-    int filterMemCount = 0;
-
-    LayerGroup* layerGroup;
+    LayerGroup* modelGraph;
 };
 
 #endif
