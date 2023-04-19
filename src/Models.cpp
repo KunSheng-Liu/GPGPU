@@ -97,6 +97,41 @@ Model::memoryAllocate(MMU* mmu)
 
 
 /** ===============================================================================================
+ * \name    compileToKernel
+ * 
+ * \brief   Compile the current layer graph into GPU command
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+vector<Kernel>
+Model::compileToKernel()
+{
+    log_D("Model", "compileToKernel");
+    vector<Kernel> container;
+    container.reserve(numOfLayer);
+    modelGraph->issueLayer(container, {});
+
+    for (auto kernel : container)
+    {
+        cout << "current kernel ID: " << kernel.kernelID << " dependency: ";
+        for (auto dependkernel : kernel.dependencyKernels)
+        {
+            cout << dependkernel->kernelID << " ";
+        }
+        cout << endl;
+    }
+
+    log_D("Model", "compileToKernel Done");
+    return move(container);
+}
+
+
+/** ===============================================================================================
  * \name    printSummary
  * 
  * \brief   Construct a model
@@ -177,6 +212,8 @@ Model::None()
     modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{ 3, 64, 3, 3}, (char*)"ReLU", 1, 1));
     modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
     modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
+
+    numOfLayer = 3;
 }
 
 
@@ -248,6 +285,8 @@ Model::VGG16()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
     modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 4096));
     modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
+
+    numOfLayer = 22;
 }
 
 
@@ -299,7 +338,7 @@ Model::VGG16()
  * 20   |   ByPass              256        14 x 14
  *   \ /
  *    |  
- *  / \
+ *   / \
  *  |  21   Conv2D    3 x 3     512         7 x 7      2          1          ReLU
  *  |  22   Conv2D    3 x 3     512         7 x 7      1          1       
  * 23   |   Conv2D    3 x 3     512         7 x 7      2          1          ReLU    
@@ -426,4 +465,6 @@ Model::ResNet18()
 
     modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 1024, 7, 7}, (char*)"None", 2, 0));
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
+
+    numOfLayer = 28;
 }

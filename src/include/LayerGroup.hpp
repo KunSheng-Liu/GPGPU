@@ -15,6 +15,7 @@
  */
 #include "App_config.h"
 #include "Log.h"
+
 #include "Layers.hpp"
 
 
@@ -59,10 +60,10 @@ public:
     void setIFMap  (vector<unsigned char>* data) override;
     void setFilter (vector<unsigned char>* data) override;
 
+    void printInfo() override;
     void changeBatch (int new_batch_size) override;
     void memoryAllocate (MMU* mmu) override;
-    void printInfo() override;
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void addCaseCade (Layer*);

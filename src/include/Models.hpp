@@ -20,6 +20,7 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Kernel.hpp"
 #include "Layers.hpp"
 #include "LayerGroup.hpp"
 
@@ -68,6 +69,7 @@ public:
 public:
 
     void memoryAllocate (MMU* mmu);
+    vector<Kernel> compileToKernel ();
     void printSummary ();
 
     void setBatchSize (int batch_size);

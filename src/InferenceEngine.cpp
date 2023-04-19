@@ -22,7 +22,7 @@ InferenceEngine::InferenceEngine(MMU* mmu, vector<Application*>* apps) : mMMU(mm
 }
 
 /** ===============================================================================================
- * \name    InferenceEngine
+ * \name   ~InferenceEngine
  * 
  * \brief   Destruct InferenceEngine
  * 
@@ -70,12 +70,15 @@ InferenceEngine::Dynamic_Batching_Algorithm()
 
     for (auto app : *mAPPs)
     {
-        // int batchSize = 1;
-        // Model model = Model(batchSize);
-        // model.VGG16();
-        // model.printSummary();
-        // model.memoryAllocate(mMMU);
+        int batchSize = 1;
+        Model model = Model(batchSize);
+        model.ResNet18();
+        model.printSummary();
+        model.memoryAllocate(mMMU);
+        vector<Kernel> kernels = model.compileToKernel();
+
     }
+    ASSERT(false);
 }
 
 

@@ -23,6 +23,7 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Kernel.hpp"
 #include "MemoryControl.hpp"
 #include "MMU.hpp"
 
@@ -94,7 +95,7 @@ public:
     virtual void memoryAllocate (MMU* mmu);
     virtual void changeBatch (int new_batch_size);
     /* pure virtual function */
-    virtual void issueLayer() = 0;
+    virtual vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) = 0;
 
 private:
     /* pure virtual function */
@@ -191,7 +192,7 @@ public:
 public:
     // void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -232,7 +233,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
 
 };
 
@@ -262,7 +263,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -295,7 +296,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -333,7 +334,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer() override;
+    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;

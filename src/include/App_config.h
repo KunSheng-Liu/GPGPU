@@ -44,6 +44,7 @@ class Application;
 class Model;
 class InferenceEngine;
 class MemoryControl;
+class Kernel;
 
 
 /* ************************************************************************************************

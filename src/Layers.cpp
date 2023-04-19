@@ -315,15 +315,30 @@ Conv2D::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Print the layer information
+ * \brief   Compile the layer into GPU requests.
+ * 
+ * \param   container   the container to keep the compiled GPU requests.
+ * 
+ * \param   dependency  the depended pointers of this kernel
+ * 
+ * \return  dependency of the next layer
  * 
  * \endcond
  * ================================================================================================
  */
-void
-Conv2D::issueLayer()
+vector<Kernel*> 
+Conv2D::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    
+    log_D("Conv2D", "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
+
+    /* add requests */
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
 }
 
 
@@ -373,15 +388,26 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Print the layer information
+ * \brief   Compile the layer into GPU requests.
+ * 
+ * \param   container   the container to keep the compiled GPU requests.
  * 
  * \endcond
  * ================================================================================================
  */
-void
-Pooling::issueLayer()
+vector<Kernel*> 
+Pooling::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
 {
+    log_D("Pooling", "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
 
+    /* add requests */
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
 }
 
 
@@ -458,15 +484,26 @@ Flatten::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Print the layer information
+ * \brief   Compile the layer into GPU requests.
+ * 
+ * \param   container   the container to keep the compiled GPU requests.
  * 
  * \endcond
  * ================================================================================================
  */
-void
-Flatten::issueLayer()
+vector<Kernel*> 
+Flatten::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
 {
+    log_D("Flatten", "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
 
+    /* add requests */
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
 }
 
 
@@ -538,15 +575,26 @@ ByPass::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Print the layer information
+ * \brief   Compile the layer into GPU requests.
+ * 
+ * \param   container   the container to keep the compiled GPU requests.
  * 
  * \endcond
  * ================================================================================================
  */
-void
-ByPass::issueLayer()
+vector<Kernel*> 
+ByPass::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
 {
+    log_D("ByPass", "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
 
+    /* add requests */
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
 }
 
 
@@ -644,14 +692,25 @@ Dense::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Print the layer information
+ * \brief   Compile the layer into GPU requests.
+ * 
+ * \param   container   the container to keep the compiled GPU requests.
  * 
  * \endcond
  * ================================================================================================
  */
-void
-Dense::issueLayer()
+vector<Kernel*> 
+Dense::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
 {
+    log_D("Dense", "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
 
+    /* add requests */
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
 }
 
