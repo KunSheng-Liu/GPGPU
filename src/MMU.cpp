@@ -81,7 +81,7 @@ MMU::addressTranslate (int va)
             page = page->nextPage;
             pageIndex = page->pageIndex;
         }
-        pa_stream.emplace_back(pageIndex * PAGE_SIZE + i);
+        pa_stream.emplace_back(pageIndex * PAGE_SIZE + i % PAGE_SIZE);
     }
 
     return move(pa_stream);
