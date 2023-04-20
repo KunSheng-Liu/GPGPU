@@ -63,7 +63,7 @@ public:
     void printInfo() override;
     void changeBatch (int new_batch_size) override;
     void memoryAllocate (MMU* mmu) override;
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void addCaseCade (Layer*);

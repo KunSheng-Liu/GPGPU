@@ -21,7 +21,7 @@ int Layer::layerCount = 0;
  * 
  * \param   layer_type          the layer type
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * 
  * \endcond
@@ -111,7 +111,7 @@ Layer::changeBatch(int new_batch_size)
  *
  * \brief   Allocate physical address to the model virtual address.
  * 
- * \param   mmu     the memory manager unit
+ * \param   mmu     the memory management unit
  * 
  * \endcond
  * ================================================================================================
@@ -119,15 +119,7 @@ Layer::changeBatch(int new_batch_size)
 void
 Layer::memoryAllocate(MMU* mmu)
 {
-    int numOfByte = 0;
-
     log_D("memoryAllocate", "ID: " + to_string(layerIndex) + "  " + layerType);
-    // if (LOG_LEVEL >= VERBOSE) cout << "iFMapSize ";
-    // if(iFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMapSize)),  iFMapSize->size()  * sizeof(int));
-    // if (LOG_LEVEL >= VERBOSE) cout << "oFMapSize ";
-    // if(oFMapSize)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMapSize)),  oFMapSize->size()  * sizeof(int));
-    // if (LOG_LEVEL >= VERBOSE) cout << "filterSize ";
-    // if(filterSize) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filterSize)), filterSize->size() * sizeof(int));
     if (LOG_LEVEL >= VERBOSE) cout << "iFMap ";
     if(iFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMap)),  iFMap->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
@@ -150,11 +142,16 @@ void
 Layer::printInfo()
 {
     std::cout << "(" 
-              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_I] << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]             << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]                     \
+              << std::left  << std::setw(10) << ")" << "("                              \
               << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_O] << ", " \
+              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_I] << ", " \
               << std::right << std::setw(3)  << (*filterSize)[HEIGHT]           << ", " \
               << std::right << std::setw(3)  << (*filterSize)[WIDTH]                    \
-              << std::left  << std::setw(10) << ")" << "("                           \
+              << std::left  << std::setw(10) << ")" << "("                              \
               << std::right << std::setw(4)  << (*oFMapSize)[BATCH]             << ", " \
               << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL]           << ", " \
               << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]            << ", " \
@@ -171,7 +168,7 @@ Layer::printInfo()
  * 
  * \param   layer_type          the layer type
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * \param   _stride             [height, width]
  * \param   _padding            [height, width]
@@ -195,7 +192,7 @@ Conv2D::Conv2D(char* layer_type, vector<int>* input_size, vector<int>* filter_si
  * \brief   Construct a 2D convolution layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * \param   _stride             [height, width]
  * \param   _padding            [height, width]
@@ -216,7 +213,7 @@ Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activati
  * \brief   Construct a 2D convolution layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * \param   _stride             width
  * \param   _padding            width
@@ -272,7 +269,7 @@ Conv2D::calculateOFMapSize()
  *
  * \brief   Allocate physical address to the model virtual address.
  * 
- * \param   mmu     the memory manager unit
+ * \param   mmu     the memory management unit
  * 
  * \endcond
  * ================================================================================================
@@ -280,11 +277,11 @@ Conv2D::calculateOFMapSize()
 // void
 // Conv2D::memoryAllocate(MMU* mmu)
 // {
-//     int numOfByte = 0;
-    
 //     Layer::memoryAllocate(mmu);
-//     if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(int));
-//     if(padding) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)), padding->size() * sizeof(int));
+//     if (LOG_LEVEL >= VERBOSE) cout << "stride ";
+//     if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(unsigned char));
+//     if (LOG_LEVEL >= VERBOSE) cout << "padding ";
+//     if(padding)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)),  padding->size()  * sizeof(unsigned char));
 
 // }
 
@@ -301,14 +298,16 @@ void
 Conv2D::printInfo()
 {
     std::cout << std::left << std::setw(10) << layerIndex; 
-    std::cout << std::left << std::setw(10) << layerType; 
-    std::cout << std::left << std::setw(10) << activationType;
+    std::cout << std::left << std::setw(16) << layerType; 
+    std::cout << std::left << std::setw(13) << activationType;
     Layer::printInfo();
     std::cout << "(" << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_HEIGHT]  << ", " \
                      << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_WIDTH]           \
-                     << std::left  << std::setw(10) << ")" << "("                             \
+                     << std::left  << std::setw(10) << ")" << "("                                \
                      << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_HEIGHT] << ", " \
-                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_WIDTH]  << ")" << std::endl;
+                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_WIDTH]  << ")";
+                     
+    std::cout << std::endl;
 }
 
 
@@ -317,8 +316,8 @@ Conv2D::printInfo()
  *
  * \brief   Compile the layer into GPU requests.
  * 
- * \param   container   the container to keep the compiled GPU requests.
- * 
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
  * \param   dependency  the depended pointers of this kernel
  * 
  * \return  dependency of the next layer
@@ -327,7 +326,7 @@ Conv2D::printInfo()
  * ================================================================================================
  */
 vector<Kernel*> 
-Conv2D::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+Conv2D::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("Conv2D", "issueLayer");
     container.emplace_back();
@@ -336,6 +335,64 @@ Conv2D::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
     /* add requests */
     kernelptr->kernelID = layerIndex;
     kernelptr->dependencyKernels = move(dependency);
+
+    vector<int> iFMapAddr   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapAddr   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    vector<int> filterAddr  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
+    log_D("iFMapAddr Size"  , to_string(iFMapAddr.size()));
+    log_D("oFMapAddr Size"  , to_string(oFMapAddr.size()));
+    log_D("filterAddr Size" , to_string(filterAddr.size()));
+
+    /* Use inverse order for let the address be closer */
+    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    {
+        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        {
+            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            {
+                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                {
+                    Request* request = new Request();
+                    request->writeAddresses.emplace_back(oFMapAddr[b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT]* (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o]);
+
+                    for (int c_i = 0; c_i < (*iFMapSize)[CHANNEL]; c_i++)
+                    {
+                        for (int h_f = 0; h_f < (*filterSize)[HEIGHT]; h_f++)
+                        {
+                            for (int w_f = 0; w_f < (*filterSize)[WIDTH]; w_f++)
+                            {
+                                /* oFMap to iFMap mapping */
+                                int h = h_o * (*stride)[STRIDE_PADDING_HEIGHT] + h_f - (*padding)[STRIDE_PADDING_HEIGHT];
+                                int w = w_o * (*stride)[STRIDE_PADDING_WIDTH]  + w_f - (*padding)[STRIDE_PADDING_WIDTH];
+                                /* skip the padding calculations */
+                                if (h >= 0 && h < (*iFMapSize)[HEIGHT] && w >= 0 && w < (*iFMapSize)[WIDTH])
+                                {
+                                    /* Read iFMap address */
+                                    request->readAddresses.emplace_back(iFMapAddr[b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h * (*iFMapSize)[WIDTH] + w]);
+                                    /* Read filter address */
+                                    request->readAddresses.emplace_back(filterAddr[c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] + c_i * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] + h_f * (*filterSize)[WIDTH] + w_f]);
+
+                                    request->numOfInstructions++;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (strcmp(activationType, "None") != 0)
+                        request->numOfInstructions++;  // for the activation exectuion
+
+                    kernelptr->addRequest(move(request));
+                }
+                
+            }
+            
+        }
+        
+    }
+
+    log_D("Num of read address", to_string(kernelptr->numOfRead));
+    log_D("Num of write address", to_string(kernelptr->numOfWrite));
 
     dependency.emplace_back(kernelptr);
     return move(dependency);
@@ -349,7 +406,7 @@ Conv2D::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
  * \brief   Construct a pooling layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * \param   _stride             [height, width]
  * \param   _padding            [height, width]
@@ -370,7 +427,7 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  * \brief   Construct a pooling layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * \param   _stride             [height, width]
  * \param   _padding            [height, width]
@@ -390,13 +447,15 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  *
  * \brief   Compile the layer into GPU requests.
  * 
- * \param   container   the container to keep the compiled GPU requests.
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * \param   dependency  the depended pointers of this kernel
  * 
  * \endcond
  * ================================================================================================
  */
 vector<Kernel*> 
-Pooling::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+Pooling::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("Pooling", "issueLayer");
     container.emplace_back();
@@ -466,10 +525,16 @@ Flatten::printInfo()
 {
 
     std::cout << std::left << std::setw(10) << layerIndex \
-              << std::left << std::setw(10) << layerType  \
-              << std::left << std::setw(10) << activationType;
+              << std::left << std::setw(16) << layerType  \
+              << std::left << std::setw(13) << activationType;
 
-    std::cout << std::right << std::setw(22) << "None"                \
+    std::cout << "(" 
+              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::left  << std::setw(10) << ")"         
+              << std::right << std::setw(22) << "None"                        \
               << std::right << setw(10) << "("
               << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
               << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
@@ -486,13 +551,15 @@ Flatten::printInfo()
  *
  * \brief   Compile the layer into GPU requests.
  * 
- * \param   container   the container to keep the compiled GPU requests.
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * \param   dependency  the depended pointers of this kernel
  * 
  * \endcond
  * ================================================================================================
  */
 vector<Kernel*> 
-Flatten::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+Flatten::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("Flatten", "issueLayer");
     container.emplace_back();
@@ -557,10 +624,16 @@ ByPass::printInfo()
 {
 
     std::cout << std::left << std::setw(10) << layerIndex \
-              << std::left << std::setw(10) << layerType  \
-              << std::left << std::setw(10) << activationType;
+              << std::left << std::setw(16) << layerType  \
+              << std::left << std::setw(13) << activationType;
 
-    std::cout << std::right << std::setw(22) << "None"                \
+    std::cout << "(" 
+              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::left  << std::setw(10) << ")"  
+              << std::right << std::setw(22) << "None"                        \
               << std::right << setw(10) << "("
               << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
               << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
@@ -577,13 +650,15 @@ ByPass::printInfo()
  *
  * \brief   Compile the layer into GPU requests.
  * 
- * \param   container   the container to keep the compiled GPU requests.
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * \param   dependency  the depended pointers of this kernel
  * 
  * \endcond
  * ================================================================================================
  */
 vector<Kernel*> 
-ByPass::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+ByPass::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("ByPass", "issueLayer");
     container.emplace_back();
@@ -605,7 +680,7 @@ ByPass::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
  * \brief   Construct a dense layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [channel, height, width]
+ * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * 
  * \endcond
@@ -674,15 +749,21 @@ Dense::printInfo()
 {
 
     std::cout << std::left << std::setw(10) << layerIndex \
-              << std::left << std::setw(10) << layerType  \
-              << std::left << std::setw(10) << activationType;
+              << std::left << std::setw(16) << layerType  \
+              << std::left << std::setw(13) << activationType;
 
-    std::cout << std::right << std::setw(22) << "None"                \
-              << std::right << setw(10) << "("                      \
-              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]             << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL]           << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
+    std::cout << "(" 
+              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::left  << std::setw(10) << ")"
+              << std::right << std::setw(22) << "None"                        \
+              << std::right << setw(10) << "("                                \
+              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
               << std::left  << std::setw(10) << ")"; 
 
     std::cout << std::endl;
@@ -694,13 +775,15 @@ Dense::printInfo()
  *
  * \brief   Compile the layer into GPU requests.
  * 
- * \param   container   the container to keep the compiled GPU requests.
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * \param   dependency  the depended pointers of this kernel
  * 
  * \endcond
  * ================================================================================================
  */
 vector<Kernel*> 
-Dense::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+Dense::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("Dense", "issueLayer");
     container.emplace_back();

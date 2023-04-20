@@ -32,8 +32,8 @@
  */
 
 /* The index for "filterSize" */
-#define FILTER_CHANNEL_I        0
-#define FILTER_CHANNEL_O        1
+#define FILTER_CHANNEL_O        0
+#define FILTER_CHANNEL_I        1
 
 /* The index for "stride" and "padding" */
 #define STRIDE_PADDING_HEIGHT   0
@@ -60,7 +60,7 @@ enum class Layer_t{
 enum class Activation_t{
     None,
     ReLU,
-    Sigmoid1,
+    Sigmoid,
 };
 
 
@@ -91,10 +91,10 @@ public:
 public:
     /* virtual function */
     virtual void printInfo();
-    virtual void memoryAllocate (MMU* mmu);
     virtual void changeBatch (int new_batch_size);
+    virtual void memoryAllocate (MMU* mmu);
     /* pure virtual function */
-    virtual vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) = 0;
+    virtual vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) = 0;
 
 private:
     /* pure virtual function */
@@ -191,7 +191,7 @@ public:
 public:
     // void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -232,7 +232,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
 
 };
 
@@ -262,7 +262,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -295,7 +295,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;
@@ -333,7 +333,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
     
 private:
     void calculateOFMapSize() override;

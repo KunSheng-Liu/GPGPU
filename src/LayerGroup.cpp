@@ -178,6 +178,8 @@ LayerGroup::memoryAllocate(MMU* mmu)
  *
  * \brief   Compile the layer into GPU requests.
  * 
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
  * \param   dependency  the depended pointers of this kernel
  * 
  * \return  dependency of the next layer
@@ -186,19 +188,19 @@ LayerGroup::memoryAllocate(MMU* mmu)
  * ================================================================================================
  */
 vector<Kernel*> 
-LayerGroup::issueLayer(vector<Kernel>& container, vector<Kernel*> dependency)
+LayerGroup::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_D("LayerGroup", "issueLayer");
     if (groupType == Group_t::CaseCade) {
         for (auto layer: layers)
         {
-            dependency = layer->issueLayer(container, dependency);
+            dependency = layer->issueLayer(mmu, container, dependency);
         }
     } else {  // groupType == Group_t::CaseCode
         vector<Kernel*> new_dependency;
         for (auto layer: layers)
         {
-            vector<Kernel*> temp = layer->issueLayer(container, dependency);
+            vector<Kernel*> temp = layer->issueLayer(mmu, container, dependency);
             new_dependency.insert(new_dependency.end(), temp.begin(), temp.end());
         }
         dependency = move(new_dependency);

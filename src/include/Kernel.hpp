@@ -44,7 +44,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void addRequest (Request request);
+    void addRequest (Request* request);
     void checkDependency ();
 
 /* ************************************************************************************************
@@ -60,7 +60,7 @@ public:
     int numOfRead;
     int numOfWrite;
     int numOfMemory;
-    queue<Request> requests;
+    queue<Request*> requests;
 
     vector<Kernel*> dependencyKernels; 
 };

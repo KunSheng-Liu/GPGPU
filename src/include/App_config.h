@@ -67,7 +67,7 @@ class Kernel;
  */
 #define LOG_LEVEL                   DEBUG
 #define PRINT_MODEL_DETIAL          true
-#define PRINT_MEMORY_ALLOCATION     true
+#define PRINT_MEMORY_ALLOCATION     false
 #define PRINT_KERNEL_DEPENDENCY     true
 
 

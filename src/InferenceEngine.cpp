@@ -72,9 +72,9 @@ InferenceEngine::Dynamic_Batching_Algorithm()
     {
         int batchSize = 1;
         Model model = Model(batchSize);
-        model.ResNet18();
+        model.Test();
         model.memoryAllocate(mMMU);
-        vector<Kernel> kernels = model.compileToKernel();
+        vector<Kernel> kernels = model.compileToKernel(mMMU);
 
     }
     ASSERT(false);

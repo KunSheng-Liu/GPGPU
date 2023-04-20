@@ -69,7 +69,7 @@ public:
 public:
 
     void memoryAllocate (MMU* mmu);
-    vector<Kernel> compileToKernel ();
+    vector<Kernel> compileToKernel (MMU* mmu);
     void printSummary ();
 
     void setBatchSize (int batch_size);
@@ -87,7 +87,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void None();
+    void Test();
     // void LeNet();
     void VGG16();
     // void VGG19();
