@@ -18,7 +18,7 @@
  * \endcond
  * ================================================================================================
  */
-CPU::CPU(MemoryControl* mc) : mMC(mc)
+CPU::CPU(MemoryController* mc) : mMC(mc)
 {
     mMMU = new MMU(mc);
     mInferenceEngine = new InferenceEngine(mMMU, &mAPPs);

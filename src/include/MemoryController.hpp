@@ -1,13 +1,13 @@
 /**
- * \name    MemoryControl.hpp
+ * \name    MemoryController.hpp
  * 
  * \brief   Declare the memory API 
  * 
  * \date    APR 7, 2023
  */
 
-#ifndef _MEMORYCONTROL_HPP_
-#define _MEMORYCONTROL_HPP_
+#ifndef _MEMORYCONTROLLER_HPP_
+#define _MEMORYCONTROLLER_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -17,22 +17,34 @@
 #include "Log.h"
 
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct Page {
+    int pageIndex;
+    Page* nextPage;
+
+    Page(int page_indnex = -1, Page* next_page = nullptr) : pageIndex(page_indnex), nextPage(next_page) {}
+};
+
+
 /** ===============================================================================================
- * \name    MemoryControl
+ * \name    MemoryController
  * 
  * \brief   The class of memory controller for handling the uniquie physicall address.
  * 
  * \endcond
  * ================================================================================================
  */
-class MemoryControl
+class MemoryController
 {
 /* ************************************************************************************************
  * Class Constructor
  * ************************************************************************************************
  */ 
 public:
-   MemoryControl(long long storage_limit, int page_size);
+   MemoryController(long long storage_limit, int page_size);
 
 /* ************************************************************************************************
  * Functions
@@ -42,9 +54,9 @@ public:
 
     void init();
 
-    pair<int, int> memoryAllocate (int numByte);
+    Page* memoryAllocate (int numByte);
 
-    int  createPage ();
+    void createPage ();
 
     void printInfo();
 
@@ -58,9 +70,9 @@ private:
     const int pageFrameOffset;
 
     int pageIndex = 0;
-    int physicalAddressCount = 0;       // unit in Byte
 
-    queue<int> availablePageList;
+    queue<Page*> availablePageList;
+    queue<Page*> usedPageList;
 
 };
 

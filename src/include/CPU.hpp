@@ -20,7 +20,7 @@
 
 #include "Application.hpp"
 #include "InferenceEngine.hpp"
-#include "MemoryControl.hpp"
+#include "MemoryController.hpp"
 #include "MMU.hpp"
 #include "Models.hpp"
 
@@ -40,7 +40,7 @@ class CPU
  */ 
 public:
 
-    CPU(MemoryControl* mc);
+    CPU(MemoryController* mc);
 
    ~CPU();
 
@@ -57,7 +57,7 @@ public:
  */
 private:
     MMU* mMMU;
-    MemoryControl* mMC;
+    MemoryController* mMC;
 
     vector<Application*> mAPPs;
     InferenceEngine* mInferenceEngine;

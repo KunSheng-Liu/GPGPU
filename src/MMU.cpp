@@ -14,12 +14,12 @@
  * 
  * \brief   The memory manage unit for handling the CPU virtual address to physical address.
  * 
- * \param   
+ * \param   mc      the pointer of Memory Controller
  * 
  * \endcond
  * ================================================================================================
  */
-MMU::MMU(MemoryControl* mc): mMC(mc)
+MMU::MMU(MemoryController* mc): mMC(mc)
 {
     mTLB = new TLB(DRAM_SPACE / PAGE_SIZE);
 
@@ -42,12 +42,12 @@ MMU::memoryAllocate (int va, int numOfByte)
 {
     if (va == 0 || numOfByte == 0) return;
     
-    pair<int, int> pa_pair = mTLB->lookup(va);
-    if (pa_pair.first == -1 && pa_pair.second == -1) 
+    pair<Page*, int> pa_pair = mTLB->lookup(va);
+    if (pa_pair.first == nullptr && pa_pair.second == -1) 
     {
         log_D("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));
-        pair<int, int> PAs = mMC->memoryAllocate(numOfByte);
-        mTLB->insert(va, PAs);
+        Page* PP = mMC->memoryAllocate(numOfByte);
+        mTLB->insert(va, make_pair(PP, numOfByte));
     }
 }
 
@@ -59,20 +59,32 @@ MMU::memoryAllocate (int va, int numOfByte)
  * 
  * \param   va      the virtual address going to translate
  * 
- * \return  Pythsical Address
+ * \return  Pythsical Address vector
  * 
  * \endcond
  * ================================================================================================
  */
-pair<int, int> 
+vector<int>
 MMU::addressTranslate (int va)
 {
     /* lookup wheather VA has been cached */
-    pair<int, int> pa_pair = mTLB->lookup(va);
+    pair<Page*, int> pa_pair = mTLB->lookup(va);
     
-    ASSERT(!(pa_pair.first == pa_pair.second == -1), "The virtual address haven't been allocated");
+    ASSERT(!(pa_pair.first == nullptr || pa_pair.second == -1), "The virtual address haven't been allocated");
 
-    return pa_pair;
+    vector<int> pa_stream;
+    Page* page = pa_pair.first;
+    int pageIndex = page->pageIndex;
+    for (int i = 0; i < pa_pair.second; i++)
+    {
+        if (i != 0 && i % PAGE_SIZE == 0) {
+            page = page->nextPage;
+            pageIndex = page->pageIndex;
+        }
+        pa_stream.emplace_back(pageIndex * PAGE_SIZE + i);
+    }
+
+    return move(pa_stream);
 }
 
 
@@ -84,12 +96,12 @@ MMU::addressTranslate (int va)
  * 
  * \param   va      the virtual address
  * 
- * \return  a pair of PA [start, end]
+ * \return  a pair of physical page and the data size
  * 
  * \endcond
  * ================================================================================================
  */
-pair<int, int>
+pair<Page*, int>
 TLB::lookup (int va) {
 
     auto it = table.find(va);
@@ -101,7 +113,7 @@ TLB::lookup (int va) {
 
     } else { // TLB miss
 
-        return make_pair(-1, -1);
+        return make_pair(nullptr, -1);
     }
 }
 
@@ -112,13 +124,13 @@ TLB::lookup (int va) {
  * \brief   insert the VA and PA to the table
  * 
  * \param   va          the virtual address
- * \param   pa_pair     the physical address
+ * \param   pa_pair     the pair of physical page and the data size
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-TLB::insert(int va, pair<int, int> pa_pair) {
+TLB::insert(int va, pair<Page*, int> pa_pair) {
 
     auto it = table.find(va);
 

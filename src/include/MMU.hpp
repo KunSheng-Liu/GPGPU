@@ -17,7 +17,7 @@
  */
 #include "App_config.h"
 #include "Log.h"
-#include "MemoryControl.hpp"
+#include "MemoryController.hpp"
 
 /** ===============================================================================================
  * \name    MMU
@@ -35,7 +35,7 @@ class MMU
  */ 
 public:
 
-    MMU(MemoryControl* mc);
+    MMU(MemoryController* mc);
 
 /* ************************************************************************************************
  * Functions
@@ -43,14 +43,14 @@ public:
  */
 public:
     void memoryAllocate (int va, int numOfByte);
-    pair<int, int> addressTranslate (int va);
+    vector<int> addressTranslate (int va);
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 private:
-    MemoryControl* mMC;
+    MemoryController* mMC;
     TLB* mTLB;
 };
 
@@ -83,8 +83,8 @@ public:
  */
 public:
 
-    pair<int, int> lookup (int va);
-    void insert(int va, pair<int, int> pa_pair);
+    pair<Page*, int> lookup (int va);
+    void insert(int va, pair<Page*, int> pa_pair);
     
 /* ************************************************************************************************
  * Parameter
@@ -93,8 +93,8 @@ public:
 private:
     struct PageTableEntry {
         int VA;
-        pair<int, int> PAPair;
-        PageTableEntry(int va, pair<int, int> pa_pair) : VA(va), PAPair(pa_pair) {}
+        pair<Page*, int> PAPair;
+        PageTableEntry(int va, pair<Page*, int> pa_pair) : VA(va), PAPair(pa_pair) {}
     };
 
     const int capacity;

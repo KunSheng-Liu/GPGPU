@@ -18,7 +18,7 @@
  */
 GPGPU::GPGPU()
 {
-    mMC  = new MemoryControl(DISK_SPACE, PAGE_SIZE);
+    mMC  = new MemoryController(DISK_SPACE, PAGE_SIZE);
     mCPU = new CPU(mMC);
 }
 

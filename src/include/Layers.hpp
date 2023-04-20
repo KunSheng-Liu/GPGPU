@@ -24,7 +24,6 @@
 #include "Log.h"
 
 #include "Kernel.hpp"
-#include "MemoryControl.hpp"
 #include "MMU.hpp"
 
 /* ************************************************************************************************

@@ -43,7 +43,7 @@ class TLB;
 class Application;
 class Model;
 class InferenceEngine;
-class MemoryControl;
+class MemoryController;
 class Kernel;
 
 
@@ -65,15 +65,17 @@ class Kernel;
  * Application Configuration
  * ************************************************************************************************
  */
-#define LOG_LEVEL               DEBUG
-#define PRINT_MODEL_DETIAL      true
+#define LOG_LEVEL                   DEBUG
+#define PRINT_MODEL_DETIAL          true
+#define PRINT_MEMORY_ALLOCATION     true
+#define PRINT_KERNEL_DEPENDENCY     true
 
 
 /* ************************************************************************************************
  * BenchMark
  * ************************************************************************************************
  */
-#define HARDWARE_ARCHITECTURE   AGX_XAVIER
+#define HARDWARE_ARCHITECTURE       AGX_XAVIER
 
 /* ************************************************************************************************
  * Hardware Configuration

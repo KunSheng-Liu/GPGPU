@@ -116,6 +116,7 @@ Model::compileToKernel()
     container.reserve(numOfLayer);
     modelGraph->issueLayer(container, {});
 
+#if (PRINT_KERNEL_DEPENDENCY)
     for (auto kernel : container)
     {
         cout << "current kernel ID: " << kernel.kernelID << " dependency: ";
@@ -125,6 +126,7 @@ Model::compileToKernel()
         }
         cout << endl;
     }
+#endif
 
     log_D("Model", "compileToKernel Done");
     return move(container);
@@ -214,6 +216,11 @@ Model::None()
     modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
 
     numOfLayer = 3;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
 }
 
 
@@ -287,6 +294,11 @@ Model::VGG16()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
 
     numOfLayer = 22;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
 }
 
 
@@ -467,4 +479,9 @@ Model::ResNet18()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
 
     numOfLayer = 28;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
 }
