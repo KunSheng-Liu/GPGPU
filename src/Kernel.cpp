@@ -49,8 +49,8 @@ Kernel::~Kernel()
 void
 Kernel::addRequest(Request* request)
 {
-    numOfRead  += request->readAddresses.size();
-    numOfWrite += request->writeAddresses.size();
+    numOfRead  += request->readPages.size();
+    numOfWrite += request->writePages.size();
     
     requests.push(request);
 }

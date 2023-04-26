@@ -59,7 +59,7 @@ public:
         vector<int> inputSize;  // [Channel, Height, Width]
         vector<int> outputSize; // [Channel, Height, Width]
 
-        ModelInfo(char* model_name) : modelName(model_name) {}
+        ModelInfo(const char* model_name) : modelName(model_name) {}
     };
 
 /* ************************************************************************************************
@@ -69,7 +69,7 @@ public:
 public:
 
     void memoryAllocate (MMU* mmu);
-    vector<Kernel> compileToKernel (MMU* mmu);
+    vector<Kernel>& compileToKernel ();
     void printSummary ();
 
     void setBatchSize (int batch_size);
@@ -77,7 +77,7 @@ public:
     char* getModelName (void) {return modelName;}
     int   getNumOfLayer (void) {return numOfLayer;}
 
-    static ModelInfo getModelInfo (char* model_type);
+    static ModelInfo getModelInfo (const char* model_type);
 
     vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
     vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}
@@ -87,6 +87,8 @@ public:
  * ************************************************************************************************
  */
 public:
+    void buildLayerGraph (const char* model_type);
+
     void Test();
     // void LeNet();
     void VGG16();
@@ -117,6 +119,8 @@ protected:
     int batchSize = 0;
 
     LayerGroup* modelGraph;
+    
+    vector<Kernel> kernelContainer;
 };
 
 #endif

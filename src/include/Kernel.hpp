@@ -18,6 +18,7 @@
 
 #include "GPU.hpp"
 #include "Kernel.hpp"
+#include "Layers.hpp"
 
 /** ===============================================================================================
  * \name    Kernel
@@ -60,6 +61,10 @@ public:
     int numOfRead;
     int numOfWrite;
     int numOfMemory;
+
+    /* source layer */
+    Layer* srcLayer;
+
     queue<Request*> requests;
 
     vector<Kernel*> dependencyKernels; 

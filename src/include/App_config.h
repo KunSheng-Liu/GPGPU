@@ -42,9 +42,11 @@ class MMU;
 class TLB;
 class Application;
 class Model;
-class InferenceEngine;
-class MemoryController;
+class Layer;
+class GPU;
 class Kernel;
+class MemoryController;
+class InferenceEngine;
 
 
 /* ************************************************************************************************
@@ -67,7 +69,7 @@ class Kernel;
  */
 #define LOG_LEVEL                   DEBUG
 #define PRINT_MODEL_DETIAL          true
-#define PRINT_MEMORY_ALLOCATION     false
+#define PRINT_MEMORY_ALLOCATION     true
 #define PRINT_KERNEL_DEPENDENCY     true
 
 

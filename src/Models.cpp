@@ -101,8 +101,6 @@ Model::memoryAllocate(MMU* mmu)
  * 
  * \brief   Compile the current layer graph into GPU command
  * 
- * \param   mmu     the memory management unit form the CPU
- * 
  * \note    The batch size must be designed
  * 
  * \note    The memory address must be allocated
@@ -110,16 +108,16 @@ Model::memoryAllocate(MMU* mmu)
  * \endcond
  * ================================================================================================
  */
-vector<Kernel>
-Model::compileToKernel(MMU* mmu)
+vector<Kernel>&
+Model::compileToKernel()
 {
     log_D("Model", "compileToKernel");
-    vector<Kernel> container;
-    container.reserve(numOfLayer);
-    modelGraph->issueLayer(mmu, container, {});
+    
+    kernelContainer.reserve(numOfLayer);
+    modelGraph->compileToKernel(kernelContainer, {});
 
 #if (PRINT_KERNEL_DEPENDENCY)
-    for (auto kernel : container)
+    for (auto kernel : kernelContainer)
     {
         cout << "current kernel ID: " << kernel.kernelID << " dependency: ";
         for (auto dependkernel : kernel.dependencyKernels)
@@ -131,7 +129,7 @@ Model::compileToKernel(MMU* mmu)
 #endif
 
     log_D("Model", "compileToKernel Done");
-    return move(container);
+    return kernelContainer;
 }
 
 
@@ -174,11 +172,11 @@ Model::printSummary()
  * ================================================================================================
  */
 Model::ModelInfo
-Model::getModelInfo(char* model_type)
+Model::getModelInfo(const char* model_type)
 {
     ModelInfo Info (model_type);
 
-    if (strcmp(model_type, "None") == 0) {
+    if (strcmp(model_type, "Test") == 0) {
         Info.numOfLayers    = 3;
         Info.ioMemCount     = 7375872;
         Info.filterMemCount = 54976;
@@ -206,6 +204,31 @@ Model::getModelInfo(char* model_type)
 
 
 /** ===============================================================================================
+ * \name    buildLayerGraph
+ * 
+ * \brief   Build the model graph
+ * 
+ * \param   model_type   the choosen model graph name
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Model::buildLayerGraph(const char* model_type)
+{
+    if (strcmp(model_type, "Test") == 0) {
+        Test();
+
+    } else if (strcmp(model_type, "VGG16") == 0) {
+        VGG16();
+
+    } else if (strcmp(model_type, "ResNet18") == 0) {
+        ResNet18();
+    }
+
+}
+
+/** ===============================================================================================
  * \name    None
  * 
  * \brief   Build the None layer graph
@@ -223,7 +246,7 @@ Model::getModelInfo(char* model_type)
 void 
 Model::Test()
 {
-    modelName = (char*)"None";
+    modelName = (char*)"Test";
     
     modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 8, 8}, new vector<int>{2, 3, 3, 3}, (char*)"ReLU", 1, 1));
     modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 2, 8, 8}, new vector<int>{2, 2, 3, 3}, (char*)"ReLU", 1, 1));

@@ -66,17 +66,35 @@ void
 InferenceEngine::Dynamic_Batching_Algorithm()
 {
     log_D("InferenceEngine", "Dynamic_Batching_Algorithm");
-    /* Choose the batch size of each model and create the instance */
 
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
+    /* Choose the batch size of each model and create the instance */
     for (auto app : *mAPPs)
     {
         int batchSize = 1;
-        Model model = Model(batchSize);
-        model.Test();
-        model.memoryAllocate(mMMU);
-        vector<Kernel> kernels = model.compileToKernel(mMMU);
+        app->runningModels.emplace_back(new Model(batchSize));
+        
+        Model* model = app->runningModels.back();
+        model->buildLayerGraph(app->modelType);
+        model->memoryAllocate(mMMU);
+        vector<Kernel>& kernels = model->compileToKernel();
 
+        for (auto& kernel : kernels)
+        {
+            kernel.srcLayer->issueLayer(mMMU, &kernel);
+        }
+        for (auto& kernel : kernels)
+        {
+            cout << kernel.srcLayer->layerType << " requests num: " << kernel.requests.size() << endl;
+        }
     }
+
+    gettimeofday(&end, NULL);
+    float spendTime = (1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001;
+    log_I("main", "Total spend: " + to_string(spendTime) + " ms");
+
     ASSERT(false);
 }
 

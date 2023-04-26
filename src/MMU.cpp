@@ -59,7 +59,7 @@ MMU::memoryAllocate (int va, int numOfByte)
  * 
  * \param   va      the virtual address going to translate
  * 
- * \return  Pythsical Address vector
+ * \return  Pythsical Pages vector
  * 
  * \endcond
  * ================================================================================================
@@ -72,19 +72,17 @@ MMU::addressTranslate (int va)
     
     ASSERT(!(pa_pair.first == nullptr || pa_pair.second == -1), "The virtual address haven't been allocated");
 
-    vector<int> pa_stream;
+    vector<int> pa_list;
     Page* page = pa_pair.first;
     int pageIndex = page->pageIndex;
-    for (int i = 0; i < pa_pair.second; i++)
+
+    while(page != nullptr) 
     {
-        if (i != 0 && i % PAGE_SIZE == 0) {
-            page = page->nextPage;
-            pageIndex = page->pageIndex;
-        }
-        pa_stream.emplace_back(pageIndex * PAGE_SIZE + i % PAGE_SIZE);
+        pa_list.emplace_back(page->pageIndex);
+        page = page->nextPage;
     }
 
-    return move(pa_stream);
+    return move(pa_list);
 }
 
 

@@ -24,11 +24,11 @@
  */
 struct Request{
     int numOfInstructions;
-    vector<int> readAddresses;
-    vector<int> writeAddresses;
+    vector<int> readPages;
+    vector<int> writePages;
 
-    Request (vector<int> read_addresses = {}, vector<int> write_addresses = {}) 
-        : numOfInstructions(0), readAddresses(read_addresses), writeAddresses(write_addresses) {}
+    Request (vector<int> read_pages = {}, vector<int> write_pages = {}) 
+        : numOfInstructions(0), readPages(read_pages), writePages(write_pages) {}
 };
 
 

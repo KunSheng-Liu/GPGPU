@@ -131,6 +131,37 @@ Layer::memoryAllocate(MMU* mmu)
 
 
 /** ===============================================================================================
+ * \name    compileToKernel
+ *
+ * \brief   Make the kernel dependency.
+ * 
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * \param   dependency  the depended pointers of this kernel
+ * 
+ * \return  dependency of the next layer 
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+vector<Kernel*>
+Layer::compileToKernel(vector<Kernel>& container, vector<Kernel*> dependency)
+{
+    log_D(layerType, "issueLayer");
+    container.emplace_back();
+    Kernel* kernelptr = &container.back();
+
+    /* add config */
+    kernelptr->srcLayer = this;
+    kernelptr->kernelID = layerIndex;
+    kernelptr->dependencyKernels = move(dependency);
+
+    dependency.emplace_back(kernelptr);
+    return move(dependency);
+}
+
+
+/** ===============================================================================================
  * \name    printInfo
  *
  * \brief   Print the layer information
@@ -325,23 +356,16 @@ Conv2D::printInfo()
  * \endcond
  * ================================================================================================
  */
-vector<Kernel*> 
-Conv2D::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
+void 
+Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-    log_D("Conv2D", "issueLayer");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
 
-    /* add requests */
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    vector<int> iFMapAddr   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapAddr   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    vector<int> filterAddr  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
-    log_D("iFMapAddr Size"  , to_string(iFMapAddr.size()));
-    log_D("oFMapAddr Size"  , to_string(oFMapAddr.size()));
-    log_D("filterAddr Size" , to_string(filterAddr.size()));
+    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
+    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    log_D("filterPages Num" , to_string(filterPages.size()));
 
     /* Use inverse order for let the address be closer */
     for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
@@ -351,38 +375,54 @@ Conv2D::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependen
             for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
             {
                 for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
-                {
+                {                   
                     Request* request = new Request();
-                    request->writeAddresses.emplace_back(oFMapAddr[b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT]* (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o]);
 
-                    for (int c_i = 0; c_i < (*iFMapSize)[CHANNEL]; c_i++)
+                    /* read filter pages */
+                    const int f_start = c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE;
+                    for (int f_offset = 0; f_offset <= (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE; f_offset++)
                     {
-                        for (int h_f = 0; h_f < (*filterSize)[HEIGHT]; h_f++)
-                        {
-                            for (int w_f = 0; w_f < (*filterSize)[WIDTH]; w_f++)
-                            {
-                                /* oFMap to iFMap mapping */
-                                int h = h_o * (*stride)[STRIDE_PADDING_HEIGHT] + h_f - (*padding)[STRIDE_PADDING_HEIGHT];
-                                int w = w_o * (*stride)[STRIDE_PADDING_WIDTH]  + w_f - (*padding)[STRIDE_PADDING_WIDTH];
-                                /* skip the padding calculations */
-                                if (h >= 0 && h < (*iFMapSize)[HEIGHT] && w >= 0 && w < (*iFMapSize)[WIDTH])
-                                {
-                                    /* Read iFMap address */
-                                    request->readAddresses.emplace_back(iFMapAddr[b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h * (*iFMapSize)[WIDTH] + w]);
-                                    /* Read filter address */
-                                    request->readAddresses.emplace_back(filterAddr[c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] + c_i * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] + h_f * (*filterSize)[WIDTH] + w_f]);
-
-                                    request->numOfInstructions++;
-                                }
-                            }
-                            
-                        }
-                        
+                        request->readPages.emplace_back(filterPages[f_start + f_offset]);
                     }
+
+                    /* read input pages */
+                    const int h_start = h_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+
+                    for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
+                    {
+                        for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
+                        {
+                            int w_i = max(0, w_start);
+                            const int i_start = b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i;
+                            
+                            if (request->readPages.back() != iFMapPages[i_start / PAGE_SIZE]) 
+                            {
+                                request->readPages.emplace_back(iFMapPages[i_start / PAGE_SIZE]);
+                            }
+
+                            if (PAGE_SIZE - i_start % PAGE_SIZE > (*iFMapSize)[WIDTH] - 1)
+                                continue;
+                            else
+                                request->readPages.emplace_back((i_start / PAGE_SIZE) + 1);
+                        }
+                    }
+
+                    // cout << "[" << b << ", " << c_o << ", " << h_o << ", " << w_o << "] Read Pages: ";
+                    // for(int page : request->readPages)
+                    // {
+                    //     cout << page << ", ";
+                    // }
+                    // cout << endl;
+
+                    /* write ouput page */
+                    request->writePages.emplace_back(oFMapPages[b * c_o * h_o * w_o / PAGE_SIZE]);
+
+                    /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0)
                         request->numOfInstructions++;  // for the activation exectuion
 
-                    kernelptr->addRequest(move(request));
+                    targetKernel->addRequest(move(request));
                 }
                 
             }
@@ -391,11 +431,10 @@ Conv2D::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependen
         
     }
 
-    log_D("Num of read address", to_string(kernelptr->numOfRead));
-    log_D("Num of write address", to_string(kernelptr->numOfWrite));
+    log_D("Num of request", to_string(targetKernel->requests.size()));
+    log_D("Num of read address", to_string(targetKernel->numOfRead));
+    log_D("Num of write address", to_string(targetKernel->numOfWrite));
 
-    dependency.emplace_back(kernelptr);
-    return move(dependency);
 }
 
 
@@ -454,19 +493,10 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  * \endcond
  * ================================================================================================
  */
-vector<Kernel*> 
-Pooling::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
+void 
+Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-    log_D("Pooling", "issueLayer");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
 
-    /* add requests */
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    dependency.emplace_back(kernelptr);
-    return move(dependency);
 }
 
 
@@ -558,19 +588,10 @@ Flatten::printInfo()
  * \endcond
  * ================================================================================================
  */
-vector<Kernel*> 
-Flatten::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
+void 
+Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-    log_D("Flatten", "issueLayer");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
 
-    /* add requests */
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    dependency.emplace_back(kernelptr);
-    return move(dependency);
 }
 
 
@@ -657,19 +678,10 @@ ByPass::printInfo()
  * \endcond
  * ================================================================================================
  */
-vector<Kernel*> 
-ByPass::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
+void 
+ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-    log_D("ByPass", "issueLayer");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
 
-    /* add requests */
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    dependency.emplace_back(kernelptr);
-    return move(dependency);
 }
 
 
@@ -782,18 +794,9 @@ Dense::printInfo()
  * \endcond
  * ================================================================================================
  */
-vector<Kernel*> 
-Dense::issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency)
+void 
+Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-    log_D("Dense", "issueLayer");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
 
-    /* add requests */
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    dependency.emplace_back(kernelptr);
-    return move(dependency);
 }
 

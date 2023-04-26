@@ -72,6 +72,9 @@ public:
 
     queue<task> tasks;
 
+    /* Running Models */
+    list<Model*> runningModels = {};
+
 private:
     /* Number of layer be created */
     static int appCount;

@@ -93,8 +93,9 @@ public:
     virtual void printInfo();
     virtual void changeBatch (int new_batch_size);
     virtual void memoryAllocate (MMU* mmu);
+    virtual vector<Kernel*> compileToKernel (vector<Kernel>& container, vector<Kernel*> dependency);
     /* pure virtual function */
-    virtual vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) = 0;
+    virtual void issueLayer(MMU* mmu, Kernel* targetKernel) = 0;
 
 private:
     /* pure virtual function */
@@ -191,7 +192,7 @@ public:
 public:
     // void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
-    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
     
 private:
     void calculateOFMapSize() override;
@@ -232,7 +233,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
 
 };
 
@@ -262,7 +263,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
     
 private:
     void calculateOFMapSize() override;
@@ -295,7 +296,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
     
 private:
     void calculateOFMapSize() override;
@@ -333,7 +334,7 @@ public:
  */
 public:
     void printInfo() override;
-    vector<Kernel*> issueLayer(MMU* mmu, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
     
 private:
     void calculateOFMapSize() override;
