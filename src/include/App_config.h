@@ -112,9 +112,10 @@ class InferenceEngine;
 
     /* GPU */
     #define GPU_SM_NUM                  8 
-    #define GPU_WARP_PER_SM             2 
+    #define GPU_KERNEL_PER_SM           2
+    #define GPU_WARP_PER_KERNEL         32 
     #define GPU_THREAD_PER_WARP         32 
-    #define GPU_MAX_THREAD_PER_SM       GPU_SM_NUM *  GPU_WARP_PER_SM * GPU_THREAD_PER_WARP
+    #define GPU_MAX_THREAD_PER_SM       GPU_KERNEL_PER_SM * GPU_WARP_PER_KERNEL * GPU_THREAD_PER_WARP
     #define GPU_REGISTER_PER_SM         65536 
 
     #define GPU_SHARED_MEMORY_PER_SM    96  	                // unit (KB)
