@@ -51,6 +51,7 @@ Kernel::addRequest(Request* request)
 {
     numOfRead  += request->readPages.size();
     numOfWrite += request->writePages.size();
+    numOfCycle += request->numOfInstructions;
     
     requests.push(request);
 }

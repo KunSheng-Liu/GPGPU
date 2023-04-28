@@ -60,6 +60,7 @@ public:
 
     int numOfRead;
     int numOfWrite;
+    int numOfCycle;
     int numOfMemory;
 
     /* source layer */

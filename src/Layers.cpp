@@ -147,7 +147,7 @@ Layer::memoryAllocate(MMU* mmu)
 vector<Kernel*>
 Layer::compileToKernel(vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    log_D(layerType, "issueLayer");
+    // log_D(layerType, "compileToKernel");
     container.emplace_back();
     Kernel* kernelptr = &container.back();
 
@@ -345,7 +345,7 @@ Conv2D::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Compile the layer into GPU requests.
+ * \brief   Conv2D perfrom the element multiplication on iFMap to filter at each place
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -359,7 +359,7 @@ Conv2D::printInfo()
 void 
 Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
-
+    log_D(layerType, "issueLayer");
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
     vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
@@ -408,15 +408,11 @@ Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
                         }
                     }
 
-                    // cout << "[" << b << ", " << c_o << ", " << h_o << ", " << w_o << "] Read Pages: ";
-                    // for(int page : request->readPages)
-                    // {
-                    //     cout << page << ", ";
-                    // }
-                    // cout << endl;
-
-                    /* write ouput page */
-                    request->writePages.emplace_back(oFMapPages[b * c_o * h_o * w_o / PAGE_SIZE]);
+                    /* write result to pages */
+                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    
+                    // Conv2D perfrom the element multiplication on iFMap to filter at each place
+                    request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
 
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0)
@@ -484,7 +480,7 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Compile the layer into GPU requests.
+ * \brief   Pooling layer find the maxinum / mininum input data in the field masked by filter
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -496,6 +492,77 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
 void 
 Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
+    log_D(layerType, "issueLayer");
+    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
+    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    log_D("filterPages Num" , to_string(filterPages.size()));
+
+    /* Use inverse order for let the address be closer */
+    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    {
+        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        {
+            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            {
+                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                {                   
+                    Request* request = new Request();
+
+                    /* read filter pages */
+                    const int f_start = c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE;
+                    for (int f_offset = 0; f_offset <= (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE; f_offset++)
+                    {
+                        request->readPages.emplace_back(filterPages[f_start + f_offset]);
+                    }
+
+                    /* read input pages */
+                    const int h_start = h_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+
+                    for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
+                    {
+                        for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
+                        {
+                            int w_i = max(0, w_start);
+                            const int i_start = b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i;
+                            
+                            if (request->readPages.back() != iFMapPages[i_start / PAGE_SIZE]) 
+                            {
+                                request->readPages.emplace_back(iFMapPages[i_start / PAGE_SIZE]);
+                            }
+
+                            if (PAGE_SIZE - i_start % PAGE_SIZE > (*iFMapSize)[WIDTH] - 1)
+                                continue;
+                            else
+                                request->readPages.emplace_back((i_start / PAGE_SIZE) + 1);
+                        }
+                    }
+
+                    /* write result to pages */
+                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+
+                    // Pooling layer find the maxinum input data in the field masked by filter
+                    request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
+
+                    /* for the activation exectuion */
+                    if (strcmp(activationType, "None") != 0)
+                        request->numOfInstructions++;  // for the activation exectuion
+
+                    targetKernel->addRequest(move(request));
+                }
+                
+            }
+            
+        }
+        
+    }
+
+    log_D("Num of request", to_string(targetKernel->requests.size()));
+    log_D("Num of read address", to_string(targetKernel->numOfRead));
+    log_D("Num of write address", to_string(targetKernel->numOfWrite));
 
 }
 
@@ -579,7 +646,7 @@ Flatten::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Compile the layer into GPU requests.
+ * \brief   Flatten layer casting the input dimension into a 1-dim array.
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -591,7 +658,43 @@ Flatten::printInfo()
 void 
 Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
+    log_D(layerType, "issueLayer");
+    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
 
+    /* Use inverse order for let the address be closer */
+    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    {
+        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        {
+            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            {
+                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                {                   
+                    Request* request = new Request();
+                    /* read input pages */
+                    request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+
+                    /* write result to pages */
+                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+
+                    // Performs data copy
+                    request->numOfInstructions += 1;
+
+                    targetKernel->addRequest(move(request));
+                }
+                
+            }
+            
+        }
+        
+    }
+
+    log_D("Num of request", to_string(targetKernel->requests.size()));
+    log_D("Num of read address", to_string(targetKernel->numOfRead));
+    log_D("Num of write address", to_string(targetKernel->numOfWrite));
 }
 
 
@@ -669,7 +772,7 @@ ByPass::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Compile the layer into GPU requests.
+ * \brief   ByPass layer is my self designed layer for tranfer the previous result.
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -681,7 +784,43 @@ ByPass::printInfo()
 void 
 ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
+    log_D(layerType, "issueLayer");
+    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
 
+    /* Use inverse order for let the address be closer */
+    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    {
+        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        {
+            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            {
+                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                {                   
+                    Request* request = new Request();
+                    /* read input pages */
+                    request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+
+                    /* write result to pages */
+                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+
+                    // Performs data copy
+                    request->numOfInstructions += 1;
+
+                    targetKernel->addRequest(move(request));
+                }
+                
+            }
+            
+        }
+        
+    }
+
+    log_D("Num of request", to_string(targetKernel->requests.size()));
+    log_D("Num of read address", to_string(targetKernel->numOfRead));
+    log_D("Num of write address", to_string(targetKernel->numOfWrite));
 }
 
 
@@ -717,7 +856,7 @@ Dense::Dense(vector<int>* input_size, vector<int>* filter_size, char* activation
  * ================================================================================================
  */
 Dense::Dense(vector<int>* input_size, int output_width)
-        : Layer((char*)"Dense", input_size), outWidth(output_width)
+        : Dense(input_size, new vector<int>{output_width, (*input_size)[CHANNEL], 1, 1}, (char*)"Relu")
 {
     calculateOFMapSize();
     int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
@@ -742,7 +881,7 @@ Dense::calculateOFMapSize()
 
     oFMapSize = new vector<int>();
     (*oFMapSize).emplace_back((*iFMapSize)[BATCH]);
-    (*oFMapSize).emplace_back(outWidth);
+    (*oFMapSize).emplace_back((*filterSize)[FILTER_CHANNEL_O]);
     (*oFMapSize).emplace_back(1);
     (*oFMapSize).emplace_back(1);
 }
@@ -785,7 +924,7 @@ Dense::printInfo()
 /** ===============================================================================================
  * \name    issueLayer
  *
- * \brief   Compile the layer into GPU requests.
+ * \brief   Dense layer use linear transormation function to down / up sampling the data dimension.
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -797,6 +936,45 @@ Dense::printInfo()
 void 
 Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
 {
+    log_D(layerType, "issueLayer");
+    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
+    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
+    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    log_D("filterPages Num" , to_string(filterPages.size()));
 
+    ASSERT((*iFMapSize)[HEIGHT] == 1 && (*iFMapSize)[WIDTH] == 1, "Dimension error!");
+
+    /* Use inverse order for let the address be closer */
+    for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+    {
+        for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+        {                   
+            Request* request = new Request();
+
+            for (int c_i = 0; c_i < (*filter)[FILTER_CHANNEL_I]; c_i++)
+            {
+                /* read input pages */
+                request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] + c_i) / PAGE_SIZE]);
+
+                /* filter pages */
+                request->readPages.emplace_back(filterPages[(c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE]);
+
+                // Performs dot product
+                request->numOfInstructions += 1;
+            }
+
+            /* write result to pages */
+            request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] + c_o) / PAGE_SIZE]);
+
+            targetKernel->addRequest(move(request));
+
+        }
+    }
+
+    log_D("Num of request", to_string(targetKernel->requests.size()));
+    log_D("Num of read address", to_string(targetKernel->numOfRead));
+    log_D("Num of write address", to_string(targetKernel->numOfWrite));
 }
 
