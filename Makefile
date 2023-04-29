@@ -22,7 +22,7 @@ GPGPU: update $(OBJ)
 %.o: %.cpp
 	@echo Build $@
 	@@$(CXX) $(CXXFLAGS) -c -o $@ $<
-	@@$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
+#@@$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
 
 .PHONY: update clean
 update:
@@ -31,6 +31,6 @@ update:
 
 clean:
 	@find -name "*.o" -exec rm {} \;
-	@find -name "*.d" -exec rm {} \;
+#@find -name "*.d" -exec rm {} \;
 
 
