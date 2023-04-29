@@ -50,6 +50,22 @@ MemoryController::init()
 
 
 /** ===============================================================================================
+ * \name    cycle
+ * 
+ * \brief   Handling the MemoryController in a period of cycle
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+MemoryController::cycle()
+{
+    log_I("MemoryController Cycle", to_string(total_gpu_cycle));
+
+}
+
+
+/** ===============================================================================================
  * \name    createPage
  * 
  * \brief   Create new page into availablePageList if not excess the storageLimit.

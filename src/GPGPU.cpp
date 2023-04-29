@@ -7,6 +7,11 @@
  */
 #include "include/GPGPU.hpp"
 
+/* ************************************************************************************************
+ * Global Variable
+ * ************************************************************************************************
+ */
+unsigned long long total_gpu_cycle = 0;
 
 /** ===============================================================================================
  * \name    GPGPU
@@ -16,10 +21,9 @@
  * \endcond
  * ================================================================================================
  */
-GPGPU::GPGPU()
+GPGPU::GPGPU() : mMC(MemoryController(DISK_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
 {
-    mMC  = new MemoryController(DISK_SPACE, PAGE_SIZE);
-    mCPU = new CPU(mMC);
+    mGMMU = mGPU.getGMMU();
 }
 
 
@@ -54,21 +58,19 @@ GPGPU::run ()
         int clock_mask = next_clock_domain();
 
 		if (clock_mask & MC_MASK) {
-            cout << "Memory Controller" << endl;
-			// m_mc.cycle();
+			mMC.cycle();
 		}
 		if (clock_mask & GMMU_MASK) {
-            cout << "GMMU" << endl;
-			// m_gmmu.cycle();
+			mGMMU->cycle();
 		}
 		if (clock_mask & GPU_MASK) {
-            cout << "GPU" << endl;
-			// m_gpu.cycle();
+			mGPU.cycle();
+			mGPU.Runtime_Block_Scheduling();
+			total_gpu_cycle++;
 			
 		}
 		if (clock_mask & CPU_MASK) {
-            cout << "CPU" << endl;
-			mCPU->cycle();
+			mCPU.cycle();
 		}
 
         // Finish = m_cpu.check_all_application_finished() & m_mc.check_finished();

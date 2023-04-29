@@ -19,7 +19,6 @@
 #include "Log.h"
 
 #include "Application.hpp"
-#include "InferenceEngine.hpp"
 #include "MemoryController.hpp"
 #include "MMU.hpp"
 #include "Models.hpp"
@@ -40,7 +39,7 @@ class CPU
  */ 
 public:
 
-    CPU(MemoryController* mc);
+    CPU(MemoryController* mc, GPU* gpu);
 
    ~CPU();
 
@@ -50,17 +49,20 @@ public:
  */
 public:
     void cycle ();
+    void Dynamic_Batching_Algorithm ();
+    void Kernek_Inference_Scheduler ();
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 private:
-    MMU* mMMU;
+    GPU* mGPU;
     MemoryController* mMC;
 
-    vector<Application*> mAPPs;
-    InferenceEngine* mInferenceEngine;
+    MMU mMMU;
+
+    list<Application*> mAPPs;
 };
 
 #endif

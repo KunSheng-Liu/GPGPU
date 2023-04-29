@@ -93,8 +93,11 @@ public:
     virtual void printInfo();
     virtual void changeBatch (int new_batch_size);
     virtual void memoryAllocate (MMU* mmu);
-    virtual vector<Kernel*> compileToKernel (vector<Kernel>& container, vector<Kernel*> dependency);
-    /* pure virtual function */
+
+    /* Make the kernel dependency by layer graph */
+    virtual vector<Kernel*> compileToKernel (int app_id, vector<Kernel>& container, vector<Kernel*> dependency);
+
+    /* Compile the current layer graph into GPU command */
     virtual void issueLayer(MMU* mmu, Kernel* targetKernel) = 0;
 
 private:
@@ -106,13 +109,11 @@ private:
  * ************************************************************************************************
  */
 public:
-    /* basic parameter I/O */
-    int  getLayerIndex (void) {return layerIndex;}
-
     /* Layer data I/O */
     virtual void setIFMap  (vector<unsigned char>* data);
     virtual void setFilter (vector<unsigned char>* data);
 
+    int getMemoryUsage();
     vector<int>* getIFMapSize  (void) {return iFMapSize;}
     vector<int>* getOFMapSize  (void) {return oFMapSize;}
     vector<int>* getFilterSize (void) {return filterSize;}
@@ -131,13 +132,13 @@ public:
  */
 public:
     /* The index of layer. Each layer have a unique index */
-    const int layerIndex;
+    const int layerID;
 
     /* Type of layer */
-    char* layerType;
+    const char* layerType;
     
     /* The activation type */
-    char* activationType;
+    const char* activationType;
 
 protected:
 

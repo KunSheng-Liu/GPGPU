@@ -53,6 +53,8 @@ public:
 public:
 
     void init();
+    
+    void cycle ();
 
     Page* memoryAllocate (int numByte);
 

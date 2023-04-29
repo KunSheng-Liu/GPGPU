@@ -23,7 +23,7 @@ int Model::modelCount = 0;
  * \endcond
  * ================================================================================================
  */
-Model::Model(): modelIndex(modelCount++)
+Model::Model(int app_id): appID(app_id), modelID(modelCount++)
 {
     modelGraph = new LayerGroup();
 }
@@ -39,7 +39,7 @@ Model::Model(): modelIndex(modelCount++)
  * \endcond
  * ================================================================================================
  */
-Model::Model(int batch_size): modelIndex(++modelCount), batchSize(batch_size)
+Model::Model(int app_id, int batch_size): appID(app_id), modelID(modelCount++), batchSize(batch_size)
 {
     modelGraph = new LayerGroup();
 }
@@ -99,11 +99,9 @@ Model::memoryAllocate(MMU* mmu)
 /** ===============================================================================================
  * \name    compileToKernel
  * 
- * \brief   Compile the current layer graph into GPU command
+ * \brief   Make the kernel dependency.
  * 
- * \note    The batch size must be designed
- * 
- * \note    The memory address must be allocated
+ * \return  reference of model kernels
  * 
  * \endcond
  * ================================================================================================
@@ -114,19 +112,7 @@ Model::compileToKernel()
     log_D("Model", "compileToKernel");
     
     kernelContainer.reserve(numOfLayer);
-    modelGraph->compileToKernel(kernelContainer, {});
-
-#if (PRINT_KERNEL_DEPENDENCY)
-    for (auto kernel : kernelContainer)
-    {
-        cout << "current kernel ID: " << kernel.kernelID << " dependency: ";
-        for (auto dependkernel : kernel.dependencyKernels)
-        {
-            cout << dependkernel->kernelID << " ";
-        }
-        cout << endl;
-    }
-#endif
+    auto dependencyKernels = modelGraph->compileToKernel(appID, kernelContainer, {});
 
     log_D("Model", "compileToKernel Done");
     return kernelContainer;
@@ -134,30 +120,28 @@ Model::compileToKernel()
 
 
 /** ===============================================================================================
- * \name    printSummary
+ * \name    findReadyKernels
  * 
- * \brief   Construct a model
+ * \brief   Make the kernel dependency.
+ * 
+ * \return  reference of model kernels
  * 
  * \endcond
  * ================================================================================================
  */
-void
-Model::printSummary()
+list<Kernel*>
+Model::findReadyKernels()
 {
-    std::cout << "Model " << modelIndex << ", " << modelName << " summary:" << std::endl;
-    std::cout << std::left << std::setw(10) << "Layer_ID"    \
-              << std::left << std::setw(12) << "Layer_Type"  \
-              << std::left << std::setw(25)  << "Activation_Type" \
-              << std::left << std::setw(30)  << "Input_Size" \
-              << std::left << std::setw(30)  << "Filter_Size" \
-              << std::left << std::setw(26)  << "Output_Size" \
-              << std::left << std::setw(17)  << "Stride" \
-              << std::left << std::setw(10)  << "Padding" ;
-
-    std::cout << std::endl;
-
-
-    modelGraph->printInfo();
+    list<Kernel*> readyList;
+    for (auto& kernel : kernelContainer)
+    {
+        if(!kernel.isFinish() && !kernel.isRunning() && kernel.isReady())
+        {
+            readyList.emplace_back(&kernel);
+        }
+        
+    }
+    return readyList;
 }
 
 
@@ -238,9 +222,10 @@ Model::buildLayerGraph(const char* model_type)
  * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
  *                    Size       Map        Size
  *            Data                3       224 x 224
- *    1     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
- *    2     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
- *    3       Pool    2 x 2      64       112 x 112    2          0
+ *    1     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
+ *    2       Pool    2 x 2     512         7 x 7      2          0
+ *    3    Flatten            25088         1 x 1
+ *    4      Dense    1 x 1    4096         1 x 1                            ReLU
  * ================================================================================================
  */
 void 
@@ -248,9 +233,12 @@ Model::Test()
 {
     modelName = (char*)"Test";
     
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 8, 8}, new vector<int>{2, 3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 2, 8, 8}, new vector<int>{2, 2, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 2, 8, 8}, new vector<int>{1, 2, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
+                                                        
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
 
     numOfLayer = 3;
     
@@ -521,4 +509,32 @@ Model::ResNet18()
     printSummary();
 #endif
 
+}
+
+
+/** ===============================================================================================
+ * \name    printSummary
+ * 
+ * \brief   Construct a model
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Model::printSummary()
+{
+    std::cout << "Model " << modelID << ", " << modelName << " summary:" << std::endl;
+    std::cout << std::left << std::setw(10) << "Layer_ID"    \
+              << std::left << std::setw(12) << "Layer_Type"  \
+              << std::left << std::setw(25)  << "Activation_Type" \
+              << std::left << std::setw(30)  << "Input_Size" \
+              << std::left << std::setw(30)  << "Filter_Size" \
+              << std::left << std::setw(26)  << "Output_Size" \
+              << std::left << std::setw(17)  << "Stride" \
+              << std::left << std::setw(10)  << "Padding" ;
+
+    std::cout << std::endl;
+
+
+    modelGraph->printInfo();
 }

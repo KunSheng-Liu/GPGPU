@@ -84,7 +84,7 @@ LayerGroup::addCaseCade (Layer* layer)
         /* Dimension check */
         vector<int>* nextIFMapSize = layer->getIFMapSize();
         bool check = ((*oFMapSize)[BATCH] == (*nextIFMapSize)[BATCH]) && ((*oFMapSize)[CHANNEL] == (*nextIFMapSize)[CHANNEL]) && ((*oFMapSize)[HEIGHT] == (*nextIFMapSize)[HEIGHT]) && ((*oFMapSize)[WIDTH] == (*nextIFMapSize)[WIDTH]);
-        ASSERT(check, "Layer " + to_string(layer->layerIndex) + " has error iFMapSize to the existing oFMapSize.");
+        ASSERT(check, "Layer " + to_string(layer->layerID) + " has error iFMapSize to the existing oFMapSize.");
 
         layer->setIFMap(oFMap);
         oFMapSize = layer->getOFMapSize();
@@ -187,19 +187,19 @@ LayerGroup::memoryAllocate(MMU* mmu)
  * ================================================================================================
  */
 vector<Kernel*> 
-LayerGroup::compileToKernel(vector<Kernel>& container, vector<Kernel*> dependency)
+LayerGroup::compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    log_D("LayerGroup", "issueLayer");
+    log_V("LayerGroup", "compileToKernel");
     if (groupType == Group_t::CaseCade) {
         for (auto layer: layers)
         {
-            dependency = layer->compileToKernel(container, dependency);
+            dependency = layer->compileToKernel(app_id, container, dependency);
         }
     } else {  // groupType == Group_t::CaseCode
         vector<Kernel*> new_dependency;
         for (auto layer: layers)
         {
-            vector<Kernel*> temp = layer->compileToKernel(container, dependency);
+            vector<Kernel*> temp = layer->compileToKernel(app_id, container, dependency);
             new_dependency.insert(new_dependency.end(), temp.begin(), temp.end());
         }
         dependency = move(new_dependency);

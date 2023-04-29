@@ -41,8 +41,8 @@ class Model
  */ 
 public:
 
-    Model();
-    Model(int batch_size);
+    Model(int app_id);
+    Model(int app_id, int batch_size);
 
     ~Model();
 
@@ -73,14 +73,15 @@ public:
     void printSummary ();
 
     void setBatchSize (int batch_size);
+    list<Kernel*> findReadyKernels();
 
     char* getModelName (void) {return modelName;}
     int   getNumOfLayer (void) {return numOfLayer;}
 
-    static ModelInfo getModelInfo (const char* model_type);
-
     vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
     vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}
+
+    static ModelInfo getModelInfo (const char* model_type);
     
 /* ************************************************************************************************
  * Benchmark
@@ -101,8 +102,11 @@ public:
  * ************************************************************************************************
  */
 public:
+    /* The index of source application. */
+    const int appID;
+
     /* The index of model. Each model have a unique index */
-    const int modelIndex;
+    const int modelID;
 
 protected:
 

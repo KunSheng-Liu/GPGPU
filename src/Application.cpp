@@ -28,7 +28,8 @@ int Application::appCount = 0;
 Application::Application(char* model_type)
     : appID(appCount++), modelType(model_type), modelInfo(Model::getModelInfo(model_type))
 {
-
+    /* Baseline, all application needs to execute once */
+    tasks.push(Task(0, 0, appID, vector<unsigned char> (3*224*224, 1)));
 }
 
 
@@ -61,5 +62,4 @@ Application::cycle()
 {
     /* Launch task into queue */
     log_D("Application::cycle", modelInfo.modelName);
-    tasks.push(task(0, 0, appID, vector<unsigned char> (3*224*224)));
 }

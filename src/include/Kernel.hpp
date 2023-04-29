@@ -20,6 +20,18 @@
 #include "Kernel.hpp"
 #include "Layers.hpp"
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct KernelInfo {
+    int numOfRead    = 0;
+    int numOfWrite   = 0;
+    int numOfCycle   = 0;
+    int numOfMemory  = 0;
+    int numOfRequest = 0;
+};
+
 /** ===============================================================================================
  * \name    Kernel
  * 
@@ -36,7 +48,8 @@ class Kernel
  */ 
 public:
 
-    Kernel();
+    // Kernel();
+    Kernel(int app_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies);
     ~Kernel();
 
 
@@ -45,26 +58,35 @@ public:
  * ************************************************************************************************
  */
 public:
+    void compileRequest (MMU* mmu);
     void addRequest (Request* request);
-    void checkDependency ();
+    void printInfo ();
+
+    bool isReady();
+    bool isFinish()  {return finish;}
+    bool isRunning() {return running;}
+    KernelInfo getKernelInfo() const {return info;}
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 public:
+    /* The index of source application. */
+    const int appID;
 
-    int kernelID;
+    /* The index of kernel. Each model have a unique index */
+    const int kernelID;
 
     bool finish;
-
-    int numOfRead;
-    int numOfWrite;
-    int numOfCycle;
-    int numOfMemory;
+    bool running;
+    
+private:
 
     /* source layer */
     Layer* srcLayer;
+
+    KernelInfo info;
 
     queue<Request*> requests;
 

@@ -24,13 +24,13 @@
  * Type Define
  * ************************************************************************************************
  */
-struct task{
+struct Task{
     int arrivalTime;
     int deadLine;
     int appIndex;
     vector<unsigned char> data;
 
-    task (int arrival_time, int dead_line, int app_index, vector<unsigned char> data) 
+    Task (int arrival_time, int dead_line, int app_index, vector<unsigned char> data) 
         : arrivalTime(arrival_time), deadLine(dead_line), appIndex(app_index), data(data) {}
 };
 
@@ -70,7 +70,7 @@ public:
 
     const char* modelType;
 
-    queue<task> tasks;
+    queue<Task> tasks;
 
     /* Running Models */
     list<Model*> runningModels = {};

@@ -20,11 +20,14 @@
 #include <iostream>
 #include <list>
 #include <queue>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
 #include <string.h>
 #include <sys/time.h>
+
+#include "Global.h"
 
 /* ************************************************************************************************
  * Name Space
@@ -37,16 +40,22 @@ using namespace std;
  * ************************************************************************************************
  */
 class GPGPU;
+
 class CPU;
 class MMU;
 class TLB;
+
 class Application;
 class Model;
 class Layer;
-class GPU;
-class Kernel;
+
 class MemoryController;
-class InferenceEngine;
+
+class GPU;
+class SM;
+class GMMU;
+class Kernel;
+class Request;
 
 
 /* ************************************************************************************************
@@ -60,23 +69,21 @@ class InferenceEngine;
 #define DEBUG               3
 #define VERBOSE             4
 
-/* Approach  */
-
 
 /* ************************************************************************************************
- * Application Configuration
+ * Print-Out Configuration
  * ************************************************************************************************
  */
 #define LOG_LEVEL                   DEBUG
 #define PRINT_MODEL_DETIAL          true
-#define PRINT_MEMORY_ALLOCATION     true
-#define PRINT_KERNEL_DEPENDENCY     true
+#define PRINT_MEMORY_ALLOCATION     false
 
 
 /* ************************************************************************************************
  * BenchMark
  * ************************************************************************************************
  */
+#define TASK_SET                    TEST
 #define HARDWARE_ARCHITECTURE       AGX_XAVIER
 
 /* ************************************************************************************************

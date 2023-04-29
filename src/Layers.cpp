@@ -29,7 +29,7 @@ int Layer::layerCount = 0;
  */
 Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerIndex(layerCount++), flagExecuting(false), flagFinish(false)
+        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerID(layerCount++), flagExecuting(false), flagFinish(false)
 {
     if (iFMapSize  != nullptr)  iFMap = new vector<unsigned char> ((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
     if (filterSize != nullptr) filter = new vector<unsigned char> ((*filterSize)[BATCH] * (*filterSize)[CHANNEL] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH]);
@@ -119,7 +119,7 @@ Layer::changeBatch(int new_batch_size)
 void
 Layer::memoryAllocate(MMU* mmu)
 {
-    log_D("memoryAllocate", "ID: " + to_string(layerIndex) + "  " + layerType);
+    log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
     if (LOG_LEVEL >= VERBOSE) cout << "iFMap ";
     if(iFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMap)),  iFMap->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
@@ -145,19 +145,34 @@ Layer::memoryAllocate(MMU* mmu)
  * ================================================================================================
  */
 vector<Kernel*>
-Layer::compileToKernel(vector<Kernel>& container, vector<Kernel*> dependency)
+Layer::compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    // log_D(layerType, "compileToKernel");
-    container.emplace_back();
-    Kernel* kernelptr = &container.back();
+    container.emplace_back(Kernel(app_id, layerID, this, move(dependency)));
 
-    /* add config */
-    kernelptr->srcLayer = this;
-    kernelptr->kernelID = layerIndex;
-    kernelptr->dependencyKernels = move(dependency);
-
-    dependency.emplace_back(kernelptr);
+    dependency.emplace_back(&container.back());
     return move(dependency);
+}
+
+
+/** ===============================================================================================
+ * \name    getMemoryUsage
+ *
+ * \brief   get the number of pages used in this layer
+ * 
+ * \return  int
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+int
+Layer::getMemoryUsage()
+{
+    int usage = 0;
+    if(iFMap)  usage += ceil(iFMap->size()  * sizeof(unsigned char) / PAGE_SIZE);
+    if(oFMap)  usage += ceil(oFMap->size()  * sizeof(unsigned char) / PAGE_SIZE);
+    if(filter) usage += ceil(filter->size() * sizeof(unsigned char) / PAGE_SIZE);
+
+    return usage;
 }
 
 
@@ -328,7 +343,7 @@ Conv2D::calculateOFMapSize()
 void
 Conv2D::printInfo()
 {
-    std::cout << std::left << std::setw(10) << layerIndex; 
+    std::cout << std::left << std::setw(10) << layerID; 
     std::cout << std::left << std::setw(16) << layerType; 
     std::cout << std::left << std::setw(13) << activationType;
     Layer::printInfo();
@@ -346,6 +361,10 @@ Conv2D::printInfo()
  * \name    issueLayer
  *
  * \brief   Conv2D perfrom the element multiplication on iFMap to filter at each place
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -427,9 +446,10 @@ Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    log_D("Num of request", to_string(targetKernel->requests.size()));
-    log_D("Num of read address", to_string(targetKernel->numOfRead));
-    log_D("Num of write address", to_string(targetKernel->numOfWrite));
+    KernelInfo info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
 
 }
 
@@ -481,6 +501,10 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  * \name    issueLayer
  *
  * \brief   Pooling layer find the maxinum / mininum input data in the field masked by filter
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -560,9 +584,10 @@ Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    log_D("Num of request", to_string(targetKernel->requests.size()));
-    log_D("Num of read address", to_string(targetKernel->numOfRead));
-    log_D("Num of write address", to_string(targetKernel->numOfWrite));
+    KernelInfo info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
 
 }
 
@@ -621,7 +646,7 @@ void
 Flatten::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerIndex \
+    std::cout << std::left << std::setw(10) << layerID \
               << std::left << std::setw(16) << layerType  \
               << std::left << std::setw(13) << activationType;
 
@@ -647,6 +672,10 @@ Flatten::printInfo()
  * \name    issueLayer
  *
  * \brief   Flatten layer casting the input dimension into a 1-dim array.
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -692,9 +721,10 @@ Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    log_D("Num of request", to_string(targetKernel->requests.size()));
-    log_D("Num of read address", to_string(targetKernel->numOfRead));
-    log_D("Num of write address", to_string(targetKernel->numOfWrite));
+    KernelInfo info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
 }
 
 
@@ -747,7 +777,7 @@ void
 ByPass::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerIndex \
+    std::cout << std::left << std::setw(10) << layerID \
               << std::left << std::setw(16) << layerType  \
               << std::left << std::setw(13) << activationType;
 
@@ -773,6 +803,10 @@ ByPass::printInfo()
  * \name    issueLayer
  *
  * \brief   ByPass layer is my self designed layer for tranfer the previous result.
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -818,9 +852,10 @@ ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    log_D("Num of request", to_string(targetKernel->requests.size()));
-    log_D("Num of read address", to_string(targetKernel->numOfRead));
-    log_D("Num of write address", to_string(targetKernel->numOfWrite));
+    KernelInfo info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
 }
 
 
@@ -899,7 +934,7 @@ void
 Dense::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerIndex \
+    std::cout << std::left << std::setw(10) << layerID \
               << std::left << std::setw(16) << layerType  \
               << std::left << std::setw(13) << activationType;
 
@@ -925,6 +960,10 @@ Dense::printInfo()
  * \name    issueLayer
  *
  * \brief   Dense layer use linear transormation function to down / up sampling the data dimension.
+ * 
+ * \note    The batch size must be designed
+ * 
+ * \note    The memory address must be allocated
  * 
  * \param   mmu         the memory management unit
  * \param   container   the container to keep the compiled GPU requests
@@ -953,10 +992,10 @@ Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
         {                   
             Request* request = new Request();
 
-            for (int c_i = 0; c_i < (*filter)[FILTER_CHANNEL_I]; c_i++)
+            for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
             {
                 /* read input pages */
-                request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] + c_i) / PAGE_SIZE]);
+                request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE]);
 
                 /* filter pages */
                 request->readPages.emplace_back(filterPages[(c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE]);
@@ -973,8 +1012,9 @@ Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
         }
     }
 
-    log_D("Num of request", to_string(targetKernel->requests.size()));
-    log_D("Num of read address", to_string(targetKernel->numOfRead));
-    log_D("Num of write address", to_string(targetKernel->numOfWrite));
+    KernelInfo info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
 }
 
