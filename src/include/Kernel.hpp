@@ -19,6 +19,7 @@
 #include "GPU.hpp"
 #include "Kernel.hpp"
 #include "Layers.hpp"
+#include "SM.hpp"
 
 /* ************************************************************************************************
  * Type Define
@@ -30,6 +31,13 @@ struct KernelInfo {
     int numOfCycle   = 0;
     int numOfMemory  = 0;
     int numOfRequest = 0;
+};
+
+struct KernelRecord {
+    unsigned long long start_cycle = 0;
+    unsigned long long end_cycle   = 0;
+    SM* running_sm;
+    Block* block_info;
 };
 
 /** ===============================================================================================
@@ -58,8 +66,11 @@ public:
  * ************************************************************************************************
  */
 public:
-    void compileRequest (MMU* mmu);
+    bool compileRequest (MMU* mmu);
     void addRequest (Request* request);
+    Request* accessRequest ();
+
+    void release ();
     void printInfo ();
 
     bool isReady();
@@ -79,16 +90,19 @@ public:
     const int kernelID;
 
     bool finish;
+
     bool running;
-    
+
+    queue<Request*> requests;
+
+    KernelRecord record;
+
 private:
 
     /* source layer */
     Layer* srcLayer;
 
     KernelInfo info;
-
-    queue<Request*> requests;
 
     vector<Kernel*> dependencyKernels; 
 };

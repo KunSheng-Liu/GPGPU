@@ -68,15 +68,17 @@ public:
  */
 public:
 
+    void setBatchSize (int batch_size);
     void memoryAllocate (MMU* mmu);
-    vector<Kernel>& compileToKernel ();
     void printSummary ();
 
-    void setBatchSize (int batch_size);
-    list<Kernel*> findReadyKernels();
+    bool checkFinish ();
 
-    char* getModelName (void) {return modelName;}
     int   getNumOfLayer (void) {return numOfLayer;}
+    char* getModelName  (void) {return modelName;}
+
+    list<Kernel*> findReadyKernels ();
+    vector<Kernel>& compileToKernel ();
 
     vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
     vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}

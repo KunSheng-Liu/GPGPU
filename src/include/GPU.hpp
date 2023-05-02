@@ -62,9 +62,14 @@ public:
  */
 public:
     void cycle ();
-    void Runtime_Block_Scheduling();
+
+    bool launchKernel (Kernel* kernel);
 
     GMMU* getGMMU() {return &mGMMU;}
+
+private:
+    void Runtime_Block_Scheduling();
+    void Check_Finish_Kernel();
 
 /* ************************************************************************************************
  * Parameter

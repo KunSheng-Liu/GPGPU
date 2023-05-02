@@ -60,10 +60,12 @@ Kernel::~Kernel()
  * 
  * \param   mmu     the memory management unit
  * 
+ * \return  return True if the request not empty
+ * 
  * \endcond
  * ================================================================================================
  */
-void
+bool
 Kernel::compileRequest (MMU* mmu)
 {
     srcLayer->issueLayer(mmu, this);
@@ -73,6 +75,7 @@ Kernel::compileRequest (MMU* mmu)
 #if PRINT_MODEL_DETIAL
     printInfo();
 #endif
+    return !requests.empty();
 }
 
 
@@ -99,6 +102,26 @@ Kernel::addRequest(Request* request)
 
 
 /** ===============================================================================================
+ * \name    accessRequest
+ * 
+ * \brief   Add a request into this kernel
+ * 
+ * \return  Request
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+Request*
+Kernel::accessRequest()
+{
+    Request* request = requests.front();
+    requests.pop();
+
+    return request;
+}
+
+
+/** ===============================================================================================
  * \name    isReady
  * 
  * \brief   check whether the dependency kernels are all finished
@@ -117,6 +140,22 @@ Kernel::isReady()
         isReady &= kernel->isFinish();
     }
     return isReady;
+}
+
+
+/** ===============================================================================================
+ * \name    release
+ * 
+ * \brief   Release no used memory space
+ *  
+ * \endcond
+ * ================================================================================================
+ */
+void
+Kernel::release()
+{
+    srcLayer->release();
+    dependencyKernels.clear();
 }
 
 
@@ -144,6 +183,8 @@ Kernel::printInfo()
     {
         std::cout << std::left << std::setw(3) << kernel->kernelID; 
     }
+
+    std::cout << std::right << std::setw(10) << finish; 
 
     std::cout << std::endl;
 }

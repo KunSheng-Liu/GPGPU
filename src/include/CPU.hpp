@@ -49,8 +49,12 @@ public:
  */
 public:
     void cycle ();
+    bool Check_All_Applications_Finish();
+
+private:
     void Dynamic_Batching_Algorithm ();
     void Kernek_Inference_Scheduler ();
+    void Check_Finish_Kernel();
 
 /* ************************************************************************************************
  * Parameter

@@ -61,12 +61,12 @@ void
 CPU::cycle()
 {
     log_I("CPU Cycle", to_string(total_gpu_cycle));
-    
-    Dynamic_Batching_Algorithm();
+
+    Check_Finish_Kernel();
 
     Kernek_Inference_Scheduler();
-
     
+    Dynamic_Batching_Algorithm();
 
     /* check new task */
     for (auto app: mAPPs)
@@ -97,14 +97,13 @@ CPU::Dynamic_Batching_Algorithm()
         {
             int batchSize = 1;
             Task task = app->tasks.front();
+            app->tasks.pop();
+
             app->runningModels.emplace_back(new Model(app->appID, batchSize));
             
             Model* model = app->runningModels.back();
             model->buildLayerGraph(app->modelType);
             model->memoryAllocate(&mMMU);
-            vector<Kernel>& kernels = model->compileToKernel();
-
-            app->tasks.pop();
         }
         
     }
@@ -147,10 +146,68 @@ CPU::Kernek_Inference_Scheduler()
     /* launch kernel into gpu */
     for (auto kernel : readyKernels)
     {
-        kernel->compileRequest(&mMMU);
-        kernel->running = true;
+        if (kernel->compileRequest(&mMMU))
+        {
+            kernel->running = mGPU->launchKernel(kernel);
+            
+        } else {
+            
+            log_W("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
+        }
+    }    
+}
+
+
+/** ===============================================================================================
+ * \name    Check_Finish_Kernel
+ * 
+ * \brief   Check whether the kernel has been finished, Record kernel inside finishedKernels.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+CPU::Check_Finish_Kernel()
+{  
+    /* check finish kernel */
+    if (!mGPU->finishedKernels.empty())
+    {
+        auto kernel = mGPU->finishedKernels.front();
+        mGPU->finishedKernels.pop_front();
+
+        log_I("", "Kernel: " + to_string(kernel->kernelID) + " is finished");
+        kernel->finish = true;
+        kernel->running = false;
+
+        /* recording... */
+
+        /* release */
+        kernel->release();
+        
     }
 
-    ASSERT(false);
-    
+    for (auto app : mAPPs)
+    {
+        app->runningModels.remove_if([](Model* m){return m->checkFinish();});
+    }
+}
+
+
+/** ===============================================================================================
+ * \name    Check_All_Applications_Finish
+ * 
+ * \brief   Check whether the applications has finished.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+CPU::Check_All_Applications_Finish()
+{  
+    bool finish = true;
+    for (auto app : mAPPs)
+    {
+        finish &= app->finish;
+    }
+    return finish;
 }

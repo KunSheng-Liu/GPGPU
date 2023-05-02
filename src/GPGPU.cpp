@@ -65,7 +65,6 @@ GPGPU::run ()
 		}
 		if (clock_mask & GPU_MASK) {
 			mGPU.cycle();
-			mGPU.Runtime_Block_Scheduling();
 			total_gpu_cycle++;
 			
 		}
@@ -73,7 +72,8 @@ GPGPU::run ()
 			mCPU.cycle();
 		}
 
-        // Finish = m_cpu.check_all_application_finished() & m_mc.check_finished();
+    	// ASSERT(total_gpu_cycle != 150);
+        Finish = mCPU.Check_All_Applications_Finish();
     }
 }
 

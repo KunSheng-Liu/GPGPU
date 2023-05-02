@@ -16,33 +16,63 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Kernel.hpp"
+
 /* ************************************************************************************************
  * Type Define
  * ************************************************************************************************
  */
 struct SMInfo {
-    unsigned long long exec_cycle;
-	unsigned long long computing_cycle;
-	unsigned long long wait_cycle;
-	unsigned long long idle_cycle;
+    unsigned long long exec_cycle = 0;
+	unsigned long long computing_cycle = 0;
+	unsigned long long wait_cycle = 0;
+	unsigned long long idle_cycle = 0;
 };
 
-struct BlockInfo
+struct ComputingResource {
+    int remaining_threads = GPU_MAX_THREAD_PER_SM;
+};
+
+
+/** ===============================================================================================
+ * \name    Block
+ * 
+ * \brief   The class of ...
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+class Block
 {
-	Kernel* running_kernel;
-	//bool suspend;
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+
+    Block(Kernel* kernel,  unsigned long long start_cycle) : running_kernel(kernel), start_cycle(start_cycle), finish(false) {};
+
+/* ************************************************************************************************
+ * Parameter
+ * ************************************************************************************************
+ */
+public:
+    int block_id;
+
+    bool finish;
+
+    unsigned long long start_cycle = 0;
+    unsigned long long end_cycle = 0;
+
+    unsigned bind_thread_number = 0;
+
 	unsigned long long launch_access_counter = 0;
 	unsigned long long return_access_counter = 0;
 	unsigned launch_warp_counter = 0;
-	//unsigned long long computing_time = 0;
-	// according diff resource, kernel in different sm can access warp number is not same
-	unsigned max_can_launch_warp_number = 0;
-	unsigned bind_block_number = 0;
 
-	// launch information 
-	list<int> wait_cmputing_time;
-	// map<unsigned, launch_request_info* > launch_info;
-	bool unbind_flag = false;
+	Kernel* running_kernel;
+
+	list<int> wait_computing_time;
 };
 
 
@@ -72,12 +102,17 @@ public:
  */
 public:
     void cycle ();
-    bool isRunning();
+
+    bool bindKernel(Kernel* kernel);
+    void recycleResource(Block* block);
+
     bool isComputing();
+    bool isRunning();
     bool checkIsComplete();
 
     void setGMMU (GMMU* gmmu) {mGMMU = gmmu;}
     
+    ComputingResource getResourceInfo() const {return reousrceInfo;}
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
@@ -91,6 +126,10 @@ private:
     GMMU* mGMMU;
 
     SMInfo info;
+
+    ComputingResource reousrceInfo;
+
+    list<Block*> runningBlocks;
 
 };
 

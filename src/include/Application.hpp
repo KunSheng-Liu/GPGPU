@@ -75,6 +75,8 @@ public:
     /* Running Models */
     list<Model*> runningModels = {};
 
+    bool finish;
+
 private:
     /* Number of layer be created */
     static int appCount;

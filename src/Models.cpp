@@ -115,6 +115,12 @@ Model::compileToKernel()
     auto dependencyKernels = modelGraph->compileToKernel(appID, kernelContainer, {});
 
     log_D("Model", "compileToKernel Done");
+
+    for (auto& kernel : kernelContainer)
+    {
+        kernel.printInfo();
+    }
+
     return kernelContainer;
 }
 
@@ -142,6 +148,26 @@ Model::findReadyKernels()
         
     }
     return readyList;
+}
+
+
+/** ===============================================================================================
+ * \name    checkFinish
+ * 
+ * \brief   Construct a model
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+Model::checkFinish()
+{
+    bool finish = true;
+    for (auto kernel : kernelContainer)
+    {
+        finish &= kernel.isFinish();
+    }
+    return finish;
 }
 
 
@@ -221,11 +247,11 @@ Model::buildLayerGraph(const char* model_type)
  * 
  * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
  *                    Size       Map        Size
- *            Data                3       224 x 224
- *    1     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
- *    2       Pool    2 x 2     512         7 x 7      2          0
- *    3    Flatten            25088         1 x 1
- *    4      Dense    1 x 1    4096         1 x 1                            ReLU
+ *            Data               512      224 x 224 
+ *    1     Conv2D    3 x 3      512       14 x 14     1          1          ReLU
+ *    2       Pool    2 x 2      512        7 x 7      2          0
+ *    3    Flatten             25088        1 x 1
+ *    4      Dense    1 x 1     4096        1 x 1                            ReLU
  * ================================================================================================
  */
 void 
@@ -233,14 +259,16 @@ Model::Test()
 {
     modelName = (char*)"Test";
     
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,   3, 14, 14}, new vector<int>{512,   3, 3, 3}, (char*)"ReLU", 1, 1));
     modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
     modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
                                                         
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
 
-    numOfLayer = 3;
+    numOfLayer = 4;
+
+    compileToKernel();
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
@@ -319,6 +347,8 @@ Model::VGG16()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
 
     numOfLayer = 22;
+
+    compileToKernel();
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
@@ -505,6 +535,8 @@ Model::ResNet18()
 
     numOfLayer = 28;
     
+    compileToKernel();
+
 #if (PRINT_MODEL_DETIAL)
     printSummary();
 #endif
@@ -535,6 +567,6 @@ Model::printSummary()
 
     std::cout << std::endl;
 
-
     modelGraph->printInfo();
+    
 }

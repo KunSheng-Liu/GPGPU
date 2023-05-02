@@ -29,7 +29,7 @@ int Layer::layerCount = 0;
  */
 Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerID(layerCount++), flagExecuting(false), flagFinish(false)
+        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerID(layerCount++)
 {
     if (iFMapSize  != nullptr)  iFMap = new vector<unsigned char> ((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
     if (filterSize != nullptr) filter = new vector<unsigned char> ((*filterSize)[BATCH] * (*filterSize)[CHANNEL] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH]);
@@ -51,6 +51,30 @@ Layer::~Layer()
 
 
 /** ===============================================================================================
+ * \name    release
+ * 
+ * \brief   Release no used memory space
+ *  
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::release()
+{
+    if (iFMap)
+    {
+        iFMap->clear();
+        iFMap->shrink_to_fit();
+    }
+    if (filter)
+    {
+        filter->clear();
+        filter->shrink_to_fit();  
+    }
+}
+
+
+/** ===============================================================================================
  * \name    setIFMap
  *
  * \brief   Set the input feature map
@@ -63,7 +87,7 @@ Layer::~Layer()
 void
 Layer::setIFMap(vector<unsigned char>* data)
 {
-    if (iFMap != nullptr) delete iFMap;
+    if (iFMap) delete iFMap;
     iFMap  = data;
 }
 
@@ -81,7 +105,7 @@ Layer::setIFMap(vector<unsigned char>* data)
 void
 Layer::setFilter(vector<unsigned char>* data)
 {
-    if (filter != nullptr) delete filter;
+    if (filter) delete filter;
     filter = data;    
 }
 

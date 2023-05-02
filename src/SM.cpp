@@ -55,11 +55,24 @@ SM::~SM()
 void
 SM::cycle()
 {
+    for (auto block : runningBlocks)
+    {
+        cout << "Execute block: " << block->block_id << endl;
 
+        for (int i = 0; i < block->bind_thread_number; i++)
+        {
+            if(block->running_kernel->requests.empty())
+            {
+                block->finish = true;
+                block->end_cycle = total_gpu_cycle;
+                break;
+            }
+            
+            Request* request = block->running_kernel->accessRequest();
+        }
+    }
 
-
-
-
+    runningBlocks.remove_if([](Block* b){return b->finish;});
 
     if (isRunning()) {
         info.exec_cycle++;
@@ -78,30 +91,85 @@ SM::cycle()
 
 
 /** ===============================================================================================
- * \name    isRunning
+ * \name    bindKernel
  * 
- * \brief   Check whether there still kernel is running in this SM.
+ * \brief   Try to bind kernel into SM according to the resource bound.
+ * 
+ * \return  return True if bind success
  * 
  * \endcond
  * ================================================================================================
  */
 bool
-SM::isRunning()
+SM::bindKernel(Kernel* kernel)
 {
-    return false;
+    if (reousrceInfo.remaining_threads == 0) return false;
+
+    kernel->record.block_info = new Block(kernel, total_gpu_cycle);
+    
+    Block* block = kernel->record.block_info;
+
+    block->block_id = kernel->kernelID;
+
+    block->bind_thread_number = min(GPU_MAX_THREAD_PER_BLOCK, reousrceInfo.remaining_threads);
+
+    reousrceInfo.remaining_threads -= min(GPU_MAX_THREAD_PER_BLOCK, reousrceInfo.remaining_threads);
+
+    runningBlocks.push_back(block);
+
+    kernel->record.running_sm = this;
+
+    log_D("bindKernel", "kernel: " + to_string(kernel->kernelID) + " bind to SM: " + to_string(smID));
+
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    recycleResource
+ * 
+ * \brief   Re-cycle the used resource on the block.
+ * 
+ * \param   block   the finished block
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+SM::recycleResource(Block* block)
+{
+    ASSERT(block->finish);
+
+    reousrceInfo.remaining_threads += block->bind_thread_number;
+    runningBlocks.remove(block);
 }
 
 
 /** ===============================================================================================
  * \name    isComputing
  * 
- * \brief   Check whether the kernel is computing or idle.
+ * \brief   Check whether the SM is computing or idle in this cycle.
  * 
  * \endcond
  * ================================================================================================
  */
 bool
 SM::isComputing()
+{
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    isRunning
+ * 
+ * \brief   Check whether there still SM is running.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+SM::isRunning()
 {
     return false;
 }

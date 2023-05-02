@@ -13,6 +13,7 @@
  * Include Library
  * ************************************************************************************************
  */
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <fstream>
@@ -52,8 +53,9 @@ class Layer;
 class MemoryController;
 
 class GPU;
-class SM;
 class GMMU;
+class SM;
+class Block;
 class Kernel;
 class Request;
 
@@ -87,17 +89,23 @@ class Request;
 #define HARDWARE_ARCHITECTURE       AGX_XAVIER
 
 /* ************************************************************************************************
+ * Software Configuration
+ * ************************************************************************************************
+ */
+#define SM_SORT_TYPE                THREAD_NUM
+
+/* ************************************************************************************************
  * Hardware Configuration
  * ************************************************************************************************
  */
 #if (HARDWARE_ARCHITECTURE == AGX_XAVIER)
     /* Architecture */
     #define PAGE_SIZE                   4096                    // unit (Byte)
-    #define DRAM_SPACE                  1  * pow(2, 28)         // unit (Byte)  256 MB
-    #define DISK_SPACE                  16 * pow(2, 30)         // unit (Byte)   16 GB
+    #define DRAM_SPACE                  256  * pow(2, 20)       // unit (Byte)  256 MB
+    #define DISK_SPACE                  16   * pow(2, 30)       // unit (Byte)   16 GB
     #define PCIE_CHANNEL                16
-    #define PCIE_Bendwidth              1  * pow(10, 9)         // unit (s)
-    #define PAGE_FAULT_PENALTY          50 * pow(0.1, 6)		// unit (s)
+    #define PCIE_Bendwidth              1    * pow(10, 9)       // unit (s)
+    #define PAGE_FAULT_PENALTY          50   * pow(0.1, 6)		// unit (s)
 
     #define GPU_PREFETCH_SIZE           80
 
@@ -111,27 +119,27 @@ class Request;
     #define CPU_CONSTANT_POWER	        1526 * pow(0.1, 3)      // unit (W) (8 core, Frequence=1200000000)
 
     /* DRAM */
-    #define DRAM_READ_LATENCY	        10   * pow(0.1, 10)	    // unit (s) about 30GB/s
-    #define DRAM_WRITE_LATENCY	        10   * pow(0.1, 10)	    // unit (s) about 30GB/s
-    #define DRAM_READ_ENENGY	        2.3  * pow(0.1, 9)	    // unit (J)
-    #define DRAM_WRITE_ENENGY	        2.44 * pow(0.1, 9)	    // unit (J)
-    #define DRAM_LEAKAGE_POWER	        70.8 * pow(0.1, 3)	    // unit (W)
+    #define DRAM_READ_LATENCY	        10    * pow(0.1, 10)	// unit (s) about 30GB/s
+    #define DRAM_WRITE_LATENCY	        10    * pow(0.1, 10)	// unit (s) about 30GB/s
+    #define DRAM_READ_ENENGY	        2.3   * pow(0.1, 9)	    // unit (J)
+    #define DRAM_WRITE_ENENGY	        2.44  * pow(0.1, 9)	    // unit (J)
+    #define DRAM_LEAKAGE_POWER	        70.8  * pow(0.1, 3)	    // unit (W)
 
     /* GPU */
     #define GPU_SM_NUM                  8 
-    #define GPU_KERNEL_PER_SM           2
-    #define GPU_WARP_PER_KERNEL         32 
+    #define GPU_WARP_PER_SM             64 
     #define GPU_THREAD_PER_WARP         32 
-    #define GPU_MAX_THREAD_PER_SM       GPU_KERNEL_PER_SM * GPU_WARP_PER_KERNEL * GPU_THREAD_PER_WARP
+    #define GPU_MAX_THREAD_PER_SM       GPU_WARP_PER_SM * GPU_THREAD_PER_WARP
+    #define GPU_MAX_THREAD_PER_BLOCK    1024
     #define GPU_REGISTER_PER_SM         65536 
 
-    #define GPU_SHARED_MEMORY_PER_SM    96  	                // unit (KB)
-    #define GPU_L1_CACHE                192                     // unit (KB)
-    #define GPU_L2_CACHE                512                     // unit (KB)
+    #define GPU_SHARED_MEMORY_PER_SM    96    * pow(2, 10) 	    // unit (KB)
+    #define GPU_L1_CACHE                192   * pow(2, 10)      // unit (KB)
+    #define GPU_L2_CACHE                512   * pow(2, 10)      // unit (KB)
     #define GPU_GDDR_SIZE               
 
-    #define GPU_IDEL_POWER		        10    * pow(0.1, 3)      // unit (W) (Frequence=1377000000)
-    #define GPU_EXEC_POWER		        19326 * pow(0.1, 3)      // unit (W) (Frequence=1377000000)
+    #define GPU_IDEL_POWER		        10    * pow(0.1, 3)     // unit (W) (Frequence=1377000000)
+    #define GPU_EXEC_POWER		        19326 * pow(0.1, 3)     // unit (W) (Frequence=1377000000)
 #endif
 
 #endif

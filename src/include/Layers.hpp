@@ -89,6 +89,8 @@ public:
  * ************************************************************************************************
  */
 public:
+    void release ();
+    
     /* virtual function */
     virtual void printInfo();
     virtual void changeBatch (int new_batch_size);
@@ -121,10 +123,6 @@ public:
     vector<unsigned char>* getIFMap  (void) {return iFMap;}
     vector<unsigned char>* getFilter (void) {return filter;}
 
-    /* layer stats */
-    bool isExecuting   (void) {return flagExecuting;}
-    bool isFinish      (void) {return flagFinish;}
-
 
 /* ************************************************************************************************
  * Parameter
@@ -144,10 +142,6 @@ protected:
 
     /* Number of layer be created */
     static int layerCount;
-
-    /* Layer stats flags */
-    bool flagExecuting;
-    bool flagFinish;
 
     /* The dimensions of feature map and filter */
     vector<int>* iFMapSize;     // In order "batch", "channel", "height", and "width"
