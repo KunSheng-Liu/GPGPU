@@ -112,7 +112,7 @@ CPU::Dynamic_Batch_Admission()
     
 #elif (INFERENCE_METHOD == PARALLEL)
 
-    if (SM_MODE = SM_Dispatch::Baseline)
+    if (SM_MODE == SM_Dispatch::Baseline)
     {
         /* Each application got the same SM resource */
         for (auto app : mAPPs)
@@ -126,7 +126,7 @@ CPU::Dynamic_Batch_Admission()
                 app->SM_budget.push_back(i);
             }
         }
-    } else if (SM_MODE = SM_Dispatch::SMD) 
+    } else if (SM_MODE == SM_Dispatch::SMD) 
     {
         /* Record the total required memory base on the task number */
         float total_needed_memory = 0;

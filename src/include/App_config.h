@@ -95,7 +95,7 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */
-#define INFERENCE_METHOD            SEQUENTIAL
+#define INFERENCE_METHOD            PARALLEL
 #define BATCH_INFERENCE             false
 
 /* ************************************************************************************************

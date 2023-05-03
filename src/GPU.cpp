@@ -56,7 +56,6 @@ GPU::cycle()
 {
     log_I("GPU Cycle", to_string(total_gpu_cycle));
 
-    Check_Finish_Kernel();
     
     /* cycle() */
 	for (auto& sm : mSMs) {
@@ -68,13 +67,15 @@ GPU::cycle()
 		sm.second.checkFinish();
 	}
 
+    Check_Finish_Kernel();
+
+    Runtime_Block_Scheduling();
+
     /* gpu statistic */
     bool isBusy = false;
     for (auto& sm : mSMs) {
 		isBusy |= sm.second.isRunning();
 	}
-
-    Runtime_Block_Scheduling();
 
 }
 
