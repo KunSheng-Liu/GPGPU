@@ -30,7 +30,11 @@ struct SMInfo {
 };
 
 struct ComputingResource {
+    int remaining_blocks  = GPU_MAX_BLOCK_PER_SM;
+    int remaining_warps   = GPU_WARP_PER_SM;
     int remaining_threads = GPU_MAX_THREAD_PER_SM;
+    int remaining_shmem   = GPU_SHARED_MEMORY_PER_SM;
+    int remaining_regs    = GPU_REGISTER_PER_SM;
 };
 
 
@@ -61,14 +65,14 @@ public:
 
     bool finish;
 
+    unsigned bind_warp_number = 0;
+
     unsigned long long start_cycle = 0;
     unsigned long long end_cycle = 0;
 
-    unsigned bind_thread_number = 0;
-
+	unsigned launch_warp_counter = 0;
 	unsigned long long launch_access_counter = 0;
 	unsigned long long return_access_counter = 0;
-	unsigned launch_warp_counter = 0;
 
 	Kernel* running_kernel;
 
@@ -105,14 +109,15 @@ public:
 
     bool bindKernel(Kernel* kernel);
     void recycleResource(Block* block);
+    void checkFinish();
 
     bool isComputing();
     bool isRunning();
-    bool checkIsComplete();
+    bool checkIsComplete(Kernel* kernel);
 
     void setGMMU (GMMU* gmmu) {mGMMU = gmmu;}
     
-    ComputingResource getResourceInfo() const {return reousrceInfo;}
+    ComputingResource getResourceInfo() const {return resource;}
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
@@ -127,7 +132,7 @@ private:
 
     SMInfo info;
 
-    ComputingResource reousrceInfo;
+    ComputingResource resource;
 
     list<Block*> runningBlocks;
 

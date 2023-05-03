@@ -49,6 +49,7 @@ class TLB;
 class Application;
 class Model;
 class Layer;
+class LayerGroup;
 
 class MemoryController;
 
@@ -71,6 +72,8 @@ class Request;
 #define DEBUG               3
 #define VERBOSE             4
 
+#define SEQUENTIAL          0
+#define PARALLEL            1
 
 /* ************************************************************************************************
  * Print-Out Configuration
@@ -92,7 +95,8 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */
-#define SM_SORT_TYPE                THREAD_NUM
+#define INFERENCE_METHOD            SEQUENTIAL
+#define BATCH_INFERENCE             false
 
 /* ************************************************************************************************
  * Hardware Configuration
@@ -130,6 +134,7 @@ class Request;
     #define GPU_WARP_PER_SM             64 
     #define GPU_THREAD_PER_WARP         32 
     #define GPU_MAX_THREAD_PER_SM       GPU_WARP_PER_SM * GPU_THREAD_PER_WARP
+    #define GPU_MAX_BLOCK_PER_SM        32
     #define GPU_MAX_THREAD_PER_BLOCK    1024
     #define GPU_REGISTER_PER_SM         65536 
 

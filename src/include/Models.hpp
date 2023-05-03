@@ -80,6 +80,8 @@ public:
     list<Kernel*> findReadyKernels ();
     vector<Kernel>& compileToKernel ();
 
+    vector<unsigned char>* getIFMap  (void) {return modelGraph->getIFMap();}
+    vector<unsigned char>* getOFMap  (void) {return modelGraph->getOFMap();}
     vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
     vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}
 
@@ -109,6 +111,8 @@ public:
 
     /* The index of model. Each model have a unique index */
     const int modelID;
+
+    RuntimeInfo record;
 
 protected:
 

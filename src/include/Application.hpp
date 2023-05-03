@@ -20,20 +20,6 @@
 
 #include "Models.hpp"
 
-/* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-struct Task{
-    int arrivalTime;
-    int deadLine;
-    int appIndex;
-    vector<unsigned char> data;
-
-    Task (int arrival_time, int dead_line, int app_index, vector<unsigned char> data) 
-        : arrivalTime(arrival_time), deadLine(dead_line), appIndex(app_index), data(data) {}
-};
-
 /** ===============================================================================================
  * \name    Application
  * 
@@ -55,6 +41,20 @@ public:
    ~Application();
 
 /* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct Task{
+    int arrivalTime;
+    int deadLine;
+    int appIndex;
+    vector<unsigned char> data;
+
+    Task (int arrival_time, int dead_line, int app_index, vector<unsigned char> data) 
+        : arrivalTime(arrival_time), deadLine(dead_line), appIndex(app_index), data(data) {}
+};
+
+/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -70,19 +70,21 @@ public:
 
     const char* modelType;
 
+    bool finish;
+
+    list<int> SM_budget;
+
     queue<Task> tasks;
+
+    /* Model information */
+    Model::ModelInfo modelInfo;
 
     /* Running Models */
     list<Model*> runningModels = {};
 
-    bool finish;
-
 private:
     /* Number of layer be created */
     static int appCount;
-
-    /* Model information */
-    Model::ModelInfo modelInfo;
 };
 
 #endif

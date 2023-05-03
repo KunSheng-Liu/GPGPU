@@ -27,7 +27,7 @@ int Application::appCount = 0;
  */
 Application::Application(char* model_type)
     : appID(appCount++), modelType(model_type), modelInfo(Model::getModelInfo(model_type))
-    , finish(false)
+    , SM_budget(0), finish(false)
 {
     /* Baseline, all application needs to execute once */
     tasks.push(Task(total_gpu_cycle, -1, appID, vector<unsigned char> (3*224*224, 1)));

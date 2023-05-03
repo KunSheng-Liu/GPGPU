@@ -18,12 +18,13 @@
  * \endcond
  * ================================================================================================
  */
-GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU()), mSMs(list<SM>(GPU_SM_NUM))
+GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU())
 {
-    /* Link the gmmu into each SM */
-    for (auto& sm : mSMs)
+    /* Create SMs */
+    for (int i = 0; i < GPU_SM_NUM; i++)
     {
-        sm.setGMMU(&mGMMU);
+        mSMs.insert(make_pair(i, SM()));
+        mSMs[i].setGMMU(&mGMMU);
     }
 }
 
@@ -59,13 +60,18 @@ GPU::cycle()
     
     /* cycle() */
 	for (auto& sm : mSMs) {
-		sm.cycle();
+		sm.second.cycle();
+	}
+
+    /* Check finish() */
+	for (auto& sm : mSMs) {
+		sm.second.checkFinish();
 	}
 
     /* gpu statistic */
     bool isBusy = false;
     for (auto& sm : mSMs) {
-		isBusy |= sm.isRunning();
+		isBusy |= sm.second.isRunning();
 	}
 
     Runtime_Block_Scheduling();
@@ -90,28 +96,21 @@ GPU::Runtime_Block_Scheduling()
     while(!commandQueue.empty())
     {
         Kernel* kernel = commandQueue.front();
+        commandQueue.pop();
 
-        /* Sort the list by the corresponding resource */
-#if (SM_SORT_TYPE == THEAD_NUM)
-        mSMs.sort([](const SM& a, const SM& b){return a.getResourceInfo().remaining_threads > b.getResourceInfo().remaining_threads;});
-#endif
-        
-
-        /* print sort result */
-        for (auto& sm : mSMs) {
-            cout << sm.smID << ", remain thread: " << sm.getResourceInfo().remaining_threads << endl;
+        bool success = false;
+        for (auto sm_id : kernel->record->SM_List)
+        {
+            cout << "Launch kernel: " << kernel->kernelID << " to SM: " << sm_id << endl;
+            success |= mSMs[sm_id].bindKernel(kernel);
         }
 
-        /* bind kernel to SM by best-fit */
-        SM& sm = mSMs.front();
-
-        if (sm.bindKernel(kernel)) {
+        if (success) {
             runningKernels.push_back(kernel);
         } else {
             remainingKernels.push(kernel);
         }
 
-        commandQueue.pop();
     }
 
     commandQueue = remainingKernels;
@@ -132,19 +131,23 @@ GPU::Check_Finish_Kernel()
 {  
     for (Kernel* kernel : runningKernels)
     {
-        Block* b_info = kernel->record.block_info;
-        if (b_info->finish)
+        if (kernel->requests.empty())
         {
-            kernel->record.end_cycle = total_gpu_cycle;
+            kernel->finish = true;
+            for (int sm_id : kernel->record->SM_List)
+            {
+                kernel->finish &= mSMs[sm_id].checkIsComplete(kernel);
+            }
+        }
 
+        if (kernel->isFinish()) 
+        {
+            kernel->end_cycle = total_gpu_cycle;
             finishedKernels.push_back(kernel);
-
-            /* Recycle resource */
-            kernel->record.running_sm->recycleResource(b_info);
         }
     }
 
-    runningKernels.remove_if([](Kernel* k){return k->record.block_info->finish;});
+    runningKernels.remove_if([](Kernel* k){return k->isFinish();});
 
     for(auto kernel: runningKernels)
     {
@@ -172,7 +175,6 @@ GPU::launchKernel(Kernel* kernel)
     if (!kernel->requests.size()) return false;
 
     commandQueue.push(kernel);
-    kernel->record.start_cycle = total_gpu_cycle;
 
     log_D("launchKernel", "kernel: " + to_string(kernel->kernelID) + " launch success");
 

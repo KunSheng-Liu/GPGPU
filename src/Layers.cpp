@@ -470,7 +470,7 @@ Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    KernelInfo info = targetKernel->getKernelInfo();
+    Kernel::Info info = targetKernel->getKernelInfo();
     log_D("Num of request", to_string(info.numOfRequest));
     log_D("Num of read address", to_string(info.numOfRead));
     log_D("Num of write address", to_string(info.numOfWrite));
@@ -608,7 +608,7 @@ Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    KernelInfo info = targetKernel->getKernelInfo();
+    Kernel::Info info = targetKernel->getKernelInfo();
     log_D("Num of request", to_string(info.numOfRequest));
     log_D("Num of read address", to_string(info.numOfRead));
     log_D("Num of write address", to_string(info.numOfWrite));
@@ -745,7 +745,7 @@ Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    KernelInfo info = targetKernel->getKernelInfo();
+    Kernel::Info info = targetKernel->getKernelInfo();
     log_D("Num of request", to_string(info.numOfRequest));
     log_D("Num of read address", to_string(info.numOfRead));
     log_D("Num of write address", to_string(info.numOfWrite));
@@ -876,7 +876,7 @@ ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    KernelInfo info = targetKernel->getKernelInfo();
+    Kernel::Info info = targetKernel->getKernelInfo();
     log_D("Num of request", to_string(info.numOfRequest));
     log_D("Num of read address", to_string(info.numOfRead));
     log_D("Num of write address", to_string(info.numOfWrite));
@@ -1036,7 +1036,7 @@ Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
         }
     }
 
-    KernelInfo info = targetKernel->getKernelInfo();
+    Kernel::Info info = targetKernel->getKernelInfo();
     log_D("Num of request", to_string(info.numOfRequest));
     log_D("Num of read address", to_string(info.numOfRead));
     log_D("Num of write address", to_string(info.numOfWrite));

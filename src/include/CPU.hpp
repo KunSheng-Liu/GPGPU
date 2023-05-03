@@ -52,7 +52,7 @@ public:
     bool Check_All_Applications_Finish();
 
 private:
-    void Dynamic_Batching_Algorithm ();
+    void Dynamic_Batch_Admission ();
     void Kernek_Inference_Scheduler ();
     void Check_Finish_Kernel();
 

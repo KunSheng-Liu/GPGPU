@@ -21,24 +21,6 @@
 #include "Layers.hpp"
 #include "SM.hpp"
 
-/* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-struct KernelInfo {
-    int numOfRead    = 0;
-    int numOfWrite   = 0;
-    int numOfCycle   = 0;
-    int numOfMemory  = 0;
-    int numOfRequest = 0;
-};
-
-struct KernelRecord {
-    unsigned long long start_cycle = 0;
-    unsigned long long end_cycle   = 0;
-    SM* running_sm;
-    Block* block_info;
-};
 
 /** ===============================================================================================
  * \name    Kernel
@@ -60,6 +42,17 @@ public:
     Kernel(int app_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies);
     ~Kernel();
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct Info {
+    int numOfRead    = 0;
+    int numOfWrite   = 0;
+    int numOfCycle   = 0;
+    int numOfMemory  = 0;
+    int numOfRequest = 0;
+};
 
 /* ************************************************************************************************
  * Functions
@@ -76,7 +69,7 @@ public:
     bool isReady();
     bool isFinish()  {return finish;}
     bool isRunning() {return running;}
-    KernelInfo getKernelInfo() const {return info;}
+    Info getKernelInfo() const {return kernelInfo;}
 
 /* ************************************************************************************************
  * Parameter
@@ -90,19 +83,18 @@ public:
     const int kernelID;
 
     bool finish;
-
     bool running;
 
-    queue<Request*> requests;
+    unsigned long long start_cycle = 0;
+    unsigned long long end_cycle = 0;
 
-    KernelRecord record;
-
-private:
-
-    /* source layer */
     Layer* srcLayer;
 
-    KernelInfo info;
+    Info kernelInfo;
+
+    RuntimeInfo* record;
+
+    queue<Request*> requests;
 
     vector<Kernel*> dependencyKernels; 
 };

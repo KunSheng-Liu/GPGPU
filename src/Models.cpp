@@ -267,12 +267,12 @@ Model::Test()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
 
     numOfLayer = 4;
-
-    compileToKernel();
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
 #endif
+
+    compileToKernel();
 
 }
 
@@ -347,12 +347,12 @@ Model::VGG16()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
 
     numOfLayer = 22;
-
-    compileToKernel();
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
 #endif
+
+    compileToKernel();
 
 }
 
@@ -534,12 +534,12 @@ Model::ResNet18()
     modelGraph->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
 
     numOfLayer = 28;
-    
-    compileToKernel();
 
 #if (PRINT_MODEL_DETIAL)
     printSummary();
 #endif
+    
+    compileToKernel();
 
 }
 

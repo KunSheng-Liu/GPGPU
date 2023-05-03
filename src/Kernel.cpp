@@ -70,7 +70,7 @@ Kernel::compileRequest (MMU* mmu)
 {
     srcLayer->issueLayer(mmu, this);
 
-    info.numOfMemory = srcLayer->getMemoryUsage();
+    kernelInfo.numOfMemory = srcLayer->getMemoryUsage();
 
 #if PRINT_MODEL_DETIAL
     printInfo();
@@ -92,10 +92,10 @@ Kernel::compileRequest (MMU* mmu)
 void
 Kernel::addRequest(Request* request)
 {
-    info.numOfRead  += request->readPages.size();
-    info.numOfWrite += request->writePages.size();
-    info.numOfCycle += request->numOfInstructions;
-    info.numOfRequest++;
+    kernelInfo.numOfRead  += request->readPages.size();
+    kernelInfo.numOfWrite += request->writePages.size();
+    kernelInfo.numOfCycle += request->numOfInstructions;
+    kernelInfo.numOfRequest++;
     
     requests.push(request);
 }
@@ -174,11 +174,11 @@ Kernel::printInfo()
 {
     std::cout << std::left << std::setw(10) << appID; 
     std::cout << std::left << std::setw(10) << kernelID; 
-    std::cout << std::left << std::setw(10) << info.numOfRequest; 
-    std::cout << std::left << std::setw(10) << info.numOfRead; 
-    std::cout << std::left << std::setw(10) << info.numOfWrite; 
-    std::cout << std::left << std::setw(10) << info.numOfMemory; 
-    std::cout << std::left << std::setw(10) << info.numOfCycle; 
+    std::cout << std::left << std::setw(10) << kernelInfo.numOfRequest; 
+    std::cout << std::left << std::setw(10) << kernelInfo.numOfRead; 
+    std::cout << std::left << std::setw(10) << kernelInfo.numOfWrite; 
+    std::cout << std::left << std::setw(10) << kernelInfo.numOfMemory; 
+    std::cout << std::left << std::setw(10) << kernelInfo.numOfCycle; 
     for (auto kernel : dependencyKernels)
     {
         std::cout << std::left << std::setw(3) << kernel->kernelID; 

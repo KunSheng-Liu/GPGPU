@@ -65,6 +65,7 @@ public:
 
     bool launchKernel (Kernel* kernel);
 
+    bool idle() {return runningKernels.empty() && commandQueue.empty();}
     GMMU* getGMMU() {return &mGMMU;}
 
 private:
@@ -84,7 +85,7 @@ public:
 private:
     MemoryController* mMC;
     GMMU mGMMU;
-    list<SM> mSMs;
+    map<int, SM> mSMs;
 
     list<Kernel*> runningKernels;
 };

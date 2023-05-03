@@ -54,26 +54,7 @@ SM::~SM()
  */
 void
 SM::cycle()
-{
-    for (auto block : runningBlocks)
-    {
-        cout << "Execute block: " << block->block_id << endl;
-
-        for (int i = 0; i < block->bind_thread_number; i++)
-        {
-            if(block->running_kernel->requests.empty())
-            {
-                block->finish = true;
-                block->end_cycle = total_gpu_cycle;
-                break;
-            }
-            
-            Request* request = block->running_kernel->accessRequest();
-        }
-    }
-
-    runningBlocks.remove_if([](Block* b){return b->finish;});
-
+{    
     if (isRunning()) {
         info.exec_cycle++;
 
@@ -86,6 +67,22 @@ SM::cycle()
     }
     else {
         info.idle_cycle++;
+    }
+
+    for (auto block : runningBlocks)
+    {
+        if (block->finish) continue;
+
+        cout << "SM: " << smID << " Execute block: " << block->block_id << endl;
+
+        for (int i = 0; i < block->bind_warp_number && !block->running_kernel->requests.empty(); i++)
+        {
+            for (int j = 0; j < GPU_THREAD_PER_WARP && !block->running_kernel->requests.empty(); j++)
+            {
+                Request* request = block->running_kernel->accessRequest();
+            }
+        }
+        
     }
 }
 
@@ -103,25 +100,46 @@ SM::cycle()
 bool
 SM::bindKernel(Kernel* kernel)
 {
-    if (reousrceInfo.remaining_threads == 0) return false;
+    cout << "SM: " << smID << " block: " << resource.remaining_blocks << " warps: " << resource.remaining_warps << endl;
+    if (resource.remaining_blocks == 0 || resource.remaining_warps == 0) return false;
 
-    kernel->record.block_info = new Block(kernel, total_gpu_cycle);
-    
-    Block* block = kernel->record.block_info;
+    /* Baseline: each kernel get all resource of SM */
+    Block* b = new Block(kernel, total_gpu_cycle);
 
-    block->block_id = kernel->kernelID;
+    b->block_id = kernel->kernelID;
+    b->bind_warp_number = resource.remaining_warps;
 
-    block->bind_thread_number = min(GPU_MAX_THREAD_PER_BLOCK, reousrceInfo.remaining_threads);
-
-    reousrceInfo.remaining_threads -= min(GPU_MAX_THREAD_PER_BLOCK, reousrceInfo.remaining_threads);
-
-    runningBlocks.push_back(block);
-
-    kernel->record.running_sm = this;
+    runningBlocks.emplace_back(move(b));
+    resource.remaining_warps = 0;
+    resource.remaining_blocks--;
 
     log_D("bindKernel", "kernel: " + to_string(kernel->kernelID) + " bind to SM: " + to_string(smID));
 
     return true;
+}
+
+
+/** ===============================================================================================
+ * \name    checkFinish
+ * 
+ * \brief   Check whether a block is finish
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+SM::checkFinish()
+{
+    for (auto block : runningBlocks)
+    {
+        if(block->running_kernel->requests.empty())
+        {
+            block->finish = true;
+            block->end_cycle = total_gpu_cycle;
+            recycleResource(block);
+        }
+    }
+    runningBlocks.remove_if([](Block* b){return b->finish;});
 }
 
 
@@ -140,8 +158,8 @@ SM::recycleResource(Block* block)
 {
     ASSERT(block->finish);
 
-    reousrceInfo.remaining_threads += block->bind_thread_number;
-    runningBlocks.remove(block);
+    resource.remaining_warps += block->bind_warp_number;
+    resource.remaining_blocks++;
 }
 
 
@@ -171,7 +189,7 @@ SM::isComputing()
 bool
 SM::isRunning()
 {
-    return false;
+    return !runningBlocks.empty();
 }
 
 
@@ -184,7 +202,13 @@ SM::isRunning()
  * ================================================================================================
  */
 bool
-SM::checkIsComplete()
+SM::checkIsComplete(Kernel* kernel)
 {
-    return false;
+    bool complete = true;
+    for(auto block : runningBlocks)
+    {
+        complete &= !(block->running_kernel == kernel);
+    }
+
+    return complete;
 }

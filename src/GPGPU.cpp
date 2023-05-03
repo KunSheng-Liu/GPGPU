@@ -12,6 +12,8 @@
  * ************************************************************************************************
  */
 unsigned long long total_gpu_cycle = 0;
+SM_Dispatch  SM_MODE  = SM_Dispatch::Baseline;
+MEM_Allocate MEM_MODE = MEM_Allocate::None;
 
 /** ===============================================================================================
  * \name    GPGPU

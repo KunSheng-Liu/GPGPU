@@ -66,7 +66,7 @@ CPU::cycle()
 
     Kernek_Inference_Scheduler();
     
-    Dynamic_Batching_Algorithm();
+    Dynamic_Batch_Admission();
 
     /* check new task */
     for (auto app: mAPPs)
@@ -77,7 +77,7 @@ CPU::cycle()
 
 
 /** ===============================================================================================
- * \name    Dynamic_Batching_Algorithm
+ * \name    Dynamic_Batching_Admission
  * 
  * \brief   First method, to determine the batch size of each model by the given information.
  * 
@@ -86,26 +86,142 @@ CPU::cycle()
  */
 
 void
-CPU::Dynamic_Batching_Algorithm()
+CPU::Dynamic_Batch_Admission()
 {
     log_D("CPU", "Dynamic_Batching_Algorithm");
 
-    /* Choose the batch size of each model and create the instance */
+    /* *******************************************************************
+     * Assign SM to each application according to its model needed pages
+     * *******************************************************************
+     */
+#if (INFERENCE_METHOD == SEQUENTIAL)
+
+    /* Only one application can get SM resource allocation when the GPU is idle */
     for (auto app : mAPPs)
     {
-        if (app->tasks.size() != 0)
+        app->SM_budget = {};
+        if (mGPU->idle() && !app->tasks.empty())
         {
-            int batchSize = 1;
-            Task task = app->tasks.front();
-            app->tasks.pop();
+            for (int i = 0; i < GPU_SM_NUM; i++)
+            {
+                app->SM_budget.push_back(i);
+            }
+            break;
+        }
+    }
+    
+#elif (INFERENCE_METHOD == PARALLEL)
 
-            app->runningModels.emplace_back(new Model(app->appID, batchSize));
+    if (SM_MODE = SM_Dispatch::Baseline)
+    {
+        /* Each application got the same SM resource */
+        for (auto app : mAPPs)
+        {
+            app->SM_budget = {};
+
+            if(app->tasks.size() == 0) continue;
+
+            for (int i = 0; i < GPU_SM_NUM; i++)
+            {
+                app->SM_budget.push_back(i);
+            }
+        }
+    } else if (SM_MODE = SM_Dispatch::SMD) 
+    {
+        /* Record the total required memory base on the task number */
+        float total_needed_memory = 0;
+        vector<pair<float, Application*>> APP_list;
+        for (auto app : mAPPs)
+        {
+            app->SM_budget = {};
+
+            if(app->tasks.size() == 0) continue;
+
+            auto info = app->modelInfo;
+
+            total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
             
+            APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
+        }
+
+        /* Sort to non-decreacing order */
+        sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
+            return a.first < b.first;
+        });
+
+        /* Assign SM to each application */
+        int SM_count = 0;
+        for (auto& app_pair : APP_list)
+        {
+            cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << endl;
+            /* Avoid starvation, at least assign 1 SM to application */
+            if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
+            {
+                total_needed_memory -= app_pair.first;
+                app_pair.second->SM_budget.push_back(SM_count++);
+                continue;
+            }
+
+            for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
+            {
+                app_pair.second->SM_budget.push_back(SM_count++);
+            }
+
+            ASSERT(SM_count == GPU_SM_NUM);
+        }
+    }
+
+#endif
+
+    /* Print SM allocation result */
+    for (auto app : mAPPs)
+    {
+        cout << "APP: " << app->appID << " get SM: ";
+        for (auto sm_id : app->SM_budget)
+        {
+            cout << sm_id << ", ";
+        }
+        cout << endl;
+    }
+
+    /* Check allocation correct */
+    // ASSERT(SM_count == GPU_SM_NUM);
+
+    /* *******************************************************************
+     * Choose the batch size of each model and create the instance
+     * *******************************************************************
+     */
+    for (auto app : mAPPs)
+    {
+        if (app->runningModels.empty() && !app->tasks.empty() && !app->SM_budget.empty())
+        {
+            int batchSize = 0;
+#if (BATCH_INFERENCE)
+            /* Determine the batch inference size */
+            batchSize = app->tasks.size();
+#else
+            batchSize = 1;
+#endif
+            app->runningModels.emplace_back(new Model(app->appID, batchSize));
+                
             Model* model = app->runningModels.back();
+
+            model->record.SM_List = move(app->SM_budget);
+
             model->buildLayerGraph(app->modelType);
             model->memoryAllocate(&mMMU);
+
+            /* If using real data, here should pass the data into IFMap */
+            // auto batchInput = model->getIFMap();
+            for (int i = 0; i < app->tasks.size(); i++)
+            {
+                Application::Task task = app->tasks.front();
+                app->tasks.pop();
+
+                // copy(task.data.begin(), task.data.end(), batchInput->begin() + i * task.data.size());
+            }
+
         }
-        
     }
 }
 
@@ -131,7 +247,12 @@ CPU::Kernek_Inference_Scheduler()
     {
         for (auto model : app->runningModels)
         {
-            readyKernels.splice(readyKernels.end(), model->findReadyKernels());
+            for (auto kernel : model->findReadyKernels())
+            {
+                kernel->record = &model->record;
+                readyKernels.push_back(kernel);
+            }
+            
         }
     }
 
@@ -146,6 +267,8 @@ CPU::Kernek_Inference_Scheduler()
     /* launch kernel into gpu */
     for (auto kernel : readyKernels)
     {
+        ASSERT(kernel->record->SM_List.size());
+
         if (kernel->compileRequest(&mMMU))
         {
             kernel->running = mGPU->launchKernel(kernel);
