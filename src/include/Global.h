@@ -46,9 +46,15 @@ typedef enum {
  * Global variable
  * ************************************************************************************************
  */
+/* Approach */
 extern SM_Dispatch  SM_MODE;
 extern MEM_Allocate MEM_MODE;
+
+/* Statistic */
 extern unsigned long long total_gpu_cycle;
+
+/* Thread Protect */
+extern pthread_mutex_t* ioMutex;
 
 
 #endif

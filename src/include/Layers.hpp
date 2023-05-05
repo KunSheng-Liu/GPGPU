@@ -85,6 +85,39 @@ public:
    ~Layer();
 
 /* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+protected:
+    /** ******************************************************************
+     * \name    ThreadArg
+     *
+     * \brief   The pack of data pointer used in thread compile
+     * 
+     * \param   thread_id   for calculating the start and end position of loop
+     * \param   num_thread  for calculating the start and end position of loop
+     * \param   layer       the source layer pointer
+     * \param   mmu         the memory management unit
+     * \param   queue       the container to keep the compiled GPU requests
+     * 
+     * \endcond
+     * ******************************************************************
+     */
+    struct ThreadArg
+    {
+        int threadID;
+        int numThread;
+
+        MMU* mmu;
+        Layer* srcLayer;
+
+        queue<Request*>* requestQueue;
+        
+        ThreadArg(int thread_id, int num_thread, Layer* layer, MMU* mmu, queue<Request*>* queue) 
+            : threadID(thread_id), numThread(num_thread), srcLayer(layer), mmu(mmu), requestQueue(queue) {}
+    };
+
+/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -100,11 +133,16 @@ public:
     virtual vector<Kernel*> compileToKernel (int app_id, vector<Kernel>& container, vector<Kernel*> dependency);
 
     /* Compile the current layer graph into GPU command */
-    virtual void issueLayer(MMU* mmu, Kernel* targetKernel) = 0;
+    void Compile (MMU* mmu, Kernel* targetKernel);
 
 private:
+    /* A thread wrapper */
+    static void* threadCompile (void* arg);
+
     /* pure virtual function */
+    virtual void issueLayer(ThreadArg* threadArg) = 0;
     virtual void calculateOFMapSize() = 0;
+
 
 /* ************************************************************************************************
  * Basic parameter I/O
@@ -187,7 +225,7 @@ public:
 public:
     // void memoryAllocate(MMU* mmu) override;
     void printInfo() override;
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
+    void issueLayer(ThreadArg* threadArg) override;
     
 private:
     void calculateOFMapSize() override;
@@ -228,7 +266,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
+    void issueLayer(ThreadArg* threadArg) override;
 
 };
 
@@ -258,7 +296,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
+    void issueLayer(ThreadArg* threadArg) override;
     
 private:
     void calculateOFMapSize() override;
@@ -291,7 +329,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
+    void issueLayer(ThreadArg* threadArg) override;
     
 private:
     void calculateOFMapSize() override;
@@ -329,7 +367,7 @@ public:
  */
 public:
     void printInfo() override;
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override;
+    void issueLayer(ThreadArg* threadArg) override;
     
 private:
     void calculateOFMapSize() override;

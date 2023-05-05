@@ -24,5 +24,7 @@ int main (int argc, char** argv)
 
     mGPGPU.run();
 
+    std::cout << "GPGPU Done!" << std::endl;
+
     return 0;
 }

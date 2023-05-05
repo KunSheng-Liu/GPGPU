@@ -238,6 +238,77 @@ Layer::printInfo()
 }
 
 
+/** ===============================================================================================
+ * \name    Compile
+ *
+ * \brief   Compile the layer into request
+ * 
+ * \param   mmu         the memory management unit
+ * \param   container   the container to keep the compiled GPU requests
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::Compile(MMU* mmu, Kernel* targetKernel)
+{
+    std::cout << "Compiling kernel " << targetKernel->kernelID << "..." << endl;
+
+    int numThread = THREAD_KERNEL_COMPILE ? THREAD_NUM : 1;
+    pthread_t threads[numThread];
+    vector<queue<Request*>> requestQueues(numThread);
+
+    for (int i = 0; i < numThread; i++)
+    {
+        pthread_create(&threads[i], NULL, threadCompile, move(new ThreadArg(i, numThread, this, mmu, &requestQueues[i])));
+    }
+    
+    for (int i = 0; i < numThread; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    for (auto& queue : requestQueues)
+    {
+        while(!queue.empty())
+        {
+            targetKernel->addRequest(move(queue.front()));
+            queue.pop();
+        }
+    }
+
+    Kernel::Info info = targetKernel->getKernelInfo();
+    log_D("Num of request", to_string(info.numOfRequest));
+    log_D("Num of read address", to_string(info.numOfRead));
+    log_D("Num of write address", to_string(info.numOfWrite));
+}
+
+
+/** ===============================================================================================
+ * \name    threadCompile
+ *
+ * \brief   A thread wrapper
+ * 
+ * \param   arg     the void* of threadArg
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void* 
+Layer::threadCompile(void* arg)
+{
+    ThreadArg* threadArg = static_cast<ThreadArg*>(arg);
+    
+    pthread_mutex_lock ( ioMutex );
+        log_D(threadArg->srcLayer->layerType, "issueLayer");
+    pthread_mutex_unlock ( ioMutex );
+
+    threadArg->srcLayer->issueLayer(move(threadArg));
+
+    pthread_exit(nullptr);
+}
+
+
 
 /** ===============================================================================================
  * \name    Conv2D
@@ -399,28 +470,31 @@ Conv2D::printInfo()
  * 
  * \note    The memory address must be allocated
  * 
- * \param   mmu         the memory management unit
- * \param   container   the container to keep the compiled GPU requests
- * \param   dependency  the depended pointers of this kernel
- * 
- * \return  dependency of the next layer
+ * \param   arg     the void* of threadArg
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
+Conv2D::issueLayer(ThreadArg* threadArg)
 {
-    log_D(layerType, "issueLayer");
+    MMU* mmu = threadArg->mmu;
+
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
     vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
-    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-    log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_lock ( ioMutex );
+        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_unlock ( ioMutex );
+    
+    /* Thread compile start and end index */
+    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
-    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    for (int w_o = start_index; w_o < end_index; w_o++)
     {
         for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
         {
@@ -470,7 +544,7 @@ Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
                     if (strcmp(activationType, "None") != 0)
                         request->numOfInstructions++;  // for the activation exectuion
 
-                    targetKernel->addRequest(move(request));
+                    threadArg->requestQueue->push(move(request));
                 }
                 
             }
@@ -479,11 +553,7 @@ Conv2D::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
-
+    delete threadArg;
 }
 
 
@@ -539,26 +609,31 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  * 
  * \note    The memory address must be allocated
  * 
- * \param   mmu         the memory management unit
- * \param   container   the container to keep the compiled GPU requests
- * \param   dependency  the depended pointers of this kernel
+ * \param   arg     the void* of threadArg
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
+Pooling::issueLayer(ThreadArg* threadArg)
 {
-    log_D(layerType, "issueLayer");
+    MMU* mmu = threadArg->mmu;
+
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
     vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
-    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-    log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_lock ( ioMutex );
+        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_unlock ( ioMutex );
+
+    /* Thread compile start and end index */
+    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
-    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    for (int w_o = start_index; w_o < end_index; w_o++)
     {
         for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
         {
@@ -608,7 +683,7 @@ Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
                     if (strcmp(activationType, "None") != 0)
                         request->numOfInstructions++;  // for the activation exectuion
 
-                    targetKernel->addRequest(move(request));
+                    threadArg->requestQueue->push(move(request));
                 }
                 
             }
@@ -617,11 +692,7 @@ Pooling::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
-
+    delete threadArg;
 }
 
 
@@ -710,24 +781,29 @@ Flatten::printInfo()
  * 
  * \note    The memory address must be allocated
  * 
- * \param   mmu         the memory management unit
- * \param   container   the container to keep the compiled GPU requests
- * \param   dependency  the depended pointers of this kernel
+ * \param   arg     the void* of threadArg
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
+Flatten::issueLayer(ThreadArg* threadArg)
 {
-    log_D(layerType, "issueLayer");
+    MMU* mmu = threadArg->mmu;
+
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    pthread_mutex_lock ( ioMutex );
+        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    pthread_mutex_unlock ( ioMutex );
+
+    /* Thread compile start and end index */
+    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
-    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    for (int w_o = start_index; w_o < end_index; w_o++)
     {
         for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
         {
@@ -745,7 +821,7 @@ Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
                     // Performs data copy
                     request->numOfInstructions += 1;
 
-                    targetKernel->addRequest(move(request));
+                    threadArg->requestQueue->push(move(request));
                 }
                 
             }
@@ -753,11 +829,8 @@ Flatten::issueLayer(MMU* mmu, Kernel* targetKernel)
         }
         
     }
-
-    Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
+    
+    delete threadArg;
 }
 
 
@@ -841,24 +914,29 @@ ByPass::printInfo()
  * 
  * \note    The memory address must be allocated
  * 
- * \param   mmu         the memory management unit
- * \param   container   the container to keep the compiled GPU requests
- * \param   dependency  the depended pointers of this kernel
+ * \param   arg     the void* of threadArg
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
+ByPass::issueLayer(ThreadArg* threadArg)
 {
-    log_D(layerType, "issueLayer");
+    MMU* mmu = threadArg->mmu;
+
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    pthread_mutex_lock ( ioMutex );
+        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+    pthread_mutex_unlock ( ioMutex );
+
+    /* Thread compile start and end index */
+    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
-    for (int w_o = 0; w_o < (*oFMapSize)[WIDTH]; w_o++)
+    for (int w_o = start_index; w_o < end_index; w_o++)
     {
         for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
         {
@@ -876,7 +954,7 @@ ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
                     // Performs data copy
                     request->numOfInstructions += 1;
 
-                    targetKernel->addRequest(move(request));
+                    threadArg->requestQueue->push(move(request));
                 }
                 
             }
@@ -885,10 +963,7 @@ ByPass::issueLayer(MMU* mmu, Kernel* targetKernel)
         
     }
 
-    Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
+    delete threadArg;
 }
 
 
@@ -998,28 +1073,33 @@ Dense::printInfo()
  * 
  * \note    The memory address must be allocated
  * 
- * \param   mmu         the memory management unit
- * \param   container   the container to keep the compiled GPU requests
- * \param   dependency  the depended pointers of this kernel
+ * \param   arg     the void* of threadArg
  * 
  * \endcond
  * ================================================================================================
  */
 void 
-Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
+Dense::issueLayer(ThreadArg* threadArg)
 {
-    log_D(layerType, "issueLayer");
+    MMU* mmu = threadArg->mmu;
+
     vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
     vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
     vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
-    log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-    log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-    log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_lock ( ioMutex );
+        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_D("filterPages Num" , to_string(filterPages.size()));
+    pthread_mutex_unlock ( ioMutex );
 
     ASSERT((*iFMapSize)[HEIGHT] == 1 && (*iFMapSize)[WIDTH] == 1, "Dimension error!");
 
+    /* Thread compile start and end index */
+    int start_index = ((*oFMapSize)[CHANNEL] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = ((*oFMapSize)[CHANNEL] * (threadArg->threadID + 1)) / threadArg->numThread;
+
     /* Use inverse order for let the address be closer */
-    for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+    for (int c_o = start_index; c_o < end_index; c_o++)
     {
         for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
         {                   
@@ -1040,14 +1120,11 @@ Dense::issueLayer(MMU* mmu, Kernel* targetKernel)
             /* write result to pages */
             request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] + c_o) / PAGE_SIZE]);
 
-            targetKernel->addRequest(move(request));
+            threadArg->requestQueue->push(move(request));
 
         }
     }
-
-    Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
+    
+    delete threadArg;
 }
 

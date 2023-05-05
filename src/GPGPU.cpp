@@ -11,9 +11,15 @@
  * Global Variable
  * ************************************************************************************************
  */
-unsigned long long total_gpu_cycle = 0;
+/* Approach */
 SM_Dispatch  SM_MODE  = SM_Dispatch::Baseline;
 MEM_Allocate MEM_MODE = MEM_Allocate::None;
+
+/* Statistic */
+unsigned long long total_gpu_cycle = 0;
+
+/* Thread Protect */
+pthread_mutex_t* ioMutex = new pthread_mutex_t;
 
 /** ===============================================================================================
  * \name    GPGPU
@@ -68,7 +74,6 @@ GPGPU::run ()
 		if (clock_mask & GPU_MASK) {
 			mGPU.cycle();
 			total_gpu_cycle++;
-			
 		}
 		if (clock_mask & CPU_MASK) {
 			mCPU.cycle();
@@ -77,7 +82,7 @@ GPGPU::run ()
     	// ASSERT(total_gpu_cycle != 150);
         Finish = mCPU.Check_All_Applications_Finish();
     }
-	while(1){};
+	// while(1){};
 }
 
 

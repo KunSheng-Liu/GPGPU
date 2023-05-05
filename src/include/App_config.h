@@ -25,6 +25,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <pthread.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -79,7 +80,7 @@ class Request;
  * Print-Out Configuration
  * ************************************************************************************************
  */
-#define LOG_LEVEL                   DEBUG
+#define LOG_LEVEL                   INFO
 #define PRINT_MODEL_DETIAL          true
 #define PRINT_MEMORY_ALLOCATION     false
 
@@ -97,6 +98,8 @@ class Request;
  */
 #define INFERENCE_METHOD            PARALLSEEL
 #define BATCH_INFERENCE             false
+#define THREAD_KERNEL_COMPILE       true
+#define THREAD_NUM                  8
 
 /* ************************************************************************************************
  * Hardware Configuration

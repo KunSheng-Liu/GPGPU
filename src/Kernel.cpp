@@ -68,7 +68,7 @@ Kernel::~Kernel()
 bool
 Kernel::compileRequest (MMU* mmu)
 {
-    srcLayer->issueLayer(mmu, this);
+    srcLayer->Compile(mmu, this);
 
     kernelInfo.numOfMemory = srcLayer->getMemoryUsage();
 

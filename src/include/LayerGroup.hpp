@@ -64,7 +64,7 @@ public:
     void changeBatch (int new_batch_size) override;
     void memoryAllocate (MMU* mmu) override;
     vector<Kernel*> compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency) override;
-    void issueLayer(MMU* mmu, Kernel* targetKernel) override {}
+    void issueLayer(ThreadArg* threadArg) override {}
     
 private:
     void addCaseCade (Layer*);
