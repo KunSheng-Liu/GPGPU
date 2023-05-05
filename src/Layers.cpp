@@ -41,12 +41,18 @@ Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size
  *
  * \brief   Destruct a layer
  * 
+ * \note    Only release the pointer that without sharing. Should custom release the pointer by the 
+ *          user after using.
+ * 
  * \endcond
  * ================================================================================================
  */
 Layer::~Layer()
 {
-
+    delete iFMapSize;
+    delete oFMapSize;
+    delete filterSize;
+    delete filter;
 }
 
 
@@ -54,6 +60,8 @@ Layer::~Layer()
  * \name    release
  * 
  * \brief   Release no used memory space
+ * 
+ * \note    Not release the oFMap because it will become next layer iFMap and release in next layer
  *  
  * \endcond
  * ================================================================================================
@@ -308,7 +316,8 @@ Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activati
  */
 Conv2D::~Conv2D()
 {
-    
+    delete stride;
+    delete padding;
 }
 
 

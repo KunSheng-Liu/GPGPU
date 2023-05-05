@@ -28,14 +28,32 @@ LayerGroup::LayerGroup(Group_t group_type): Layer(), groupType(group_type)
 /** ===============================================================================================
  * \name   ~LayerGroup
  *
- * \brief   Construct a layerGroup
+ * \brief   Destruct a layerGroup
+ * 
+ * \note    The I/O memory should release one by one with carefully consideration due to the pointer
+ *          passing through the layer graph
  * 
  * \endcond
  * ================================================================================================
  */
 LayerGroup::~LayerGroup()
 {
-    // delete &layers;
+    if (groupType == Group_t::CaseCade)
+    {
+        for (auto layer = layers.begin(); layer != layers.end(); ++layer) {
+            delete (*layer)->getOFMap();
+            delete *layer;
+        }
+
+    } else {
+        
+        for (auto layer = layers.begin(); layer != layers.end(); ++layer) {
+            delete (*layer)->getOFMap();
+            delete *layer;
+        }
+        delete oFMap;
+    }
+    
 }
 
 
@@ -75,8 +93,8 @@ LayerGroup::addCaseCade (Layer* layer)
     /* Handle the I/O feature map*/
     if (layers.size() == 0)
     {
-        iFMapSize = layer->getIFMapSize();
-        oFMapSize = layer->getOFMapSize();
+        iFMapSize = new vector<int>{*layer->getIFMapSize()};
+        oFMapSize = new vector<int>{*layer->getOFMapSize()};
         oFMap     = layer->getOFMap();
 
     } else {
@@ -87,7 +105,8 @@ LayerGroup::addCaseCade (Layer* layer)
         ASSERT(check, "Layer " + to_string(layer->layerID) + " has error iFMapSize to the existing oFMapSize.");
 
         layer->setIFMap(oFMap);
-        oFMapSize = layer->getOFMapSize();
+        delete oFMapSize;
+        oFMapSize = new vector<int>{*layer->getOFMapSize()};
         oFMap     = layer->getOFMap();
     }
 
@@ -109,8 +128,8 @@ LayerGroup::addCaseCode (Layer* layer)
     /* Handle the I/O feature map*/
     if (layers.size() == 0)
     {
-        iFMapSize = layer->getIFMapSize();
-        oFMapSize = layer->getOFMapSize();
+        iFMapSize = new vector<int>{*layer->getIFMapSize()};
+        oFMapSize = new vector<int>{*layer->getOFMapSize()};
 
         int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
         oFMap = new vector<unsigned char>(size);

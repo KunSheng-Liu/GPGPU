@@ -40,7 +40,7 @@ SM::SM() : smID(SMCount++)
  */
 SM::~SM()
 {
-
+    ASSERT(runningBlocks.empty(), "Error Destruct");
 }
 
 
@@ -80,6 +80,9 @@ SM::cycle()
             for (int j = 0; j < GPU_THREAD_PER_WARP && !block->running_kernel->requests.empty(); j++)
             {
                 Request* request = block->running_kernel->accessRequest();
+
+
+                delete request;
             }
         }
         
@@ -104,7 +107,7 @@ SM::bindKernel(Kernel* kernel)
     if (resource.remaining_blocks == 0 || resource.remaining_warps == 0) return false;
 
     /* Baseline: each kernel get all resource of SM */
-    Block* b = new Block(kernel, total_gpu_cycle);
+    Block* b = new Block(kernel);
 
     b->block_id = kernel->kernelID;
     b->bind_warp_number = resource.remaining_warps;
@@ -130,16 +133,17 @@ SM::bindKernel(Kernel* kernel)
 void
 SM::checkFinish()
 {
-    for (auto block : runningBlocks)
+    for (auto block = runningBlocks.begin(); block != runningBlocks.end(); ++block)
     {
-        if(block->running_kernel->requests.empty())
+        if((*block)->running_kernel->requests.empty())
         {
-            block->finish = true;
-            block->end_cycle = total_gpu_cycle;
-            recycleResource(block);
+            (*block)->finish = true;
+            recycleResource(*block);
+
+            delete *block;
+            block = runningBlocks.erase(block);
         }
     }
-    runningBlocks.remove_if([](Block* b){return b->finish;});
 }
 
 

@@ -39,7 +39,9 @@ GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU())
  */
 GPU::~GPU()
 {
-
+    ASSERT(commandQueue.empty(), "Error Destruct");
+    ASSERT(runningKernels.empty(), "Error Destruct");
+    ASSERT(finishedKernels.empty(), "Error Destruct");
 }
 
 

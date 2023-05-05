@@ -77,6 +77,7 @@ GPGPU::run ()
     	// ASSERT(total_gpu_cycle != 150);
         Finish = mCPU.Check_All_Applications_Finish();
     }
+	while(1){};
 }
 
 

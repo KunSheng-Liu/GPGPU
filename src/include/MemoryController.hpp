@@ -44,8 +44,8 @@ class MemoryController
  * ************************************************************************************************
  */ 
 public:
-   MemoryController(long long storage_limit, int page_size);
-
+    MemoryController(long long storage_limit, int page_size);
+    ~MemoryController();
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************

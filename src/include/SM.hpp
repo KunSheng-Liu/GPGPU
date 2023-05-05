@@ -54,7 +54,7 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel,  unsigned long long start_cycle) : running_kernel(kernel), start_cycle(start_cycle), finish(false) {};
+    Block(Kernel* kernel) : running_kernel(kernel), finish(false) {};
 
 /* ************************************************************************************************
  * Parameter
@@ -67,16 +67,13 @@ public:
 
     unsigned bind_warp_number = 0;
 
-    unsigned long long start_cycle = 0;
-    unsigned long long end_cycle = 0;
-
 	unsigned launch_warp_counter = 0;
 	unsigned long long launch_access_counter = 0;
 	unsigned long long return_access_counter = 0;
 
-	Kernel* running_kernel;
-
 	list<int> wait_computing_time;
+
+	Kernel* running_kernel;
 };
 
 

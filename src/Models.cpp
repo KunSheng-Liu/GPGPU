@@ -50,8 +50,6 @@ Model::Model(int app_id, int batch_size): appID(app_id), modelID(modelCount++), 
  * 
  * \brief   Destruct a model
  * 
- * \param   name    the model name
- * 
  * \endcond
  * ================================================================================================
  */
@@ -163,7 +161,7 @@ bool
 Model::checkFinish()
 {
     bool finish = true;
-    for (auto kernel : kernelContainer)
+    for (auto& kernel : kernelContainer)
     {
         finish &= kernel.isFinish();
     }
@@ -236,6 +234,7 @@ Model::buildLayerGraph(const char* model_type)
         ResNet18();
     }
 
+    log_D("buildLayerGraph", "done");
 }
 
 /** ===============================================================================================
@@ -425,7 +424,6 @@ void
 Model::ResNet18()
 {
     modelName = (char*)"ResNet18";
-    LayerGroup resnet18;
 
     modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 3, 224, 224} , new vector<int>{64,  3, 7, 7}, (char*)"ReLU", 2, 3));
     modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 112, 112}, new vector<int>{64, 64, 3, 3}, (char*)"None", 2, 1));
@@ -540,7 +538,6 @@ Model::ResNet18()
 #endif
     
     compileToKernel();
-
 }
 
 

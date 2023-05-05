@@ -37,16 +37,14 @@ Application::Application(char* model_type)
 /** ===============================================================================================
  * \name   ~Application
  * 
- * \brief   Destruct a model
- * 
- * \param   name    the model name
+ * \brief   Destruct a pplication
  * 
  * \endcond
  * ================================================================================================
  */
 Application::~Application()
 {
-    // delete mModel;
+    ASSERT(runningModels.empty(), "Error Destruct")
 }
 
 

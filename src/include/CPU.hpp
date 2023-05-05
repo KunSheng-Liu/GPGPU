@@ -66,7 +66,7 @@ private:
 
     MMU mMMU;
 
-    list<Application*> mAPPs;
+    vector<Application*> mAPPs;
 };
 
 #endif

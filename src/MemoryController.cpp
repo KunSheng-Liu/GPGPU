@@ -31,6 +31,31 @@ MemoryController::MemoryController(long long storage_limit, int page_size) : sto
 
 
 /** ===============================================================================================
+ * \name    ~MemoryController
+ * 
+ * \brief   Destruct MemoryController
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+MemoryController::~MemoryController()
+{
+    while(!availablePageList.empty())
+    {
+        Page* p = availablePageList.front();
+        availablePageList.pop();
+        delete p;
+    }
+    while(!usedPageList.empty())
+    {
+        Page* p = usedPageList.front();
+        usedPageList.pop();
+        delete p;
+    }
+}
+
+
+/** ===============================================================================================
  * \name    init
  * 
  * \brief   Pre-build some page frame for the DRAM needed.

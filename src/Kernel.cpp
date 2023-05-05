@@ -49,7 +49,7 @@ Kernel::Kernel(int app_id, int kernel_id, Layer* src_layer, vector<Kernel*> depe
  */
 Kernel::~Kernel()
 {
-
+    ASSERT(requests.empty(), "Error Destruct");
 }
 
 
@@ -114,10 +114,10 @@ Kernel::addRequest(Request* request)
 Request*
 Kernel::accessRequest()
 {
-    Request* request = requests.front();
+    Request* request = move(requests.front());
     requests.pop();
 
-    return request;
+    return move(request);
 }
 
 
@@ -154,8 +154,9 @@ Kernel::isReady()
 void
 Kernel::release()
 {
+    ASSERT(requests.empty());  
     srcLayer->release();
-    dependencyKernels.clear();
+    dependencyKernels.clear(); 
 }
 
 

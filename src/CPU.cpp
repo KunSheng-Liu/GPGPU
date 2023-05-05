@@ -45,7 +45,9 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
  */
 CPU::~CPU()
 {
-
+    for (auto app = mAPPs.begin(); app != mAPPs.end(); ++app) {
+        delete *app;
+    }
 }
 
 
@@ -311,7 +313,14 @@ CPU::Check_Finish_Kernel()
 
     for (auto app : mAPPs)
     {
-        app->runningModels.remove_if([](Model* m){return m->checkFinish();});
+        for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
+            if ((*model)->checkFinish())
+            {
+                delete *model;
+                model = app->runningModels.erase(model);
+            }
+        }
+        // app->runningModels.remove_if([](Model* m){return m->checkFinish();});
     }
 }
 
