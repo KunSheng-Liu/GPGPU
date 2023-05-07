@@ -135,7 +135,7 @@ bool
 Kernel::isReady()
 {
     bool isReady = true;
-    for (auto kernel : dependencyKernels)
+    for (auto& kernel : dependencyKernels)
     {
         isReady &= kernel->isFinish();
     }
@@ -180,7 +180,7 @@ Kernel::printInfo()
     std::cout << std::left << std::setw(10) << kernelInfo.numOfWrite; 
     std::cout << std::left << std::setw(10) << kernelInfo.numOfMemory; 
     std::cout << std::left << std::setw(10) << kernelInfo.numOfCycle; 
-    for (auto kernel : dependencyKernels)
+    for (auto& kernel : dependencyKernels)
     {
         std::cout << std::left << std::setw(3) << kernel->kernelID; 
     }

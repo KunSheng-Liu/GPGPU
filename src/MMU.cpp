@@ -37,11 +37,14 @@ MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB(DRAM_SPACE / PAGE_SIZE))
  * ================================================================================================
  */
 void 
-MMU::memoryAllocate (int va, int numOfByte)
+MMU::memoryAllocate (intptr_t va, int numOfByte)
 {
     if (va == 0 || numOfByte == 0) return;
     
     pair<Page*, int> pa_pair = mTLB.lookup(va);
+    if (!(pa_pair.first == nullptr || pa_pair.second == -1))
+        log_E("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte) + "The virtual address already been allocated");
+
     if (pa_pair.first == nullptr && pa_pair.second == -1) 
     {
         log_D("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));
@@ -63,17 +66,17 @@ MMU::memoryAllocate (int va, int numOfByte)
  * \endcond
  * ================================================================================================
  */
-vector<int>
-MMU::addressTranslate (int va)
+vector<unsigned long long>
+MMU::addressTranslate (intptr_t va)
 {
     /* lookup wheather VA has been cached */
+    log_D("addressTranslate", to_string(va));
     pair<Page*, int> pa_pair = mTLB.lookup(va);
     
     ASSERT(!(pa_pair.first == nullptr || pa_pair.second == -1), "The virtual address haven't been allocated");
 
-    vector<int> pa_list;
+    vector<unsigned long long> pa_list;
     Page* page = pa_pair.first;
-    int pageIndex = page->pageIndex;
 
     while(page != nullptr) 
     {
@@ -99,7 +102,7 @@ MMU::addressTranslate (int va)
  * ================================================================================================
  */
 pair<Page*, int>
-TLB::lookup (int va) {
+TLB::lookup (intptr_t va) {
 
     auto it = table.find(va);
 
@@ -127,7 +130,7 @@ TLB::lookup (int va) {
  * ================================================================================================
  */
 void 
-TLB::insert(int va, pair<Page*, int> pa_pair) {
+TLB::insert(intptr_t va, pair<Page*, int> pa_pair) {
 
     auto it = table.find(va);
 
@@ -140,7 +143,7 @@ TLB::insert(int va, pair<Page*, int> pa_pair) {
         
         /* TLB already full */
         if (table.size() >= capacity) {
-            int vpn = list.back().VA;
+            intptr_t vpn = list.back().VA;
             table.erase(vpn);
             list.pop_back();
         }

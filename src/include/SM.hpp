@@ -54,7 +54,7 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel) : running_kernel(kernel), finish(false) {};
+    Block(Kernel* kernel) : runningKernel(kernel), finish(false) {};
 
 /* ************************************************************************************************
  * Parameter
@@ -68,12 +68,14 @@ public:
     unsigned bind_warp_number = 0;
 
 	unsigned launch_warp_counter = 0;
-	unsigned long long launch_access_counter = 0;
+	unsigned long long launch_access_counter = 0; 
 	unsigned long long return_access_counter = 0;
 
-	list<int> wait_computing_time;
+    queue<int> readBuffer   = {};
+    queue<int> writeBuffer  = {};
+	list <int> waitingTimes = {};
 
-	Kernel* running_kernel;
+	Kernel* runningKernel = nullptr;
 };
 
 

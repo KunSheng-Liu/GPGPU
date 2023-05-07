@@ -37,8 +37,7 @@ class Request{
  * ************************************************************************************************
  */ 
 public:
-
-    Request (vector<int> read_pages = {}, vector<int> write_pages = {}) 
+    Request (vector<pair<int32_t, int>> read_pages = {}, vector<pair<int32_t, int>> write_pages = {}) 
         : numOfInstructions(0), readPages(read_pages), writePages(write_pages) {}
 
 /* ************************************************************************************************
@@ -47,8 +46,13 @@ public:
  */
 public:
     int numOfInstructions;
-    vector<int> readPages;
-    vector<int> writePages;
+    
+    /* *******************************************************************
+     * \param first     start physical address
+     * \param second    number of access to this physical address
+     * *******************************************************************
+    */
+    vector<pair<int32_t, int>> readPages, writePages;
     
 };
 

@@ -153,11 +153,11 @@ Layer::memoryAllocate(MMU* mmu)
 {
     log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
     if (LOG_LEVEL >= VERBOSE) cout << "iFMap ";
-    if(iFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(iFMap)),  iFMap->size()  * sizeof(unsigned char));
+    if(iFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&iFMap) + iFMap->size() * layerID,  iFMap->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
-    if(oFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMap)),  oFMap->size()  * sizeof(unsigned char));
+    if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * layerID,  oFMap->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) cout << "filter ";
-    if(filter) mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(filter)), filter->size() * sizeof(unsigned char));
+    if(filter) mmu->memoryAllocate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID, filter->size() * sizeof(unsigned char));
 
 }
 
@@ -429,9 +429,9 @@ Conv2D::calculateOFMapSize()
 // {
 //     Layer::memoryAllocate(mmu);
 //     if (LOG_LEVEL >= VERBOSE) cout << "stride ";
-//     if(stride)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(stride)),  stride->size()  * sizeof(unsigned char));
+//     if(stride)  mmu->memoryAllocate(stride)),  stride->size()  * sizeof(unsigned char));
 //     if (LOG_LEVEL >= VERBOSE) cout << "padding ";
-//     if(padding)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(padding)),  padding->size()  * sizeof(unsigned char));
+//     if(padding)  mmu->memoryAllocate(padding)),  padding->size()  * sizeof(unsigned char));
 
 // }
 
@@ -480,15 +480,15 @@ Conv2D::issueLayer(ThreadArg* threadArg)
 {
     MMU* mmu = threadArg->mmu;
 
-    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
     pthread_mutex_lock ( ioMutex );
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
         log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_D("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
-    
+
     /* Thread compile start and end index */
     int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
     int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
@@ -505,10 +505,15 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     Request* request = new Request();
 
                     /* read filter pages */
-                    const int f_start = c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE;
-                    for (int f_offset = 0; f_offset <= (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE; f_offset++)
+                    int f_count  = (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
+                    int f_offset  = c_o * f_count;
+                    while (f_count != 0)
                     {
-                        request->readPages.emplace_back(filterPages[f_start + f_offset]);
+                        int count = (f_offset % PAGE_SIZE) ? min((int) ceil((float) f_offset / PAGE_SIZE) * PAGE_SIZE - f_offset, f_count) : min((int)PAGE_SIZE, f_count);
+                        request->readPages.emplace_back(make_pair(filterPages[floor(f_offset / PAGE_SIZE)], count));
+                        f_count -= count;
+                        f_offset += count;
+
                     }
 
                     /* read input pages */
@@ -519,23 +524,25 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     {
                         for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
                         {
-                            int w_i = max(0, w_start);
-                            const int i_start = b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i;
-                            
-                            if (request->readPages.back() != iFMapPages[i_start / PAGE_SIZE]) 
-                            {
-                                request->readPages.emplace_back(iFMapPages[i_start / PAGE_SIZE]);
-                            }
 
-                            if (PAGE_SIZE - i_start % PAGE_SIZE > (*iFMapSize)[WIDTH] - 1)
-                                continue;
-                            else
-                                request->readPages.emplace_back((i_start / PAGE_SIZE) + 1);
+                            for (int w_i = max(0, w_start); w_i < min(w_start + (*filterSize)[WIDTH], (*iFMapSize)[WIDTH]); w_i++)
+                            {
+                                const int index = floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i) / PAGE_SIZE);
+                                
+                                if (request->readPages.back().first != iFMapPages[index]) 
+                                {
+                                    request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
+                                } else {
+                                    request->readPages.back().second++;
+                                }
+
+                            }
+                                                        
                         }
                     }
 
                     /* write result to pages */
-                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
                     
                     // Conv2D perfrom the element multiplication on iFMap to filter at each place
                     request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
@@ -619,10 +626,10 @@ Pooling::issueLayer(ThreadArg* threadArg)
 {
     MMU* mmu = threadArg->mmu;
 
-    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
     pthread_mutex_lock ( ioMutex );
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
         log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_D("filterPages Num" , to_string(filterPages.size()));
@@ -644,10 +651,15 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     Request* request = new Request();
 
                     /* read filter pages */
-                    const int f_start = c_o * (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE;
-                    for (int f_offset = 0; f_offset <= (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / PAGE_SIZE; f_offset++)
+                    int f_count  = (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
+                    int f_offset  = c_o * f_count;
+                    while (f_count != 0)
                     {
-                        request->readPages.emplace_back(filterPages[f_start + f_offset]);
+                        int count = (f_offset % PAGE_SIZE) ? min((int) ceil((float) f_offset / PAGE_SIZE) * PAGE_SIZE - f_offset, f_count) : min(PAGE_SIZE, f_count);
+                        request->readPages.emplace_back(make_pair(filterPages[floor(f_offset / PAGE_SIZE)], count));
+                        f_count -= count;
+                        f_offset += count;
+                        
                     }
 
                     /* read input pages */
@@ -658,23 +670,23 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     {
                         for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
                         {
-                            int w_i = max(0, w_start);
-                            const int i_start = b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i;
-                            
-                            if (request->readPages.back() != iFMapPages[i_start / PAGE_SIZE]) 
+                            for (int w_i = max(0, w_start); w_i < min(w_start + (*filterSize)[WIDTH], (*iFMapSize)[WIDTH]); w_i++)
                             {
-                                request->readPages.emplace_back(iFMapPages[i_start / PAGE_SIZE]);
-                            }
+                                const int index = floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i) / PAGE_SIZE);
+                                
+                                if (request->readPages.back().first != iFMapPages[index]) 
+                                {
+                                    request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
+                                } else {
+                                    request->readPages.back().second++;
+                                }
 
-                            if (PAGE_SIZE - i_start % PAGE_SIZE > (*iFMapSize)[WIDTH] - 1)
-                                continue;
-                            else
-                                request->readPages.emplace_back((i_start / PAGE_SIZE) + 1);
+                            }
                         }
                     }
 
                     /* write result to pages */
-                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Pooling layer find the maxinum input data in the field masked by filter
                     request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
@@ -791,9 +803,9 @@ Flatten::issueLayer(ThreadArg* threadArg)
 {
     MMU* mmu = threadArg->mmu;
 
-    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
     pthread_mutex_lock ( ioMutex );
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
         log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
@@ -813,10 +825,10 @@ Flatten::issueLayer(ThreadArg* threadArg)
                 {                   
                     Request* request = new Request();
                     /* read input pages */
-                    request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     /* write result to pages */
-                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Performs data copy
                     request->numOfInstructions += 1;
@@ -923,10 +935,10 @@ void
 ByPass::issueLayer(ThreadArg* threadArg)
 {
     MMU* mmu = threadArg->mmu;
-
-    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
+    
     pthread_mutex_lock ( ioMutex );
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
         log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
@@ -946,10 +958,10 @@ ByPass::issueLayer(ThreadArg* threadArg)
                 {                   
                     Request* request = new Request();
                     /* read input pages */
-                    request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     /* write result to pages */
-                    request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE]);
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Performs data copy
                     request->numOfInstructions += 1;
@@ -1083,10 +1095,10 @@ Dense::issueLayer(ThreadArg* threadArg)
 {
     MMU* mmu = threadArg->mmu;
 
-    vector<int> iFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(iFMap));
-    vector<int> oFMapPages   = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(oFMap));
-    vector<int> filterPages  = mmu->addressTranslate(reinterpret_cast<std::uintptr_t>(filter));
     pthread_mutex_lock ( ioMutex );
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
         log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_D("filterPages Num" , to_string(filterPages.size()));
@@ -1108,17 +1120,17 @@ Dense::issueLayer(ThreadArg* threadArg)
             for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
             {
                 /* read input pages */
-                request->readPages.emplace_back(iFMapPages[(b * (*iFMapSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE]);
+                request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
 
                 /* filter pages */
-                request->readPages.emplace_back(filterPages[(c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE]);
+                request->readPages.emplace_back(make_pair(filterPages[floor((c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
 
                 // Performs dot product
                 request->numOfInstructions += 1;
             }
 
             /* write result to pages */
-            request->writePages.emplace_back(oFMapPages[(b * (*oFMapSize)[CHANNEL] + c_o) / PAGE_SIZE]);
+            request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] + c_o) / PAGE_SIZE)], 1));
 
             threadArg->requestQueue->push(move(request));
 

@@ -104,7 +104,6 @@ GPU::Runtime_Block_Scheduling()
         bool success = false;
         for (auto sm_id : kernel->record->SM_List)
         {
-            cout << "Launch kernel: " << kernel->kernelID << " to SM: " << sm_id << endl;
             success |= mSMs[sm_id].bindKernel(kernel);
         }
 
@@ -152,7 +151,7 @@ GPU::Check_Finish_Kernel()
 
     runningKernels.remove_if([](Kernel* k){return k->isFinish();});
 
-    for(auto kernel: runningKernels)
+    for (auto& kernel: runningKernels)
     {
         cout << "running kernel id: " << kernel->kernelID << endl;
     }

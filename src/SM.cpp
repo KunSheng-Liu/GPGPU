@@ -55,6 +55,7 @@ SM::~SM()
 void
 SM::cycle()
 {    
+    /* SM statistic */
     if (isRunning()) {
         info.exec_cycle++;
 
@@ -69,18 +70,22 @@ SM::cycle()
         info.idle_cycle++;
     }
 
-    for (auto block : runningBlocks)
+    /* Computing */
+    for (auto& block : runningBlocks)
     {
-        if (block->finish) continue;
-
         cout << "SM: " << smID << " Execute block: " << block->block_id << endl;
 
-        for (int i = 0; i < block->bind_warp_number && !block->running_kernel->requests.empty(); i++)
+        for (int i = 0; i < block->bind_warp_number && !block->runningKernel->requests.empty(); i++)
         {
-            for (int j = 0; j < GPU_THREAD_PER_WARP && !block->running_kernel->requests.empty(); j++)
+            for (int j = 0; j < GPU_THREAD_PER_WARP && !block->runningKernel->requests.empty(); j++)
             {
-                Request* request = block->running_kernel->accessRequest();
+                Request* request = block->runningKernel->accessRequest();
 
+                // for (auto read : request->readPages)
+                // {
+                //     if (read.second > 1)
+                //         cout << "Read: " << read.first << " , " << read.second << " times" << endl;
+                // }
 
                 delete request;
             }
@@ -103,7 +108,6 @@ SM::cycle()
 bool
 SM::bindKernel(Kernel* kernel)
 {
-    cout << "SM: " << smID << " block: " << resource.remaining_blocks << " warps: " << resource.remaining_warps << endl;
     if (resource.remaining_blocks == 0 || resource.remaining_warps == 0) return false;
 
     /* Baseline: each kernel get all resource of SM */
@@ -112,11 +116,12 @@ SM::bindKernel(Kernel* kernel)
     b->block_id = kernel->kernelID;
     b->bind_warp_number = resource.remaining_warps;
 
+    cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->bind_warp_number << endl;
+
     runningBlocks.emplace_back(move(b));
     resource.remaining_warps = 0;
     resource.remaining_blocks--;
 
-    log_D("bindKernel", "kernel: " + to_string(kernel->kernelID) + " bind to SM: " + to_string(smID));
 
     return true;
 }
@@ -135,7 +140,7 @@ SM::checkFinish()
 {
     for (auto block = runningBlocks.begin(); block != runningBlocks.end(); ++block)
     {
-        if((*block)->running_kernel->requests.empty())
+        if((*block)->runningKernel->requests.empty())
         {
             (*block)->finish = true;
             recycleResource(*block);
@@ -162,6 +167,7 @@ SM::recycleResource(Block* block)
 {
     ASSERT(block->finish);
 
+    cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->bind_warp_number << endl;
     resource.remaining_warps += block->bind_warp_number;
     resource.remaining_blocks++;
 }
@@ -209,9 +215,9 @@ bool
 SM::checkIsComplete(Kernel* kernel)
 {
     bool complete = true;
-    for(auto block : runningBlocks)
+    for (auto& block : runningBlocks)
     {
-        complete &= !(block->running_kernel == kernel);
+        complete &= !(block->runningKernel == kernel);
     }
 
     return complete;

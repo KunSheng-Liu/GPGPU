@@ -22,10 +22,10 @@
  * ************************************************************************************************
  */
 struct Page {
-    int pageIndex;
+    unsigned long long pageIndex;
     Page* nextPage;
 
-    Page(int page_indnex = -1, Page* next_page = nullptr) : pageIndex(page_indnex), nextPage(next_page) {}
+    Page(unsigned page_index = -1, Page* next_page = nullptr) : pageIndex(page_index), nextPage(next_page) {}
 };
 
 
@@ -44,7 +44,7 @@ class MemoryController
  * ************************************************************************************************
  */ 
 public:
-    MemoryController(long long storage_limit, int page_size);
+    MemoryController(unsigned long long storage_limit, int page_size);
     ~MemoryController();
 /* ************************************************************************************************
  * Functions
@@ -68,10 +68,10 @@ public:
  * ************************************************************************************************
  */
 private:
-    const long long storageLimit;
-    const int pageFrameOffset;
+    const unsigned long long storageLimit;
+    const unsigned pageFrameOffset;
 
-    int pageIndex = 0;
+    unsigned long long pageIndex = 0;
 
     queue<Page*> availablePageList;
     queue<Page*> usedPageList;

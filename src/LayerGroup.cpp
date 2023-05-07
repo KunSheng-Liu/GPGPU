@@ -163,7 +163,7 @@ LayerGroup::addCaseCode (Layer* layer)
 void
 LayerGroup::changeBatch(int new_batch_size)
 {
-    for (auto layer: layers){
+    for (auto& layer: layers){
         layer->changeBatch(new_batch_size);
     }
 }
@@ -182,13 +182,13 @@ LayerGroup::changeBatch(int new_batch_size)
 void
 LayerGroup::memoryAllocate(MMU* mmu)
 {
-    for (auto layer: layers){
+    for (auto& layer: layers){
         layer->memoryAllocate(mmu);
     }
 
     /* The memory sapce for merge layer */
     if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
-    if(oFMap)  mmu->memoryAllocate(static_cast<int>(reinterpret_cast<std::uintptr_t>(oFMap)),  oFMap->size()  * sizeof(unsigned char));
+    if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * 30,  oFMap->size()  * sizeof(unsigned char));
 }
 
 
@@ -210,13 +210,13 @@ LayerGroup::compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel
 {
     log_V("LayerGroup", "compileToKernel");
     if (groupType == Group_t::CaseCade) {
-        for (auto layer: layers)
+        for (auto& layer: layers)
         {
             dependency = layer->compileToKernel(app_id, container, dependency);
         }
     } else {  // groupType == Group_t::CaseCode
         vector<Kernel*> new_dependency;
-        for (auto layer: layers)
+        for (auto& layer: layers)
         {
             vector<Kernel*> temp = layer->compileToKernel(app_id, container, dependency);
             new_dependency.insert(new_dependency.end(), temp.begin(), temp.end());
@@ -248,7 +248,7 @@ LayerGroup::setIFMap(vector<unsigned char>* data)
         layer->setIFMap(data);
 
     } else {
-        for (auto layer: layers) {
+        for (auto& layer: layers) {
             layer->setIFMap(data);
         }
     }
@@ -275,7 +275,7 @@ LayerGroup::setFilter(vector<unsigned char>* data)
         layer->setFilter(data);
 
     } else {
-        for (auto layer: layers) {
+        for (auto& layer: layers) {
             layer->setFilter(data);
         }
     }
@@ -295,7 +295,7 @@ LayerGroup::printInfo ()
 {
 #if PRINT_MODEL_DETIAL
     cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " start -------------" << std::endl;
-    for (auto layer: layers){
+    for (auto& layer: layers){
         layer->printInfo();
     }
     cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;

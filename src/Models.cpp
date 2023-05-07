@@ -263,7 +263,7 @@ Model::Test()
                                                       
     modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
                                                         
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 2048));
 
     numOfLayer = 4;
     

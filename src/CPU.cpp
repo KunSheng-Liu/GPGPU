@@ -71,7 +71,7 @@ CPU::cycle()
     Dynamic_Batch_Admission();
 
     /* check new task */
-    for (auto app: mAPPs)
+    for (auto& app: mAPPs)
     {
         app->cycle();
     }
@@ -99,7 +99,7 @@ CPU::Dynamic_Batch_Admission()
 #if (INFERENCE_METHOD == SEQUENTIAL)
 
     /* Only one application can get SM resource allocation when the GPU is idle */
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
         app->SM_budget = {};
         if (mGPU->idle() && !app->tasks.empty())
@@ -117,7 +117,7 @@ CPU::Dynamic_Batch_Admission()
     if (SM_MODE == SM_Dispatch::Baseline)
     {
         /* Each application got the same SM resource */
-        for (auto app : mAPPs)
+        for (auto& app : mAPPs)
         {
             app->SM_budget = {};
 
@@ -133,7 +133,7 @@ CPU::Dynamic_Batch_Admission()
         /* Record the total required memory base on the task number */
         float total_needed_memory = 0;
         vector<pair<float, Application*>> APP_list;
-        for (auto app : mAPPs)
+        for (auto& app : mAPPs)
         {
             app->SM_budget = {};
 
@@ -176,7 +176,7 @@ CPU::Dynamic_Batch_Admission()
 #endif
 
     /* Print SM allocation result */
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
         cout << "APP: " << app->appID << " get SM: ";
         for (auto sm_id : app->SM_budget)
@@ -193,7 +193,7 @@ CPU::Dynamic_Batch_Admission()
      * Choose the batch size of each model and create the instance
      * *******************************************************************
      */
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
         if (app->runningModels.empty() && !app->tasks.empty() && !app->SM_budget.empty())
         {
@@ -245,11 +245,11 @@ CPU::Kernek_Inference_Scheduler()
     // handle the kernel dependency, and launch next kernel
 
     list<Kernel*> readyKernels;
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
-        for (auto model : app->runningModels)
+        for (auto& model : app->runningModels)
         {
-            for (auto kernel : model->findReadyKernels())
+            for (auto& kernel : model->findReadyKernels())
             {
                 kernel->record = &model->record;
                 readyKernels.push_back(kernel);
@@ -260,14 +260,14 @@ CPU::Kernek_Inference_Scheduler()
 
     /* print ready list */
     std::cout << "Ready kernel list: ";
-    for (auto kernel : readyKernels)
+    for (auto& kernel : readyKernels)
     {
         std::cout << kernel->kernelID << ", ";
     }
     std::cout << endl;
 
     /* launch kernel into gpu */
-    for (auto kernel : readyKernels)
+    for (auto& kernel : readyKernels)
     {
         ASSERT(kernel->record->SM_List.size());
 
@@ -300,7 +300,7 @@ CPU::Check_Finish_Kernel()
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
-        log_I("", "Kernel: " + to_string(kernel->kernelID) + " is finished");
+        log_I("Kernel", to_string(kernel->kernelID) + " is finished");
         kernel->finish = true;
         kernel->running = false;
 
@@ -311,7 +311,7 @@ CPU::Check_Finish_Kernel()
         
     }
 
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
         for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
             if ((*model)->checkFinish())
@@ -337,7 +337,7 @@ bool
 CPU::Check_All_Applications_Finish()
 {  
     bool finish = true;
-    for (auto app : mAPPs)
+    for (auto& app : mAPPs)
     {
         finish &= app->finish;
     }

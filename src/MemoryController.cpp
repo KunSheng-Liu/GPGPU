@@ -19,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-MemoryController::MemoryController(long long storage_limit, int page_size) : storageLimit(storage_limit), pageFrameOffset(log2(page_size))
+MemoryController::MemoryController(unsigned long long storage_limit, int page_size) : storageLimit(storage_limit), pageFrameOffset(log2(page_size))
 {
     init();
 
@@ -103,7 +103,7 @@ MemoryController::createPage()
 {
     ASSERT(pageIndex << pageFrameOffset <= storageLimit, "Cannot create anymore physical page");
 
-    availablePageList.emplace(new Page(pageIndex++));
+    availablePageList.emplace(move(new Page(pageIndex++)));
 
 }
 
@@ -136,8 +136,9 @@ MemoryController::memoryAllocate (int numOfByte)
             createPage();
         }
 
-        Page* tempPage = availablePageList.front();
+        usedPageList.push(move(availablePageList.front()));
         availablePageList.pop();
+        Page* tempPage = usedPageList.back();
 
         if(i == 0) {
             headPage = tempPage;
@@ -145,8 +146,6 @@ MemoryController::memoryAllocate (int numOfByte)
             prevPage->nextPage = tempPage;
         }
         prevPage = tempPage;
-        
-        usedPageList.push(tempPage);
     }
 
 #if (PRINT_MEMORY_ALLOCATION)

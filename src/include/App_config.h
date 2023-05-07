@@ -17,6 +17,7 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <list>
@@ -25,6 +26,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <unistd.h>
 #include <pthread.h>
 #include <string.h>
 #include <sys/time.h>

@@ -47,8 +47,8 @@ public:
  */
 public:
 
-    pair<Page*, int> lookup (int va);
-    void insert(int va, pair<Page*, int> pa_pair);
+    pair<Page*, int> lookup (intptr_t va);
+    void insert(intptr_t va, pair<Page*, int> pa_pair);
     
 /* ************************************************************************************************
  * Parameter
@@ -56,14 +56,14 @@ public:
  */
 private:
     struct PageTableEntry {
-        int VA;
+        intptr_t VA;
         pair<Page*, int> PAPair;
-        PageTableEntry(int va, pair<Page*, int> pa_pair) : VA(va), PAPair(pa_pair) {}
+        PageTableEntry(intptr_t va, pair<Page*, int> pa_pair) : VA(va), PAPair(pa_pair) {}
     };
 
     const int capacity;
     std::list<PageTableEntry> list;
-    unordered_map<int, std::list<PageTableEntry>::iterator> table;
+    unordered_map<intptr_t, std::list<PageTableEntry>::iterator> table;
 };
 
 
@@ -91,8 +91,8 @@ public:
  * ************************************************************************************************
  */
 public:
-    void memoryAllocate (int va, int numOfByte);
-    vector<int> addressTranslate (int va);
+    void memoryAllocate (intptr_t va, int numOfByte);
+    vector<unsigned long long> addressTranslate (intptr_t va);
 
 /* ************************************************************************************************
  * Parameter
