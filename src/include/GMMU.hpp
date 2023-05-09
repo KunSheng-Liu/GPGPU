@@ -16,8 +16,10 @@
 #include "App_config.h"
 #include "Log.h"
 
-#include "Memory.hpp"
 #include "GPU.hpp"
+#include "Memory.hpp"
+#include "MemoryController.hpp"
+#include "TLB.hpp"
 
 /** ===============================================================================================
  * \name    GMMU
@@ -45,6 +47,9 @@ public:
  */
 public:
     void cycle ();
+
+    void Access_Processing ();
+    void Page_Fault_Handler ();
     
 /* ************************************************************************************************
  * Parameter
@@ -55,6 +60,13 @@ public:
 private:
 
     GPU* mGPU;
+
+    /* *******************************************************************
+     * \param model_id      the cgroup is isolated in each model
+     * \param cgroup        the cgroup, use LRU
+     * *******************************************************************
+    */
+	map<int, pair<int, LRU_TLB<int, Page*>>> mCGroups;
 
 };
 

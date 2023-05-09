@@ -76,7 +76,7 @@ public:
 public:
 
     /* The storage size of memory */
-    int storageSize;        // basic unit in Byte
+    const int storageSize; 	                // unit (KB)
 
     /* The throughput size  */
     int dataWidth_I;
@@ -86,7 +86,7 @@ public:
     int clockSpeed;
 
     /* The actually storaged data */
-    unordered_map<int, int8_t> data; // first is PA, second is data
+    unordered_map<int, unsigned char> data;    // first is PA, second is data
 
     /* Recorder */
     int numOfRead;

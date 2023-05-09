@@ -21,7 +21,10 @@
  */
 MemoryController::MemoryController(unsigned long long storage_limit, int page_size) : storageLimit(storage_limit), pageFrameOffset(log2(page_size))
 {
-    init();
+    for (int i = 0; i < DRAM_SPACE / PAGE_SIZE; i++)
+    {
+        createPage();
+    }
 
 #if (PRINT_MEMORY_ALLOCATION)
     printInfo();
@@ -40,37 +43,7 @@ MemoryController::MemoryController(unsigned long long storage_limit, int page_si
  */
 MemoryController::~MemoryController()
 {
-    while(!availablePageList.empty())
-    {
-        Page* p = availablePageList.front();
-        availablePageList.pop();
-        delete p;
-    }
-    while(!usedPageList.empty())
-    {
-        Page* p = usedPageList.front();
-        usedPageList.pop();
-        delete p;
-    }
-}
 
-
-/** ===============================================================================================
- * \name    init
- * 
- * \brief   Pre-build some page frame for the DRAM needed.
- * 
- * \endcond
- * ================================================================================================
- */
-void
-MemoryController::init()
-{
-    log_D("MemoryController", "init");
-    for (int i = 0; i < DRAM_SPACE / PAGE_SIZE; i++)
-    {
-        createPage();
-    }
 }
 
 
@@ -103,7 +76,8 @@ MemoryController::createPage()
 {
     ASSERT(pageIndex << pageFrameOffset <= storageLimit, "Cannot create anymore physical page");
 
-    availablePageList.emplace(move(new Page(pageIndex++)));
+    mPages.insert(make_pair(pageIndex, Page(pageIndex)));
+    availablePageList.push(&mPages[pageIndex++]);
 
 }
 
@@ -133,10 +107,11 @@ MemoryController::memoryAllocate (int numOfByte)
     for (int i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
     {
         if (availablePageList.empty()){
+            log_W("MemoryController::memoryAllocate()", "Out of DRAM Size");
             createPage();
         }
 
-        usedPageList.push(move(availablePageList.front()));
+        usedPageList.push(availablePageList.front());
         availablePageList.pop();
         Page* tempPage = usedPageList.back();
 

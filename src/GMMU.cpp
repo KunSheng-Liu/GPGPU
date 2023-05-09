@@ -49,6 +49,10 @@ void
 GMMU::cycle()
 {
     log_I("GMMU Cycle", to_string(total_gpu_cycle));
+    
+    Page_Fault_Handler();
+
+    Access_Processing();
 
     /* Return finished access to SM */
     if(!gmmu_to_sm_queue.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + "access");
@@ -80,3 +84,35 @@ GMMU::cycle()
         sm_to_gmmu_queue.pop();
     }
 }
+
+
+/** ===============================================================================================
+ * \name    Access_Processing
+ * 
+ * \brief   Process the access inside the sm_to_gmmu_queue
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+GMMU::Access_Processing()
+{
+
+}
+
+
+/** ===============================================================================================
+ * \name    Page_Fault_Handler
+ * 
+ * \brief   Handling the page fault and the penalty
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+GMMU::Page_Fault_Handler()
+{
+
+}
+
+

@@ -20,7 +20,7 @@
  * \endcond
  * ================================================================================================
  */
-Memory::Memory(int size)
+Memory::Memory(int size) : storageSize(size)
 {
     data.reserve(size);
 }

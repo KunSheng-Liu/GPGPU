@@ -18,54 +18,7 @@
 #include "App_config.h"
 #include "Log.h"
 #include "MemoryController.hpp"
-
-
-/** ===============================================================================================
- * \name    TLB
- * 
- * \brief   The class of translation lookaside table for translating the VA to PA by hash table.
- * 
- * \note    This TLB use the Least Recently Used (LRU) algorithm. The table hold the pair of start 
- *          and end physical address.
- * 
- * \endcond
- * ================================================================================================
- */
-class TLB
-{
-/* ************************************************************************************************
- * Class Constructor
- * ************************************************************************************************
- */ 
-public:
-
-    TLB(int _capacity) : capacity(_capacity) {}
-
-/* ************************************************************************************************
- * Functions
- * ************************************************************************************************
- */
-public:
-
-    pair<Page*, int> lookup (intptr_t va);
-    void insert(intptr_t va, pair<Page*, int> pa_pair);
-    
-/* ************************************************************************************************
- * Parameter
- * ************************************************************************************************
- */
-private:
-    struct PageTableEntry {
-        intptr_t VA;
-        pair<Page*, int> PAPair;
-        PageTableEntry(intptr_t va, pair<Page*, int> pa_pair) : VA(va), PAPair(pa_pair) {}
-    };
-
-    const int capacity;
-    std::list<PageTableEntry> list;
-    unordered_map<intptr_t, std::list<PageTableEntry>::iterator> table;
-};
-
+#include "TLB.hpp"
 
 
 /** ===============================================================================================
@@ -100,7 +53,7 @@ public:
  */
 private:
     MemoryController* mMC;
-    TLB mTLB;
+    TLB<intptr_t, pair<Page*, int>> mTLB;
 };
 
 #endif
