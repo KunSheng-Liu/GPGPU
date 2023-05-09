@@ -164,6 +164,7 @@ SM::cycle()
                             thread->access->page_id.insert(thread->access->page_id.end(), page_pair.second, page_pair.first);
                         } else {
                             thread->access->page_id.insert(thread->access->page_id.end(), remaining, page_pair.first);
+                            page_pair.second -= remaining;
                             break;
                         }
                     }
@@ -186,6 +187,7 @@ SM::cycle()
                             thread->access->page_id.insert(thread->access->page_id.end(), page_pair.second, page_pair.first);
                         } else {
                             thread->access->page_id.insert(thread->access->page_id.end(), remaining, page_pair.first);
+                            page_pair.second -= remaining;
                             break;
                         }
                     }

@@ -131,9 +131,9 @@ private:
 
     GMMU* mGMMU;
 
-    map<int, Warp> mWarps;
-
     SMInfo info;
+
+    map<int, Warp> mWarps;
 
     ComputingResource resource;
 
