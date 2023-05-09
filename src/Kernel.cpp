@@ -31,8 +31,8 @@
  * \endcond
  * ================================================================================================
  */
-Kernel::Kernel(int app_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies) 
-        : appID(app_id), kernelID(kernel_id), srcLayer(src_layer), dependencyKernels(dependencies)
+Kernel::Kernel(int app_id, int model_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies) 
+        : appID(app_id), modelID(model_id), kernelID(kernel_id), srcLayer(src_layer), dependencyKernels(dependencies)
         , running(false), finish(false)
 {
     requests = {};

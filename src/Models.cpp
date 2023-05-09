@@ -110,7 +110,7 @@ Model::compileToKernel()
     log_D("Model", "compileToKernel");
     
     kernelContainer.reserve(numOfLayer);
-    auto dependencyKernels = modelGraph->compileToKernel(appID, kernelContainer, {});
+    auto dependencyKernels = modelGraph->compileToKernel(appID, modelID, kernelContainer, {});
 
     log_D("Model", "compileToKernel Done");
 

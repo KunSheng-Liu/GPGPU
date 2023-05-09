@@ -63,7 +63,7 @@ public:
     void printInfo() override;
     void changeBatch (int new_batch_size) override;
     void memoryAllocate (MMU* mmu) override;
-    vector<Kernel*> compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency) override;
+    vector<Kernel*> compileToKernel(int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency) override;
     void issueLayer(ThreadArg* threadArg) override {}
     
 private:

@@ -206,19 +206,19 @@ LayerGroup::memoryAllocate(MMU* mmu)
  * ================================================================================================
  */
 vector<Kernel*> 
-LayerGroup::compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency)
+LayerGroup::compileToKernel(int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency)
 {
     log_V("LayerGroup", "compileToKernel");
     if (groupType == Group_t::CaseCade) {
         for (auto& layer: layers)
         {
-            dependency = layer->compileToKernel(app_id, container, dependency);
+            dependency = layer->compileToKernel(app_id, model_id, container, dependency);
         }
     } else {  // groupType == Group_t::CaseCode
         vector<Kernel*> new_dependency;
         for (auto& layer: layers)
         {
-            vector<Kernel*> temp = layer->compileToKernel(app_id, container, dependency);
+            vector<Kernel*> temp = layer->compileToKernel(app_id, model_id, container, dependency);
             new_dependency.insert(new_dependency.end(), temp.begin(), temp.end());
         }
         dependency = move(new_dependency);

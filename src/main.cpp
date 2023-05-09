@@ -17,14 +17,21 @@
  */
 int main (int argc, char** argv)
 {
+    timeval start, end;
+    gettimeofday(&start, NULL);
 
-    std::cout << "Hello GPGPU" << std::endl;
+        std::cout << "Hello GPGPU" << std::endl;
 
-    GPGPU mGPGPU;
+        GPGPU mGPGPU;
 
-    mGPGPU.run();
+        mGPGPU.run();
 
-    std::cout << "GPGPU Done!" << std::endl;
+        std::cout << "GPGPU Done!" << std::endl;
+
+    gettimeofday(&end, NULL);
+    unsigned long long spendTime = (1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.000001;
+    log_I("Total spend time", to_string(spendTime) + " s");
+    
 
     return 0;
 }

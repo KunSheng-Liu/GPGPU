@@ -130,7 +130,7 @@ public:
     virtual void memoryAllocate (MMU* mmu);
 
     /* Make the kernel dependency by layer graph */
-    virtual vector<Kernel*> compileToKernel (int app_id, vector<Kernel>& container, vector<Kernel*> dependency);
+    virtual vector<Kernel*> compileToKernel (int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency);
 
     /* Compile the current layer graph into GPU command */
     void Compile (MMU* mmu, Kernel* targetKernel);

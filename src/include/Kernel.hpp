@@ -39,7 +39,7 @@ class Kernel
 public:
 
     // Kernel();
-    Kernel(int app_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies);
+    Kernel(int app_id, int model_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies);
     ~Kernel();
 
 /* ************************************************************************************************
@@ -78,6 +78,9 @@ public:
 public:
     /* The index of source application. */
     const int appID;
+
+    /* The index of source model. */
+    const int modelID;
 
     /* The index of kernel. Each model have a unique index */
     const int kernelID;

@@ -177,9 +177,9 @@ Layer::memoryAllocate(MMU* mmu)
  * ================================================================================================
  */
 vector<Kernel*>
-Layer::compileToKernel(int app_id, vector<Kernel>& container, vector<Kernel*> dependency)
+Layer::compileToKernel(int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    container.emplace_back(Kernel(app_id, layerID, this, move(dependency)));
+    container.emplace_back(Kernel(app_id, model_id, layerID, this, move(dependency)));
 
     dependency.emplace_back(&container.back());
     return move(dependency);
