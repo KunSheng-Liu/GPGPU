@@ -7,6 +7,7 @@
  */
 
 #include "include/GPU.hpp"
+#include "include/GMMU.hpp"
 
 /** ===============================================================================================
  * \name    GPU
@@ -18,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU())
+GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU(this))
 {
     /* Create SMs */
     for (int i = 0; i < GPU_SM_NUM; i++)

@@ -37,7 +37,7 @@ class Request{
  * ************************************************************************************************
  */ 
 public:
-    Request (vector<pair<int32_t, int>> read_pages = {}, vector<pair<int32_t, int>> write_pages = {}) 
+    Request (vector<pair<unsigned long long, int>> read_pages = {}, vector<pair<unsigned long long, int>> write_pages = {}) 
         : numOfInstructions(0), readPages(read_pages), writePages(write_pages) {}
 
 /* ************************************************************************************************
@@ -45,6 +45,7 @@ public:
  * ************************************************************************************************
  */
 public:
+    int requst_id;
     int numOfInstructions;
     
     /* *******************************************************************
@@ -52,7 +53,7 @@ public:
      * \param second    number of access to this physical address
      * *******************************************************************
     */
-    vector<pair<int32_t, int>> readPages, writePages;
+    vector<pair<unsigned long long, int>> readPages, writePages;
     
 };
 
@@ -109,7 +110,8 @@ private:
     map<int, SM> mSMs;
 
     list<Kernel*> runningKernels;
-};
 
+friend GMMU;
+};
 
 #endif

@@ -73,7 +73,7 @@ Kernel::compileRequest (MMU* mmu)
     kernelInfo.numOfMemory = srcLayer->getMemoryUsage();
 
 #if PRINT_MODEL_DETIAL
-    printInfo();
+    printInfo(true);
 #endif
     return !requests.empty();
 }
@@ -92,6 +92,7 @@ Kernel::compileRequest (MMU* mmu)
 void
 Kernel::addRequest(Request* request)
 {
+    request->requst_id = requests.size();
     kernelInfo.numOfRead  += request->readPages.size();
     kernelInfo.numOfWrite += request->writePages.size();
     kernelInfo.numOfCycle += request->numOfInstructions;
@@ -171,8 +172,22 @@ Kernel::release()
  * ================================================================================================
  */
 void
-Kernel::printInfo()
+Kernel::printInfo(bool title)
 {
+    if (title) {
+        std::cout << std::left << std::setw(10) << "appID"; 
+        std::cout << std::left << std::setw(10) << "kernelID"; 
+        std::cout << std::left << std::setw(10) << "Request"; 
+        std::cout << std::left << std::setw(10) << "Read"; 
+        std::cout << std::left << std::setw(10) << "Write"; 
+        std::cout << std::left << std::setw(10) << "Memory"; 
+        std::cout << std::left << std::setw(10) << "Cycle"; 
+        std::cout << std::left << std::setw(14) << "Dependency"; 
+        std::cout << std::left << std::setw(10) << "Finish"; 
+        std::cout << std::endl;
+    }
+    
+
     std::cout << std::left << std::setw(10) << appID; 
     std::cout << std::left << std::setw(10) << kernelID; 
     std::cout << std::left << std::setw(10) << kernelInfo.numOfRequest; 
@@ -180,12 +195,13 @@ Kernel::printInfo()
     std::cout << std::left << std::setw(10) << kernelInfo.numOfWrite; 
     std::cout << std::left << std::setw(10) << kernelInfo.numOfMemory; 
     std::cout << std::left << std::setw(10) << kernelInfo.numOfCycle; 
+
     for (auto& kernel : dependencyKernels)
     {
-        std::cout << std::left << std::setw(3) << kernel->kernelID; 
+        std::cout << kernel->kernelID << ", "; 
     }
 
-    std::cout << std::right << std::setw(10) << finish; 
+    std::cout << std::right << std::setw(15) << finish; 
 
     std::cout << std::endl;
 }

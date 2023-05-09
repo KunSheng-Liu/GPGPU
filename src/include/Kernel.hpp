@@ -64,7 +64,7 @@ public:
     Request* accessRequest ();
 
     void release ();
-    void printInfo ();
+    void printInfo (bool title = false);
 
     bool isReady();
     bool isFinish()  {return finish;}

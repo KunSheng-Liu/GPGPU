@@ -114,10 +114,14 @@ Model::compileToKernel()
 
     log_D("Model", "compileToKernel Done");
 
+#if (LOG_LEVEL >= VERBOSE)
+    bool title = true;
     for (auto& kernel : kernelContainer)
     {
-        kernel.printInfo();
+        kernel.printInfo(title);
+        title = false;
     }
+#endif
 
     return kernelContainer;
 }

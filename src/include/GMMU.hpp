@@ -3,7 +3,7 @@
  * 
  * \brief   Declare the structure of GMMU
  * 
- * \date    APR 30, 2023
+ * \date    May 9, 2023
  */
 
 #ifndef _GMMU_HPP_
@@ -15,6 +15,9 @@
  */
 #include "App_config.h"
 #include "Log.h"
+
+#include "Memory.hpp"
+#include "GPU.hpp"
 
 /** ===============================================================================================
  * \name    GMMU
@@ -32,7 +35,7 @@ class GMMU
  */ 
 public:
 
-    GMMU();
+    GMMU(GPU* gpu);
 
    ~GMMU();
 
@@ -47,6 +50,12 @@ public:
  * Parameter
  * ************************************************************************************************
  */
+	queue<MemoryAccess*> sm_to_gmmu_access;
+	queue<MemoryAccess*> gmmu_to_sm_access;
+private:
+
+    GPU* mGPU;
+
 };
 
 #endif

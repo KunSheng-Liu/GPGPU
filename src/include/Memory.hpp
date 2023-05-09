@@ -17,6 +17,26 @@
 #include "Log.h"
 
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */ 
+typedef enum {
+	Write = 0,
+	Read  = 1,
+}AccessType;
+
+struct MemoryAccess {
+	int sm_id;
+	int block_id;
+    int request_id;
+    AccessType type;
+
+    vector<unsigned long long> page_id;
+
+    MemoryAccess(int sm_id, int block_id, int request_id, AccessType type) 
+            : sm_id(sm_id), block_id(block_id), request_id(request_id), type(type) {}
+};
 
 /** ===============================================================================================
  * \name    Memory

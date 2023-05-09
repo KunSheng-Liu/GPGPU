@@ -3,7 +3,7 @@
  * 
  * \brief   Declare the structure of SM
  * 
- * \date    APR 30, 2023
+ * \date    May 7, 2023
  */
 
 #ifndef _SM_HPP_
@@ -17,6 +17,7 @@
 #include "Log.h"
 
 #include "Kernel.hpp"
+#include "Memory.hpp"
 
 /* ************************************************************************************************
  * Type Define
@@ -31,10 +32,58 @@ struct SMInfo {
 
 struct ComputingResource {
     int remaining_blocks  = GPU_MAX_BLOCK_PER_SM;
-    int remaining_warps   = GPU_WARP_PER_SM;
+    int remaining_warps   = GPU_MAX_WARP_PER_SM;
     int remaining_threads = GPU_MAX_THREAD_PER_SM;
     int remaining_shmem   = GPU_SHARED_MEMORY_PER_SM;
     int remaining_regs    = GPU_REGISTER_PER_SM;
+};
+
+struct AccessThread {
+    int waiting_time = 0;
+    MemoryAccess* access;
+};
+
+
+/** ===============================================================================================
+ * \name    Warp
+ * 
+ * \brief   The class of ...
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+class Warp
+{
+
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+
+    Warp() : idleThread(list<AccessThread>(GPU_MAX_THREAD_PER_WARP)), busyThread({})
+           , request(nullptr), isIdle(true), isBusy(false) {} 
+
+   ~Warp() {}
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+
+/* ************************************************************************************************
+ * Parameter
+ * ************************************************************************************************
+ */
+public:
+    bool isIdle;
+    bool isBusy;
+
+    Request* request;
+
+    list<AccessThread> idleThread;  // idel
+    list<AccessThread> busyThread;  // is executing
+    list<AccessThread> waitingThread; // is waiting gmmu handle
 };
 
 
@@ -54,7 +103,7 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel) : runningKernel(kernel), finish(false) {};
+    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel), finish(false) {};
 
 /* ************************************************************************************************
  * Parameter
@@ -65,17 +114,17 @@ public:
 
     bool finish;
 
-    unsigned bind_warp_number = 0;
-
 	unsigned launch_warp_counter = 0;
 	unsigned long long launch_access_counter = 0; 
 	unsigned long long return_access_counter = 0;
 
-    queue<int> readBuffer   = {};
-    queue<int> writeBuffer  = {};
-	list <int> waitingTimes = {};
-
 	Kernel* runningKernel = nullptr;
+
+    list<Warp> mWarps;
+
+private:
+    /* Number of block be created */
+    static int blockCount;
 };
 
 
@@ -134,7 +183,11 @@ private:
     ComputingResource resource;
 
     list<Block*> runningBlocks;
+    
+	list<MemoryAccess*> sm_to_gmmu_access;
+	list<MemoryAccess*> gmmu_to_sm_access;
 
+friend GMMU;
 };
 
 #endif
