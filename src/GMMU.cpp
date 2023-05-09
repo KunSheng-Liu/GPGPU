@@ -51,30 +51,32 @@ GMMU::cycle()
     log_I("GMMU Cycle", to_string(total_gpu_cycle));
 
     /* Return finished access to SM */
-    if(!gmmu_to_sm_access.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_access.size()) + "access");
-    while(!gmmu_to_sm_access.empty())
+    if(!gmmu_to_sm_queue.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + "access");
+    while(!gmmu_to_sm_queue.empty())
     {
-        MemoryAccess* access = gmmu_to_sm_access.front();
-        mGPU->mSMs[access->sm_id].gmmu_to_sm_access.push_back(move(access));
-        gmmu_to_sm_access.pop();
-    }
-
-    /* Handling the accesses */
-    if(!sm_to_gmmu_access.empty()) log_D("GMMU", "Handle " + to_string(sm_to_gmmu_access.size()) + "access");
-    while(!sm_to_gmmu_access.empty())
-    {
-        gmmu_to_sm_access.push(move(sm_to_gmmu_access.front()));
-        sm_to_gmmu_access.pop();
+        MemoryAccess* access = gmmu_to_sm_queue.front();
+        mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_sm_queue.push_back(move(access));
+        gmmu_to_sm_queue.pop();
     }
 
     /* Collect the accesses from each SM */
     for (auto& sm : mGPU->mSMs) { 
-
-        while(!sm.second.sm_to_gmmu_access.empty())
+        for (auto& warp : sm.second.mWarps)
         {
-            sm_to_gmmu_access.push(move(sm.second.sm_to_gmmu_access.front()));
-            sm.second.sm_to_gmmu_access.pop_front();
+            while(!warp.second.sm_to_gmmu_queue.empty())
+            {
+                sm_to_gmmu_queue.push(move(warp.second.sm_to_gmmu_queue.front()));
+                warp.second.sm_to_gmmu_queue.pop_front();
+            }
         }
 	}
-    if(!sm_to_gmmu_access.empty()) log_D("GMMU", "Receive " + to_string(gmmu_to_sm_access.size()) + "access");
+    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Receive " + to_string(gmmu_to_sm_queue.size()) + "access");
+
+    /* Handling the accesses */
+    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + "access");
+    while(!sm_to_gmmu_queue.empty())
+    {
+        gmmu_to_sm_queue.push(move(sm_to_gmmu_queue.front()));
+        sm_to_gmmu_queue.pop();
+    }
 }

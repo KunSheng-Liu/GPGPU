@@ -18,6 +18,7 @@
 
 #include "Kernel.hpp"
 #include "Memory.hpp"
+#include "Warp.hpp"
 
 /* ************************************************************************************************
  * Type Define
@@ -38,54 +39,6 @@ struct ComputingResource {
     int remaining_regs    = GPU_REGISTER_PER_SM;
 };
 
-struct AccessThread {
-    int waiting_time = 0;
-    MemoryAccess* access;
-};
-
-
-/** ===============================================================================================
- * \name    Warp
- * 
- * \brief   The class of ...
- * 
- * \endcond
- * ================================================================================================
- */
-class Warp
-{
-
-/* ************************************************************************************************
- * Class Constructor
- * ************************************************************************************************
- */ 
-public:
-
-    Warp() : idleThread(list<AccessThread>(GPU_MAX_THREAD_PER_WARP)), busyThread({})
-           , request(nullptr), isIdle(true), isBusy(false) {} 
-
-   ~Warp() {}
-
-/* ************************************************************************************************
- * Functions
- * ************************************************************************************************
- */
-
-/* ************************************************************************************************
- * Parameter
- * ************************************************************************************************
- */
-public:
-    bool isIdle;
-    bool isBusy;
-
-    Request* request;
-
-    list<AccessThread> idleThread;  // idel
-    list<AccessThread> busyThread;  // is executing
-    list<AccessThread> waitingThread; // is waiting gmmu handle
-};
-
 
 /** ===============================================================================================
  * \name    Block
@@ -103,7 +56,7 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel), finish(false) {};
+    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel), isFinish(false) {};
 
 /* ************************************************************************************************
  * Parameter
@@ -112,7 +65,7 @@ public:
 public:
     int block_id;
 
-    bool finish;
+    bool isFinish;
 
 	unsigned launch_warp_counter = 0;
 	unsigned long long launch_access_counter = 0; 
@@ -120,7 +73,7 @@ public:
 
 	Kernel* runningKernel = nullptr;
 
-    list<Warp> mWarps;
+    list<Warp*> warps;
 
 private:
     /* Number of block be created */
@@ -178,14 +131,13 @@ private:
 
     GMMU* mGMMU;
 
+    map<int, Warp> mWarps;
+
     SMInfo info;
 
     ComputingResource resource;
 
     list<Block*> runningBlocks;
-    
-	list<MemoryAccess*> sm_to_gmmu_access;
-	list<MemoryAccess*> gmmu_to_sm_access;
 
 friend GMMU;
 };

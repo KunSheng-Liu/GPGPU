@@ -1,13 +1,13 @@
 /**
- * \name    GMMU.hpp
+ * \name    Warp.hpp
  * 
- * \brief   Declare the structure of GMMU
+ * \brief   Declare the structure of Warp
  * 
  * \date    May 9, 2023
  */
 
-#ifndef _GMMU_HPP_
-#define _GMMU_HPP_
+#ifndef _WARP_HPP_
+#define _WARP_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -16,46 +16,67 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Kernel.hpp"
 #include "Memory.hpp"
-#include "GPU.hpp"
+
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct AccessThread {
+    int waiting_time = 0;
+    MemoryAccess* access;
+};
+
 
 /** ===============================================================================================
- * \name    GMMU
+ * \name    Warp
  * 
- * \brief   Contains the model and it's data
+ * \brief   The class of ...
  * 
  * \endcond
  * ================================================================================================
  */
-class GMMU
+class Warp
 {
+
 /* ************************************************************************************************
  * Class Constructor
  * ************************************************************************************************
  */ 
 public:
 
-    GMMU(GPU* gpu);
+    Warp(int id = -1) : warpID(id), idleThread(list<AccessThread>(GPU_MAX_THREAD_PER_WARP)), busyThread({})
+           , request(nullptr), isIdle(true), isBusy(false) {} 
 
-   ~GMMU();
+   ~Warp() {}
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
-public:
-    void cycle ();
-    
+
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
-	queue<MemoryAccess*> sm_to_gmmu_queue;
-	queue<MemoryAccess*> gmmu_to_sm_queue;
-private:
+public:
+    const int warpID;
 
-    GPU* mGPU;
+    bool isIdle;
+    bool isBusy;
 
+    Request* request;
+
+    list<AccessThread> idleThread;  // idel
+    list<AccessThread> busyThread;  // is executing
+    list<AccessThread> waitingThread; // is waiting gmmu handle
+    
+	list<MemoryAccess*> sm_to_gmmu_queue;
+	list<MemoryAccess*> gmmu_to_sm_queue;
+
+friend GMMU;
 };
+
 
 #endif

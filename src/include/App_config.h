@@ -59,6 +59,7 @@ class MemoryController;
 class GPU;
 class GMMU;
 class SM;
+class Warp;
 class Block;
 class Kernel;
 class Request;
@@ -85,6 +86,7 @@ class Request;
 #define LOG_LEVEL                   INFO
 #define PRINT_MODEL_DETIAL          true
 #define PRINT_MEMORY_ALLOCATION     false
+#define PRINT_ACCESS_PATTERN        true
 
 
 /* ************************************************************************************************

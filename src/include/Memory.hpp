@@ -29,13 +29,14 @@ typedef enum {
 struct MemoryAccess {
 	int sm_id;
 	int block_id;
+	int warp_id;
     int request_id;
     AccessType type;
 
     vector<unsigned long long> page_id;
 
-    MemoryAccess(int sm_id, int block_id, int request_id, AccessType type) 
-            : sm_id(sm_id), block_id(block_id), request_id(request_id), type(type) {}
+    MemoryAccess(int sm_id, int block_id, int warp_id, int request_id, AccessType type) 
+            : sm_id(sm_id), block_id(block_id), warp_id(warp_id), request_id(request_id), type(type) {}
 };
 
 /** ===============================================================================================
