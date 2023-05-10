@@ -42,8 +42,7 @@ struct Page {
     PageInfo info;
     Page* nextPage;
 
-    Page(unsigned page_index = -1, Page* next_page = nullptr)
-         : pageIndex(page_index), nextPage(next_page) {}
+    Page(unsigned page_index = -1, Page* next_page = nullptr) : pageIndex(page_index), nextPage(next_page) {}
 };
 
 
@@ -72,7 +71,7 @@ public:
     
     void cycle ();
 
-    Page* access (int page_id) {return &mPages[page_id];}
+    Page* refer (int page_id) {return &mPages[page_id];}
 
     Page* memoryAllocate (int numByte);
 

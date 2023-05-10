@@ -95,8 +95,8 @@ GPGPU::run ()
  * ================================================================================================
  */
 int 
-GPGPU::next_clock_domain() {
-    
+GPGPU::next_clock_domain() 
+{  
 	double smallest = min4(gpu_time, cpu_time, mc_time, gmmu_time);
 
 	int mask = 0x00;

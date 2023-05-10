@@ -67,14 +67,17 @@ private:
 
 	list<MemoryAccess*> sm_to_gmmu_queue;
 	list<MemoryAccess*> gmmu_to_sm_queue;
+    
+    /* Page Fault handler */
+	unsigned long long wait_cycle = 0;
+    list<pair<unsigned long long, MemoryAccess*>> page_fault_process_queue;
 
     /* *******************************************************************
      * \param model_id      the cgroup is isolated in each model
      * \param cgroup        the cgroup, use LRU
      * *******************************************************************
-    */
-	map<int, pair<int, LRU_TLB<int, Page*>>> mCGroups;
-
+     */
+	map<int, pair<int, LRU_TLB<unsigned long long, Page*>>> mCGroups;
 };
 
 #endif

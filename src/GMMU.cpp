@@ -86,36 +86,50 @@ GMMU::Access_Processing()
             sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), warp.second.sm_to_gmmu_queue);
         }
 	}
-    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + "access");
+    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + " access");
 
 
     /* *******************************************************************
      * Handling the accesses
      * *******************************************************************
      */
-    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + "access");
-    for (auto access = sm_to_gmmu_queue.begin(); access != sm_to_gmmu_queue.end();)
+    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
+    for (auto access : sm_to_gmmu_queue)
     {
-        Page* page;
-        /* Hit */
-        if (mCGroups[(*access)->model_id].second.lookup((*access)->page_id, page))
+        int count = 0;
+        auto model_id = access->model_id;
+
+        /* This lookup won't trigger the LRU */
+        for (auto page_id : access->pageIDs)
         {
-            ((*access)->type == Read) ? page->info.read_counter++ : page->info.write_counter++;
-            ++page->info.access_count;
-            mMC->gmmu_to_mc_queue.splice(mMC->gmmu_to_mc_queue.end(), sm_to_gmmu_queue, access++);
+            !mCGroups[model_id].second.lookup(page_id) && ++count;
+        }
+
+        /* Record the access info */
+        if (!count) 
+        {
+            Page* page;
+            for (auto page_id : access->pageIDs)
+            {
+                mCGroups[model_id].second.lookup(page_id, page);
+                ++page->info.access_count;
+                (access->type == Read) ? ++page->info.read_counter : ++page->info.write_counter;
+            }
+
+            mMC->gmmu_to_mc_queue.push_back(access);
         } 
-        /* Miss */
+        /* If one of the page miss, all page are push into MSHRs */
         else {
-            MSHRs.splice(MSHRs.end(), sm_to_gmmu_queue, access++);
+            MSHRs.push_back(access);
         }
     }
-
+    
 
     /* *******************************************************************
      * Return finished access to SM
      * *******************************************************************
      */
-    if(!gmmu_to_sm_queue.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + "access");
+    if(!gmmu_to_sm_queue.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
     while(!gmmu_to_sm_queue.empty())
     {
         MemoryAccess* access = gmmu_to_sm_queue.front();
@@ -137,24 +151,70 @@ void
 GMMU::Page_Fault_Handler()
 {
     log_D("GMMU", "Page_Fault_Handler");
-    for (auto& access : MSHRs)
-    {
-        Page* page = mMC->access(access->page_id);
-        if (page->info.location == SPACE_VRAM)
-        {
-            continue;
-        }
-        page->info.location = SPACE_VRAM;
-        ++page->info.swap_count;
 
-        Page* evicted_page = mCGroups[access->model_id].second.insert(access->page_id, page);
-        if (evicted_page)
+    /* *******************************************************************
+     * Waiting for communication to the CPU and migration overhead
+     * *******************************************************************
+     */
+    if (wait_cycle > 0)
+    {
+        cout << "Page_Fault_Handler: " << --wait_cycle << endl;
+        return;
+    } 
+    else {
+        /* *******************************************************************
+         * Perform page movement after finish delay of communication and 
+         * migration
+         * *******************************************************************
+         */
+        list<MemoryAccess*> finish_process_queue;
+        for (auto fault_pair : page_fault_process_queue)
         {
-            evicted_page->info.location = SPACE_DRAM;
-            ++evicted_page->info.swap_count;
+            auto page_id = fault_pair.first;
+            auto access = fault_pair.second;
+
+            Page* page;
+            /* Migration from DRAM to VRAM */
+            page = mMC->refer(page_id);
+            page->info.location = SPACE_VRAM;
+            ++page->info.swap_count;
+            page = mCGroups[access->model_id].second.insert(page_id, page);
+
+            /* Eviction happen */
+            if (page)
+            {
+                page->info.location = SPACE_DRAM;
+                ++page->info.swap_count;
+            }
+            
         }
+        /* *******************************************************************
+         * Handle return
+         * *******************************************************************
+         */
+        sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), finish_process_queue);
+
+        /* *******************************************************************
+         * Launch the access inside the MSHRs to handling queue, not remove the
+         * access from the MSHRs until processing over.
+         * *******************************************************************
+         */
+        for (auto access : MSHRs)
+        {
+            for (auto page_id : access->pageIDs)
+            {
+                page_fault_process_queue.push_back(make_pair(page_id, access));
+            }
+            
+        }
+        finish_process_queue.splice(finish_process_queue.end(), MSHRs);
+        cout << "PAGE_FAULT_COMMUNICATION_CYCLE: " << PAGE_FAULT_COMMUNICATION_CYCLE << endl;
+        cout << "PAGE_FAULT_MIGRATION_UNIT_CYCLE: " << PAGE_FAULT_MIGRATION_UNIT_CYCLE << endl;
+        // wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+        wait_cycle = 1;
+        cout << "wait_cycle: " << wait_cycle << endl;
     }
-    sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), MSHRs);
+    
 }
 
 
