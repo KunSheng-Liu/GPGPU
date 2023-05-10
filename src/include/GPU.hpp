@@ -105,8 +105,9 @@ public:
     list<Kernel*> finishedKernels;
 
 private:
-    MemoryController* mMC;
     GMMU mGMMU;
+    MemoryController* mMC;
+    
     map<int, SM> mSMs;
 
     list<Kernel*> runningKernels;

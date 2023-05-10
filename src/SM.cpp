@@ -80,141 +80,107 @@ SM::cycle()
     {
         cout << "SM: " << smID << " Execute block: " << block->block_id << endl;
 
-        
         int access_count = 0;
         for (auto& warp : block->warps)
         {
-            /* Handle gmmu to sm response */
+            /* *******************************************************************
+             * Handle gmmu to sm response
+             * *******************************************************************
+             */
             for (auto access = warp->gmmu_to_sm_queue.begin(); access != warp->gmmu_to_sm_queue.end();)
             {
-                ASSERT(warp->gmmu_to_sm_queue.size() == warp->waitingThread.size(), "Error");
-
                 for (auto thread = warp->waitingThread.begin(); thread != warp->waitingThread.end(); thread++)
                 {
-                    if (thread->access == *access) {
-                        /* Is the last access ? */
-                        if (warp->request->readPages.empty() && warp->request->writePages.empty() && warp->waitingThread.size() == 1)
+                    if (thread->access == *access) 
+                    {
+                        MemoryAccess* temp = thread->access;
+                        thread->access = nullptr;
+                        delete temp;
+
+                        /* Is the request finish ? */
+                        if (thread->request->writePages.empty())
                         {
-                            thread->waiting_time = warp->request->numOfInstructions;
-                            warp->busyThread.splice(warp->busyThread.end(), warp->waitingThread, thread);
-                        } else {
-                            MemoryAccess* temp = thread->access;
-                            thread->access = nullptr;
+                            Request* temp = thread->request;
+                            thread->request = nullptr;
                             delete temp;
                             warp->idleThread.splice(warp->idleThread.end(), warp->waitingThread, thread);
+                        } else {
+                            warp->busyThread.splice(warp->busyThread.end(), warp->waitingThread, thread);
                         }
                         access = warp->gmmu_to_sm_queue.erase(access)++;
                         break;
                     }
                 }
-                
                 ASSERT("Handle gmmu to sm", "Missing Access in waiting thread");
             }
-            
-            /* Handling the executing threads */
-            for (auto thread = warp->busyThread.begin(); thread != warp->busyThread.end();)
-            {
-                if (thread->waiting_time == 0) {
-                    MemoryAccess* temp = thread->access;
-                    thread->access = nullptr;
-                    delete temp;
-                    warp->idleThread.splice(warp->idleThread.end(), warp->busyThread, thread++);
-                } else {
-                    thread->waiting_time--;
-                    ++thread;
-                }
-            }
-            
-            /* Handle the warp status */
+
+
+            /* *******************************************************************
+             * Handle the warp status
+             * *******************************************************************
+             */
             if (warp->idleThread.size() == GPU_MAX_THREAD_PER_WARP)
             {
-                Request* temp = warp->request;
-                warp->request = nullptr;
-                delete temp;
-
-                if (!block->runningKernel->requests.empty())
-                {
-                    /* Start a new request */
-                    warp->request = block->runningKernel->accessRequest();
-                    log_V("Executing request", to_string(warp->request->requst_id));
-                    warp->isBusy = true;
-                } else {
-                    /* Skip this warp */
-                    warp->isBusy = false;
-                    continue;
-                }
+                warp->isBusy = !block->runningKernel->requests.empty();
+            }
+            
+            /* *******************************************************************
+             * Bind request to idel threads
+             * *******************************************************************
+             */
+            for (auto thread = warp->idleThread.begin(); thread != warp->idleThread.end() && !block->runningKernel->requests.empty();)
+            {
+                thread->request = block->runningKernel->accessRequest();
+                thread->readIndex = 0;
+                log_D("Executing request", to_string(thread->request->requst_id));
+                warp->busyThread.splice(warp->busyThread.end(), warp->idleThread, thread++);
             }
 
-            /* Launch new access */
-            for (auto thread = warp->idleThread.begin(); thread != warp->idleThread.end();)
+
+            /* *******************************************************************
+             * Launch the access
+             * *******************************************************************
+             */
+            for (auto thread = warp->busyThread.begin(); thread != warp->busyThread.end();)
             {
                 /* Handle the read addresses */
-                if (!warp->request->readPages.empty()) 
+                if (thread->readIndex != thread->request->readPages.size()) 
                 {
-                    thread->access = new MemoryAccess(smID, block->block_id, warp->warpID, warp->request->requst_id, AccessType::Read);
-                    thread->access->page_id.reserve(GPU_MAX_ACCESS_NUMBER);
+                    thread->access = new MemoryAccess(block->runningKernel->modelID, smID, block->block_id, warp->warpID, thread->request->requst_id, AccessType::Write);
+                    
+                    auto& page_pair = thread->request->readPages.at(thread->readIndex);
+                    thread->access->page_id = page_pair.first;
 
-                    int count = 0;
-                    for (auto& page_pair : warp->request->readPages)
-                    {
-                        int remaining = GPU_MAX_ACCESS_NUMBER - thread->access->page_id.size();
-                        if (remaining > page_pair.second)
-                        {
-                            count++;
-                            thread->access->page_id.insert(thread->access->page_id.end(), page_pair.second, page_pair.first);
-                        } else {
-                            thread->access->page_id.insert(thread->access->page_id.end(), remaining, page_pair.first);
-                            page_pair.second -= remaining;
-                            break;
-                        }
-                    }
-                    warp->request->readPages.erase(warp->request->readPages.begin(), warp->request->readPages.begin() + count);
+                    ((--page_pair.second) == 0) && (++thread->readIndex);
                 } 
 
+                /* Executing the request */
+                else if (thread->request->numOfInstructions-- != 0) {}
+
                 /* Handle the write addresses */ 
-                else if (!warp->request->writePages.empty()) 
+                else if (!thread->request->writePages.empty()) 
                 {
-                    thread->access = new MemoryAccess(smID, block->block_id, warp->warpID, warp->request->requst_id, AccessType::Write);
-                    thread->access->page_id.reserve(GPU_MAX_ACCESS_NUMBER);
-
-                    int count = 0;
-                    for (auto& page_pair : warp->request->writePages)
+                    thread->access = new MemoryAccess(block->runningKernel->modelID, smID, block->block_id, warp->warpID, thread->request->requst_id, AccessType::Write);
+                    
+                    auto& page_pair = thread->request->writePages.front();
+                    thread->access->page_id = page_pair.first;
+                    if ((--page_pair.second) == 0)
                     {
-                        int remaining = GPU_MAX_ACCESS_NUMBER - thread->access->page_id.size();
-                        if (remaining >= page_pair.second)
-                        {
-                            count++;
-                            thread->access->page_id.insert(thread->access->page_id.end(), page_pair.second, page_pair.first);
-                        } else {
-                            thread->access->page_id.insert(thread->access->page_id.end(), remaining, page_pair.first);
-                            page_pair.second -= remaining;
-                            break;
-                        }
+                        thread->request->writePages.erase(thread->request->writePages.begin());
                     }
-                    warp->request->writePages.erase(warp->request->writePages.begin(), warp->request->writePages.begin() + count);
-
-                } else {
-                    break;
                 }
 
                 /* push access to gmmu */
-                if (!thread->access->page_id.empty())
+                if (!(thread->access == nullptr))
                 {
-                    access_count += thread->access->page_id.size();
-#if (PRINT_ACCESS_PATTERN)
-                    cout << "New access page: ";
-                    for (auto page : thread->access->page_id)
-                    {
-                        cout << page << ", ";
-                    }
-                    cout << endl;
-#endif
+                    ++access_count;
                     warp->sm_to_gmmu_queue.push_back(thread->access);
-                    warp->waitingThread.splice(warp->waitingThread.end(), warp->idleThread, thread++);
+                    warp->waitingThread.splice(warp->waitingThread.end(), warp->busyThread, thread++);
 
                 } else {
                     ++thread;
                 }
+                
             }
             
         }
@@ -239,24 +205,28 @@ SM::bindKernel(Kernel* kernel)
     if (resource.remaining_blocks == 0 || resource.remaining_warps == 0) return false;
 
     /* Baseline: each kernel get all resource of SM */
-    Block* b = new Block(kernel);
-
-    /* Greedy bind all available warp to current block */
-    for (auto& warp : mWarps)
+    int launch_block_num = ceil(resource.remaining_warps / GPU_MAX_WARP_PER_BLOCK);
+    for (int i = 0; i < launch_block_num; i++)
     {
-        if(warp.second.isIdle)
+        Block* b = new Block(kernel);
+
+        /* Greedy bind all available warp to current block */
+        for (auto& warp : mWarps)
         {
-            b->warps.push_back(&warp.second);
-            warp.second.isIdle = false;
-            --resource.remaining_warps;
+            if(warp.second.isIdle)
+            {
+                b->warps.push_back(&warp.second);
+                warp.second.isIdle = false;
+                --resource.remaining_warps;
+            }
+            if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
         }
+        
+        cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
+
+        runningBlocks.emplace_back(move(b));
+        resource.remaining_blocks--;
     }
-    
-    cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
-
-    runningBlocks.emplace_back(move(b));
-    resource.remaining_blocks--;
-
 
     return true;
 }

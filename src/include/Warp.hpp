@@ -24,7 +24,10 @@
  * ************************************************************************************************
  */
 struct AccessThread {
-    int waiting_time = 0;
+    /* Read index for avoiding the erase overhead */
+    int readIndex = 0;
+
+    Request* request;
     MemoryAccess* access;
 };
 
@@ -47,7 +50,7 @@ class Warp
 public:
 
     Warp(int id = -1) : warpID(id), idleThread(list<AccessThread>(GPU_MAX_THREAD_PER_WARP)), busyThread({})
-           , request(nullptr), isIdle(true), isBusy(false) {} 
+           , isIdle(true), isBusy(false) {} 
 
    ~Warp() {}
 
@@ -66,11 +69,10 @@ public:
     bool isIdle;
     bool isBusy;
 
-    Request* request;
-
-    list<AccessThread> idleThread;  // idel
-    list<AccessThread> busyThread;  // is executing
-    list<AccessThread> waitingThread; // is waiting gmmu handle
+    /* The thread queues that handle the access state machine */
+    list<AccessThread> idleThread;      // idel
+    list<AccessThread> busyThread;      // is executing
+    list<AccessThread> waitingThread;   // is waiting gmmu handle
     
 	list<MemoryAccess*> sm_to_gmmu_queue;
 	list<MemoryAccess*> gmmu_to_sm_queue;

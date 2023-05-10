@@ -19,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU(this))
+GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU(this, mc))
 {
     /* Create SMs */
     for (int i = 0; i < GPU_SM_NUM; i++)
@@ -95,6 +95,7 @@ GPU::cycle()
 void
 GPU::Runtime_Block_Scheduling()
 {  
+    log_D("GPU", "Runtime_Block_Scheduling");
     /* Iterate all kernels inside the command Queue */
     queue<Kernel*> remainingKernels;
     while(!commandQueue.empty())
@@ -110,6 +111,7 @@ GPU::Runtime_Block_Scheduling()
 
         if (success) {
             runningKernels.push_back(kernel);
+            mGMMU.setCGroupSize(kernel->modelID, kernel->requests.size());
         } else {
             remainingKernels.push(kernel);
         }
@@ -132,6 +134,7 @@ GPU::Runtime_Block_Scheduling()
 void
 GPU::Check_Finish_Kernel()
 {  
+    log_D("GPU", "Check_Finish_Kernel");
     for (Kernel* kernel : runningKernels)
     {
         if (kernel->requests.empty())

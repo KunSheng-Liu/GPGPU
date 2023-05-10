@@ -16,6 +16,7 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Memory.hpp"
 
 /* ************************************************************************************************
  * Type Define
@@ -29,6 +30,9 @@ typedef enum {
 struct PageInfo {
     unsigned long long write_counter = 0;
 	unsigned long long read_counter = 0;
+
+    unsigned long access_count = 0;
+    unsigned long swap_count = 0;
 
     Page_Location location = SPACE_DRAM;
 };
@@ -68,12 +72,15 @@ public:
     
     void cycle ();
 
-    Page* memoryAllocate (int numByte);
+    Page* access (int page_id) {return &mPages[page_id];}
 
-    void createPage ();
+    Page* memoryAllocate (int numByte);
 
     void printInfo();
 
+private:
+
+    void createPage ();
 
 /* ************************************************************************************************
  * Parameter
@@ -87,9 +94,13 @@ private:
 
     map<int, Page> mPages;
 
-    queue<Page*> availablePageList;
-    queue<Page*> usedPageList;
+    list<Page*> availablePageList;
+    list<Page*> usedPageList;
 
+    list<MemoryAccess*> gmmu_to_mc_queue;
+	list<MemoryAccess*> mc_to_gmmu_queue;
+
+friend GMMU;
 };
 
 #endif

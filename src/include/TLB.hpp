@@ -38,7 +38,7 @@ class TLB
  */ 
 public:
 
-    TLB(unsigned _capacity) : capacity(_capacity) {}
+    TLB(unsigned _capacity = 0) : capacity(_capacity) {}
 
 /* ************************************************************************************************
  * Functions
@@ -68,6 +68,8 @@ public:
         }
 
         capacity = new_capacity;
+
+        return true;
     }
 
     /** ==================================================================
@@ -78,7 +80,7 @@ public:
      * \param   key     the key of data
      * \param   value   the reference of data container
      * 
-     * \return  hit or miss
+     * \return  true if hit
      * 
      * \endcond
      * ===================================================================
@@ -97,29 +99,48 @@ public:
         return true;
     }
 
+    bool lookup(Key key) 
+    {
+        return !(table.find(key) == table.end());
+    }
+
     /** ==================================================================
      * \name    insert
      * 
      * \brief   insert the VA and PA to the table
      * 
      * \param   key     the key of data
-     * \param   data    the data
+     * \param   value   the value going to insert 
+     * 
+     * \return  the value be evicted by TLB
      * 
      * \endcond
      * ===================================================================
      */
-    virtual void insert(Key key, Value value) 
+    virtual Value insert(Key key, Value value) 
     {
-        if (table.size() == capacity) {
-            auto evict_key = history.front().first;
-            history.pop_front();
-            table.erase(evict_key);
+        Value evict_value;
+
+        auto it = table.find(key);
+        if (it == table.end())
+        {
+            if (table.size() == capacity) {
+                auto evict_key = history.front().first;
+                evict_value = history.front().second;
+                history.pop_front();
+                table.erase(evict_key);
+            }
+            
+            history.emplace_back(key, value);
+            auto it = history.end();
+            table.emplace(key, --it);
+
+        } else {
+            history.splice(history.end(), history, it->second);
+            it->second->second = value;
         }
-        
-        history.emplace_back(key, value);
-        auto it = history.end();
-        --it;
-        table.emplace(key, it);
+
+        return evict_value;
     }
     
 /* ************************************************************************************************

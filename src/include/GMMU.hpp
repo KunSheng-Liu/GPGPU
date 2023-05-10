@@ -37,7 +37,7 @@ class GMMU
  */ 
 public:
 
-    GMMU(GPU* gpu);
+    GMMU(GPU* gpu, MemoryController* mc);
 
    ~GMMU();
 
@@ -48,6 +48,9 @@ public:
 public:
     void cycle ();
 
+    void setCGroupSize (int model_id, unsigned capacity);
+
+private:
     void Access_Processing ();
     void Page_Fault_Handler ();
     
@@ -55,11 +58,15 @@ public:
  * Parameter
  * ************************************************************************************************
  */
-	queue<MemoryAccess*> sm_to_gmmu_queue;
-	queue<MemoryAccess*> gmmu_to_sm_queue;
 private:
 
     GPU* mGPU;
+    MemoryController* mMC;
+
+    list<MemoryAccess*> MSHRs;
+
+	list<MemoryAccess*> sm_to_gmmu_queue;
+	list<MemoryAccess*> gmmu_to_sm_queue;
 
     /* *******************************************************************
      * \param model_id      the cgroup is isolated in each model

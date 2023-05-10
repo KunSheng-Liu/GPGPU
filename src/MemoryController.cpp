@@ -59,7 +59,7 @@ void
 MemoryController::cycle()
 {
     log_I("MemoryController Cycle", to_string(total_gpu_cycle));
-
+    mc_to_gmmu_queue.splice(mc_to_gmmu_queue.end(), gmmu_to_mc_queue);
 }
 
 
@@ -77,7 +77,7 @@ MemoryController::createPage()
     ASSERT(pageIndex << pageFrameOffset <= storageLimit, "Cannot create anymore physical page");
 
     mPages.insert(make_pair(pageIndex, Page(pageIndex)));
-    availablePageList.push(&mPages[pageIndex++]);
+    availablePageList.push_back(&mPages[pageIndex++]);
 
 }
 
@@ -111,8 +111,8 @@ MemoryController::memoryAllocate (int numOfByte)
             createPage();
         }
 
-        usedPageList.push(availablePageList.front());
-        availablePageList.pop();
+        usedPageList.push_back(availablePageList.front());
+        availablePageList.pop_front();
         Page* tempPage = usedPageList.back();
 
         if(i == 0) {

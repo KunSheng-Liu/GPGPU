@@ -47,7 +47,6 @@ class GPGPU;
 
 class CPU;
 class MMU;
-class TLB;
 
 class Application;
 class Model;
@@ -86,7 +85,7 @@ class Request;
 #define LOG_LEVEL                   INFO
 #define PRINT_MODEL_DETIAL          true
 #define PRINT_MEMORY_ALLOCATION     false
-#define PRINT_ACCESS_PATTERN        true
+#define PRINT_ACCESS_PATTERN        false
 
 
 /* ************************************************************************************************
@@ -139,17 +138,25 @@ class Request;
     /* GPU */
     #define GPU_SM_NUM                  8 
     #define GPU_MAX_WARP_PER_SM         64 
+    #define GPU_MAX_WARP_PER_BLOCK      32 
     #define GPU_MAX_THREAD_PER_WARP     32 
     #define GPU_MAX_THREAD_PER_SM       GPU_MAX_THREAD_PER_WARP * GPU_MAX_THREAD_PER_WARP
     #define GPU_MAX_BLOCK_PER_SM        32
     #define GPU_MAX_THREAD_PER_BLOCK    1024
-    #define GPU_MAX_ACCESS_NUMBER       32 
+    #define GPU_MAX_ACCESS_NUMBER       1 
     #define GPU_REGISTER_PER_SM         65536 
 
     #define GPU_SHARED_MEMORY_PER_SM    96    * pow(2, 10) 	    // unit (KB)
-    #define GPU_L1_CACHE                192   * pow(2, 10)      // unit (KB)
-    #define GPU_L2_CACHE                512   * pow(2, 10)      // unit (KB)
-    #define GPU_GDDR_SIZE               
+    #define GPU_L1_CACHE_SIZE           48    * 1024            // unit (B)
+    #define GPU_L1_CACHE_LINE_SIZE      32                      // unit (B)
+    #define GPU_L1_CACHE_WAY_NUMBER     4                       // unit (B)
+    #define GPU_L1_CACHE_BLOCK_SIZE     GPU_L1_CACHE_LINE_SIZE * GPU_L1_CACHE_WAY_NUMBER  // unit (B)
+
+    #define GPU_L2_CACHE_SIZE           4     * 1024 * 1024     // unit (B)
+    #define GPU_L2_CACHE_LINE_SIZE      32                      // unit (B)
+    #define GPU_L2_CACHE_WAY_NUMBER     16                      // unit (B)
+    #define GPU_L2_CACHE_BLOCK_SIZE     GPU_L1_CACHE_LINE_SIZE * GPU_L1_CACHE_WAY_NUMBER  // unit (B)
+    #define GPU_VRAM_SIZE               
 
     #define GPU_IDEL_POWER		        10    * pow(0.1, 3)     // unit (W) (Frequence=1377000000)
     #define GPU_EXEC_POWER		        19326 * pow(0.1, 3)     // unit (W) (Frequence=1377000000)
