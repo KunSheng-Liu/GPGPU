@@ -26,7 +26,6 @@ GPGPU: update $(OBJ)
 
 .PHONY: update clean
 update:
-	@git pull
 	@:
 
 clean:

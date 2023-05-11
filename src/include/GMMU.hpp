@@ -70,7 +70,8 @@ private:
     
     /* Page Fault handler */
 	unsigned long long wait_cycle = 0;
-    list<pair<unsigned long long, MemoryAccess*>> page_fault_process_queue;
+    list<MemoryAccess*> page_fault_finish_queue;
+    map<int, unordered_set<unsigned long long>> page_fault_process_queue;
 
     /* *******************************************************************
      * \param model_id      the cgroup is isolated in each model
