@@ -60,6 +60,8 @@ SM::~SM()
 void
 SM::cycle()
 {    
+    log_I("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
+
     /* SM statistic */
     if (isRunning()) {
         info.exec_cycle++;
@@ -78,7 +80,7 @@ SM::cycle()
     /* Computing */
     for (auto& block : runningBlocks)
     {
-        log_D("SM", to_string(smID) + " Execute block: " + to_string(block->block_id));
+        log_V("SM", to_string(smID) + " Execute block: " + to_string(block->block_id));
 
         int access_count = 0;
         for (auto& warp : block->warps)
@@ -135,7 +137,7 @@ SM::cycle()
                 if (thread.state == Idle && !block->runningKernel->requests.empty())
                 {
                     thread.request = block->runningKernel->accessRequest();
-                    log_D("Executing request", to_string(thread.request->requst_id));
+                    log_V("Executing request", to_string(thread.request->requst_id));
                     thread.readIndex = 0;
                     thread.state = Busy;
                 }
@@ -190,9 +192,9 @@ SM::cycle()
                 {
 #if (PRINT_ACCESS_PATTERN)
                     cout << "New access page: ";
-                    for (auto access : thread.accesses)
+                    for (auto page_id : thread.access->pageIDs)
                     {
-                        cout << access->pageIDs << ", ";
+                        cout << page_id << ", ";
                     }
                     cout << endl;
 #endif
@@ -204,7 +206,7 @@ SM::cycle()
 
             
         }
-        log_D("Total Access Request", to_string(access_count));
+        log_V("Total Access Request", to_string(access_count));
     }
 }
 
@@ -242,12 +244,12 @@ SM::bindKernel(Kernel* kernel)
             if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
         }
         
+#if (LOG_LEVEL >= VERBOSE)
         cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
-
+#endif
         runningBlocks.emplace_back(move(b));
         resource.remaining_blocks--;
     }
-
     return true;
 }
 
@@ -297,7 +299,9 @@ SM::recycleResource(Block* block)
 {
     ASSERT(block->isFinish);
 
+#if (LOG_LEVEL >= VERBOSE)
     cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
+#endif
 
     for (auto& warp : block->warps)
     {

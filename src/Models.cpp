@@ -112,8 +112,6 @@ Model::compileToKernel()
     kernelContainer.reserve(numOfLayer);
     auto dependencyKernels = modelGraph->compileToKernel(appID, modelID, kernelContainer, {});
 
-    log_D("Model", "compileToKernel Done");
-
 #if (LOG_LEVEL >= VERBOSE)
     bool title = true;
     for (auto& kernel : kernelContainer)
@@ -228,6 +226,8 @@ Model::getModelInfo(const char* model_type)
 void
 Model::buildLayerGraph(const char* model_type)
 {
+    log_D("Model", "buildLayerGraph");
+
     if (strcmp(model_type, "Test") == 0) {
         Test();
 
@@ -237,8 +237,6 @@ Model::buildLayerGraph(const char* model_type)
     } else if (strcmp(model_type, "ResNet18") == 0) {
         ResNet18();
     }
-
-    log_D("buildLayerGraph", "done");
 }
 
 /** ===============================================================================================

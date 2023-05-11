@@ -45,9 +45,9 @@ MMU::memoryAllocate (intptr_t va, int numOfByte)
     if (mTLB.lookup(va, dummy)) 
     {
         log_E("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte) + "The virtual address already been allocated");
-        
+
     } else {
-        log_D("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));
+        log_V("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));
         Page* PP = mMC->memoryAllocate(numOfByte);
         mTLB.insert(va, make_pair(PP, numOfByte));
     }
@@ -70,7 +70,7 @@ vector<unsigned long long>
 MMU::addressTranslate (intptr_t va)
 {
     /* lookup wheather VA has been cached */
-    log_D("addressTranslate", to_string(va));
+    log_V("addressTranslate", to_string(va));
 
     pair<Page*, int> pa_pair;
     ASSERT(mTLB.lookup(va, pa_pair), "The virtual address haven't been allocated");
@@ -86,70 +86,3 @@ MMU::addressTranslate (intptr_t va)
 
     return move(pa_list);
 }
-
-
-
-// /** ===============================================================================================
-//  * \name    lookup
-//  * 
-//  * \brief   lookup PA pair by VA
-//  * 
-//  * \param   va      the virtual address
-//  * 
-//  * \return  a pair of physical page and the data size
-//  * 
-//  * \endcond
-//  * ================================================================================================
-//  */
-// pair<Page*, int>
-// TLB::lookup (intptr_t va) {
-
-//     auto it = table.find(va);
-
-//     if (it != table.end()) // TLB hit
-//     {
-//         list.splice(list.begin(), list, it->second);
-//         return it->second->PAPair;
-
-//     } else { // TLB miss
-
-//         return make_pair(nullptr, -1);
-//     }
-// }
-
-
-// /** ===============================================================================================
-//  * \name    insert
-//  * 
-//  * \brief   insert the VA and PA to the table
-//  * 
-//  * \param   va          the virtual address
-//  * \param   pa_pair     the pair of physical page and the data size
-//  * 
-//  * \endcond
-//  * ================================================================================================
-//  */
-// void 
-// TLB::insert(intptr_t va, pair<Page*, int> pa_pair) {
-
-//     auto it = table.find(va);
-
-//     if (it != table.end()) // Page exist
-//     {
-//         it->second->PAPair = pa_pair;
-//         list.splice(list.begin(), list, it->second);
-
-//     } else {  // Page not exist
-        
-//         /* TLB already full */
-//         if (table.size() >= capacity) {
-//             intptr_t vpn = list.back().VA;
-//             table.erase(vpn);
-//             list.pop_back();
-//         }
-
-//         /* Add new entry */
-//         list.emplace_front(va, pa_pair);
-//         table[va] = list.begin();
-//     }
-// }

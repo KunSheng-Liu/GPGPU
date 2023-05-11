@@ -57,7 +57,7 @@ GPU::~GPU()
 void
 GPU::cycle()
 {
-    log_I("GPU Cycle", to_string(total_gpu_cycle));
+    log_W("GPU Cycle", to_string(total_gpu_cycle));
 
     
     /* cycle() */
@@ -157,7 +157,7 @@ GPU::Check_Finish_Kernel()
 
     for (auto& kernel: runningKernels)
     {
-        cout << "running kernel id: " << kernel->kernelID << endl;
+        log_V("running kernel id", to_string(kernel->kernelID));
     }
 }
 
@@ -182,7 +182,7 @@ GPU::launchKernel(Kernel* kernel)
 
     commandQueue.push(kernel);
 
-    log_D("launchKernel", "kernel: " + to_string(kernel->kernelID) + " launch success");
+    log_V("launchKernel", "kernel: " + to_string(kernel->kernelID) + " launch success");
 
     return true;
 }

@@ -19,7 +19,7 @@
  */
 GMMU::GMMU(GPU* gpu, MemoryController* mc) : mGPU(gpu), mMC(mc)
 {
-
+    
 }
 
 
@@ -48,7 +48,7 @@ GMMU::~GMMU()
 void
 GMMU::cycle()
 {
-    log_I("GMMU Cycle", to_string(total_gpu_cycle));
+    log_W("GMMU Cycle", to_string(total_gpu_cycle));
     
     Page_Fault_Handler();
 
@@ -72,8 +72,11 @@ GMMU::Access_Processing()
      * Receive the responce of Memory Controllor
      * *******************************************************************
      */
-    if(!mMC->mc_to_gmmu_queue.empty()) log_D("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + "access");
-    gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
+    if(!mMC->mc_to_gmmu_queue.empty()) 
+    {
+        log_D("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + "access");
+        gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
+    }
 
 
     /* *******************************************************************
@@ -83,7 +86,7 @@ GMMU::Access_Processing()
     for (auto& sm : mGPU->mSMs) { 
         for (auto& warp : sm.second.mWarps)
         {
-            sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), warp.second.sm_to_gmmu_queue);
+            if (!warp.second.sm_to_gmmu_queue.empty()) sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), warp.second.sm_to_gmmu_queue);
         }
 	}
     if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + " access");
@@ -123,6 +126,7 @@ GMMU::Access_Processing()
             MSHRs.push_back(access);
         }
     }
+    sm_to_gmmu_queue.clear();
     
 
     /* *******************************************************************
@@ -158,7 +162,7 @@ GMMU::Page_Fault_Handler()
      */
     if (wait_cycle > 0)
     {
-        cout << "Page_Fault_Handler: " << --wait_cycle << endl;
+        log_V("Page_Fault_Handler cycle", to_string(wait_cycle--));
         return;
     } 
     else {
@@ -167,52 +171,55 @@ GMMU::Page_Fault_Handler()
          * migration
          * *******************************************************************
          */
-        list<MemoryAccess*> finish_process_queue;
-        for (auto fault_pair : page_fault_process_queue)
+        if (!page_fault_process_queue.empty())
         {
-            auto page_id = fault_pair.first;
-            auto access = fault_pair.second;
-
-            Page* page;
-            /* Migration from DRAM to VRAM */
-            page = mMC->refer(page_id);
-            page->info.location = SPACE_VRAM;
-            ++page->info.swap_count;
-            page = mCGroups[access->model_id].second.insert(page_id, page);
-
-            /* Eviction happen */
-            if (page)
+            for (auto& fault_pair : page_fault_process_queue)
             {
-                page->info.location = SPACE_DRAM;
-                ++page->info.swap_count;
-            }
-            
-        }
-        /* *******************************************************************
-         * Handle return
-         * *******************************************************************
-         */
-        sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), finish_process_queue);
+                auto model_id = fault_pair.first;
+                for (auto& page_id : fault_pair.second)
+                {
+                    Page* page;
+                    /* Migration from DRAM to VRAM */
+                    page = mMC->refer(page_id);
+                    page->info.location = SPACE_VRAM;
+                    ++page->info.swap_count;
+                    page = mCGroups[model_id].second.insert(page_id, page);
 
+                    /* Eviction happen */
+                    if (page)
+                    {
+                        page->info.location = SPACE_DRAM;
+                        ++page->info.swap_count;
+                    }
+                }
+            }
+            page_fault_process_queue.clear();
+            /* *******************************************************************
+            * Handle return
+            * *******************************************************************
+            */
+            sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), page_fault_finish_queue);
+        }
+    
         /* *******************************************************************
          * Launch the access inside the MSHRs to handling queue, not remove the
          * access from the MSHRs until processing over.
          * *******************************************************************
          */
-        for (auto access : MSHRs)
+        if (!MSHRs.empty())
         {
-            for (auto page_id : access->pageIDs)
+            for (auto access : MSHRs)
             {
-                page_fault_process_queue.push_back(make_pair(page_id, access));
+                for (auto page_id : access->pageIDs)
+                {
+                    page_fault_process_queue[access->model_id].insert(page_id);
+                }
+                
             }
-            
+            page_fault_finish_queue.splice(page_fault_finish_queue.end(), MSHRs);
+            // wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+            wait_cycle = 1;
         }
-        finish_process_queue.splice(finish_process_queue.end(), MSHRs);
-        cout << "PAGE_FAULT_COMMUNICATION_CYCLE: " << PAGE_FAULT_COMMUNICATION_CYCLE << endl;
-        cout << "PAGE_FAULT_MIGRATION_UNIT_CYCLE: " << PAGE_FAULT_MIGRATION_UNIT_CYCLE << endl;
-        // wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
-        wait_cycle = 1;
-        cout << "wait_cycle: " << wait_cycle << endl;
     }
     
 }
@@ -235,10 +242,9 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
     mCGroups[model_id].second.resize(capacity);
     mCGroups[model_id].first = capacity;
 
-    if (mCGroups.find(model_id) != mCGroups.end())
-    {
-        cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << endl;
-    }
+#if (LOG_LEVEL >= VERBOSE)
+    cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << endl;
+#endif
     
 }
 

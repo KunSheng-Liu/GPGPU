@@ -301,15 +301,15 @@ LayerGroup::printInfo ()
     cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
 #else
     std::cout << "(" 
-              << std::right << std::setw(3)  << iFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(3)  << iFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << iFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << iFMapSize[WIDTH]                     \
+              << std::right << std::setw(3)  << (*iFMapSize)[BATCH]             << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << (*iFMapSize)[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]                     \
               << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(3)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << oFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
+              << std::right << std::setw(3)  << (*oFMapSize)[BATCH]             << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << (*oFMapSize)[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
               
     std::cout << std::endl;

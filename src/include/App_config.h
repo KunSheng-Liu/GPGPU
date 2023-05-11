@@ -23,7 +23,7 @@
 #include <list>
 #include <queue>
 #include <map>
-#include <unordered_map>
+#include <unordered_map>s
 #include <vector>
 
 #include <unistd.h>
@@ -69,40 +69,40 @@ class Request;
  * ************************************************************************************************
  */
 /* Logger level */
-#define ERROR               0
-#define WARNNING            1
-#define INFO                2
-#define DEBUG               3
-#define VERBOSE             4
+#define ERROR                               0
+#define WARNNING                            1
+#define INFO                                2
+#define DEBUG                               3
+#define VERBOSE                             4
 
-#define SEQUENTIAL          0
-#define PARALLEL            1
+#define SEQUENTIAL                          0
+#define PARALLEL                            1
 
 /* ************************************************************************************************
  * Print-Out Configuration
  * ************************************************************************************************
  */
-#define LOG_LEVEL                   DEBUG
-#define PRINT_MODEL_DETIAL          true
-#define PRINT_MEMORY_ALLOCATION     false
-#define PRINT_ACCESS_PATTERN        false
+#define LOG_LEVEL                           INFO
+#define PRINT_MODEL_DETIAL                  false
+#define PRINT_MEMORY_ALLOCATION             false
+#define PRINT_ACCESS_PATTERN                false
 
 
 /* ************************************************************************************************
  * BenchMark
  * ************************************************************************************************
  */
-#define TASK_SET                    TEST
-#define HARDWARE_ARCHITECTURE       AGX_XAVIER
+#define TASK_SET                            TEST
+#define HARDWARE_ARCHITECTURE               AGX_XAVIER
 
 /* ************************************************************************************************
  * Software Configuration
  * ************************************************************************************************
  */
-#define INFERENCE_METHOD            PARALLSEEL
-#define BATCH_INFERENCE             false
-#define THREAD_KERNEL_COMPILE       true
-#define THREAD_NUM                  8
+#define INFERENCE_METHOD                    PARALLSEEL
+#define BATCH_INFERENCE                     false
+#define THREAD_KERNEL_COMPILE               true
+#define THREAD_NUM                          8
 
 /* ************************************************************************************************
  * Hardware Configuration
@@ -143,7 +143,7 @@ class Request;
     #define GPU_MAX_THREAD_PER_SM           GPU_MAX_THREAD_PER_WARP * GPU_MAX_THREAD_PER_WARP
     #define GPU_MAX_BLOCK_PER_SM            32
     #define GPU_MAX_THREAD_PER_BLOCK        1024
-    #define GPU_MAX_ACCESS_NUMBER           1 
+    #define GPU_MAX_ACCESS_NUMBER           32 
     #define GPU_REGISTER_PER_SM             65536 
 
     #define GPU_SHARED_MEMORY_PER_SM        96    * pow(2, 10) 	    // unit (KB)
@@ -167,10 +167,10 @@ class Request;
  * Global Configuration
  * ************************************************************************************************
  */
-#define PCIE_BANDWIDTH                      16    * pow(10, 9)                          // unit (B/s)  16 GB/s
-#define PAGE_FAULT_PENALTY                  50    * pow(0.1, 6)                         // unit (s)
-#define PAGE_FAULT_COMMUNICATION_CYCLE      PAGE_FAULT_PENALTY * GMMU_F                 // unit (cycle)
-#define PAGE_FAULT_MIGRATION_UNIT_CYCLE    (PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F)    // unit (cycle)
+#define PCIE_BANDWIDTH                      16    * pow(10, 9)              // unit (B/s)  16 GB/s
+#define PAGE_FAULT_PENALTY                  50    * pow(0.1, 6)             // unit (s)
+#define PAGE_FAULT_COMMUNICATION_CYCLE      PAGE_FAULT_PENALTY * GMMU_F     // unit (cycle)
+#define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))  // unit (cycle)
 #define TRANSFER_SET_SIZE                   80 
 
 #endif

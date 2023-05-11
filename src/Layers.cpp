@@ -252,7 +252,7 @@ Layer::printInfo()
 void
 Layer::Compile(MMU* mmu, Kernel* targetKernel)
 {
-    std::cout << "Compiling kernel " << targetKernel->kernelID << "..." << endl;
+    log_V("Compiling kernel", to_string(targetKernel->kernelID) + " ...");
 
     int numThread = THREAD_KERNEL_COMPILE ? THREAD_NUM : 1;
     pthread_t threads[numThread];
@@ -298,11 +298,12 @@ void*
 Layer::threadCompile(void* arg)
 {
     ThreadArg* threadArg = static_cast<ThreadArg*>(arg);
-    
+
+#if (LOG_LEVEL >= VERBOSE)
     pthread_mutex_lock ( ioMutex );
         log_D(threadArg->srcLayer->layerType, "issueLayer");
     pthread_mutex_unlock ( ioMutex );
-
+#endif
     threadArg->srcLayer->issueLayer(move(threadArg));
 
     pthread_exit(nullptr);
@@ -484,9 +485,9 @@ Conv2D::issueLayer(ThreadArg* threadArg)
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
         vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
-        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-        log_D("filterPages Num" , to_string(filterPages.size()));
+        log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_V("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
@@ -631,9 +632,9 @@ Pooling::issueLayer(ThreadArg* threadArg)
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
         vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
-        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-        log_D("filterPages Num" , to_string(filterPages.size()));
+        log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_V("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
@@ -808,8 +809,8 @@ Flatten::issueLayer(ThreadArg* threadArg)
     pthread_mutex_lock ( ioMutex );
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
-        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
@@ -960,8 +961,8 @@ ByPass::issueLayer(ThreadArg* threadArg)
     pthread_mutex_lock ( ioMutex );
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
-        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
@@ -1139,9 +1140,9 @@ Dense::issueLayer(ThreadArg* threadArg)
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
         vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
-        log_D("iFMapPages Num"  , to_string(iFMapPages.size()));
-        log_D("oFMapPages Num"  , to_string(oFMapPages.size()));
-        log_D("filterPages Num" , to_string(filterPages.size()));
+        log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
+        log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
+        log_V("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     ASSERT((*iFMapSize)[HEIGHT] == 1 && (*iFMapSize)[WIDTH] == 1, "Dimension error!");

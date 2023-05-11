@@ -60,7 +60,7 @@ void
 Application::cycle()
 {
     /* Launch task into queue */
-    log_D("Application::cycle", modelInfo.modelName);
+    log_D("Application Cycle", modelInfo.modelName);
 
     /* check application finish */
     if(tasks.empty() && runningModels.empty()) finish = true;

@@ -62,7 +62,7 @@ CPU::~CPU()
 void
 CPU::cycle()
 {
-    log_I("CPU Cycle", to_string(total_gpu_cycle));
+    log_W("CPU Cycle", to_string(total_gpu_cycle));
 
     Check_Finish_Kernel();
 
@@ -176,6 +176,7 @@ CPU::Dynamic_Batch_Admission()
 #endif
 
     /* Print SM allocation result */
+#if (LOG_LEVEL >= VERBOSE)
     for (auto& app : mAPPs)
     {
         cout << "APP: " << app->appID << " get SM: ";
@@ -185,7 +186,7 @@ CPU::Dynamic_Batch_Admission()
         }
         cout << endl;
     }
-
+#endif
     /* Check allocation correct */
     // ASSERT(SM_count == GPU_SM_NUM);
 
@@ -259,13 +260,14 @@ CPU::Kernek_Inference_Scheduler()
     }
 
     /* print ready list */
+#if (LOG_LEVEL > VERBOSE)
     std::cout << "Ready kernel list: ";
     for (auto& kernel : readyKernels)
     {
         std::cout << kernel->kernelID << ", ";
     }
     std::cout << endl;
-
+#endif
     /* launch kernel into gpu */
     for (auto& kernel : readyKernels)
     {
