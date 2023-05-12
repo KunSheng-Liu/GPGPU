@@ -86,8 +86,8 @@ class Request;
  * Print-Out Configuration
  * ************************************************************************************************
  */
-#define LOG_LEVEL                           TRACE
-#define PRINT_TIME_STEP                     true
+#define LOG_LEVEL                           WARNNING
+#define PRINT_TIME_STEP                     false
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_ACCESS_PATTERN                false

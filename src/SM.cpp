@@ -63,19 +63,7 @@ SM::cycle()
     log_T("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
 
     /* SM statistic */
-    if (isRunning()) {
-        info.exec_cycle++;
-
-        if (isComputing()) {
-            info.computing_cycle++;
-        }
-        else {
-            info.wait_cycle++;
-        }
-    }
-    else {
-        info.idle_cycle++;
-    }
+    statistic();
 
     /* Computing */
     for (auto& block : runningBlocks)
@@ -96,19 +84,17 @@ SM::cycle()
                 {
                     if (thread.state == Waiting && thread.access == access)
                     {
+                        delete thread.access;
+
                         /* Is the last access ? */
-                        if (thread.request->writePages.empty())
-                        {
-                            MemoryAccess* temp = thread.access;
-                            thread.access = nullptr;
-                            temp->pageIDs.clear();
-                            delete temp;
-                            thread.state = Idle;
-
-                        } else {
-
+                        if (!thread.request->writePages.empty()) 
                             thread.state = Busy;
+                        else 
+                        {
+                            delete thread.request;
+                            thread.state = Idle;
                         }
+
                         it = warp->gmmu_to_sm_queue.erase(it)++;
                         break;
                     }
@@ -169,8 +155,9 @@ SM::cycle()
                 } 
 
                 /* Executing the request */
-                else if (thread.request->numOfInstructions-- != 0) {}
-
+                else if (thread.request->numOfInstructions-- != 0) {
+                    continue;
+                }
                 /* Handle the write addresses */ 
                 else if (!thread.request->writePages.empty()) 
                 {
@@ -186,26 +173,24 @@ SM::cycle()
                             thread.request->writePages.erase(thread.request->writePages.begin());
                         }
                     }
+                } else {
+                    continue;
                 }
 
                 /* push access to gmmu */
-                if (!thread.access->pageIDs.empty())
-                {
+                access_count += thread.access->pageIDs.size();
+                warp->sm_to_gmmu_queue.push_back(thread.access);
+                thread.state = Waiting;
+                
 #if (PRINT_ACCESS_PATTERN)
-                    std::cout << "New access page: ";
-                    for (auto page_id : thread.access->pageIDs)
-                    {
-                        std::cout << page_id << ", ";
-                    }
-                    std::cout << endl;
-#endif
-                    access_count += thread.access->pageIDs.size();
-                    warp->sm_to_gmmu_queue.push_back(thread.access);
-                    thread.state = Waiting;
+                std::cout << "New access page: ";
+                for (auto page_id : thread.access->pageIDs)
+                {
+                    std::cout << page_id << ", ";
                 }
-            }
-
-            
+                std::cout << endl;
+#endif
+            }            
         }
         log_V("Total Access Request", to_string(access_count));
     }
@@ -315,6 +300,33 @@ SM::recycleResource(Block* block)
 
 
 /** ===============================================================================================
+ * \name    statistic
+ * 
+ * \brief   Record the SM runtime information
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+SM::statistic()
+{
+    if (isRunning()) {
+        info.exec_cycle++;
+
+        if (isComputing()) {
+            info.computing_cycle++;
+        }
+        else {
+            info.wait_cycle++;
+        }
+    }
+    else {
+        info.idle_cycle++;
+    }
+}
+
+
+/** ===============================================================================================
  * \name    isComputing
  * 
  * \brief   Check whether the SM is computing or idle in this cycle.
@@ -325,7 +337,13 @@ SM::recycleResource(Block* block)
 bool
 SM::isComputing()
 {
-    return true;
+    bool Computing = true;
+    for (auto& warp : mWarps)
+    {
+        Computing &= warp.second.isBusy;
+    }
+
+    return Computing;
 }
 
 
@@ -340,7 +358,13 @@ SM::isComputing()
 bool
 SM::isRunning()
 {
-    return !runningBlocks.empty();
+    bool running = true;
+    for (auto& warp : mWarps)
+    {
+        running &= !warp.second.isIdle;
+    }
+
+    return running;
 }
 
 

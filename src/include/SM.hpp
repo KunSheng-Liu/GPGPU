@@ -111,6 +111,7 @@ public:
     bool bindKernel(Kernel* kernel);
     void recycleResource(Block* block);
     void checkFinish();
+    void statistic();
 
     bool isComputing();
     bool isRunning();
