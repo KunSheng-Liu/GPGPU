@@ -48,7 +48,7 @@ GMMU::~GMMU()
 void
 GMMU::cycle()
 {
-    log_W("GMMU Cycle", to_string(total_gpu_cycle));
+    log_I("GMMU Cycle", to_string(total_gpu_cycle));
     
     Page_Fault_Handler();
 
@@ -67,14 +67,14 @@ GMMU::cycle()
 void
 GMMU::Access_Processing()
 {
-    log_D("GMMU", "Access_Processing");
+    log_T("GMMU", "Access_Processing");
     /* *******************************************************************
      * Receive the responce of Memory Controllor
      * *******************************************************************
      */
     if(!mMC->mc_to_gmmu_queue.empty()) 
     {
-        log_D("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + "access");
+        log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
         gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
     }
 
@@ -89,14 +89,14 @@ GMMU::Access_Processing()
             if (!warp.second.sm_to_gmmu_queue.empty()) sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), warp.second.sm_to_gmmu_queue);
         }
 	}
-    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + " access");
+    if(!sm_to_gmmu_queue.empty()) log_T("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + " access");
 
 
     /* *******************************************************************
      * Handling the accesses
      * *******************************************************************
      */
-    if(!sm_to_gmmu_queue.empty()) log_D("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
+    if(!sm_to_gmmu_queue.empty()) log_T("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
     for (auto access : sm_to_gmmu_queue)
     {
         int count = 0;
@@ -133,7 +133,7 @@ GMMU::Access_Processing()
      * Return finished access to SM
      * *******************************************************************
      */
-    if(!gmmu_to_sm_queue.empty()) log_D("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
+    if(!gmmu_to_sm_queue.empty()) log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
     while(!gmmu_to_sm_queue.empty())
     {
         MemoryAccess* access = gmmu_to_sm_queue.front();
@@ -154,7 +154,7 @@ GMMU::Access_Processing()
 void
 GMMU::Page_Fault_Handler()
 {
-    log_D("GMMU", "Page_Fault_Handler");
+    log_T("GMMU", "Page_Fault_Handler");
 
     /* *******************************************************************
      * Waiting for communication to the CPU and migration overhead
@@ -176,6 +176,9 @@ GMMU::Page_Fault_Handler()
             for (auto& fault_pair : page_fault_process_queue)
             {
                 auto model_id = fault_pair.first;
+
+                ASSERT(fault_pair.second.size() <= mCGroups[model_id].first, "Allocated memory is less than the model needed");
+
                 for (auto& page_id : fault_pair.second)
                 {
                     Page* page;
@@ -193,7 +196,6 @@ GMMU::Page_Fault_Handler()
                     }
                 }
             }
-            page_fault_process_queue.clear();
             /* *******************************************************************
             * Handle return
             * *******************************************************************
@@ -243,7 +245,7 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
     mCGroups[model_id].first = capacity;
 
 #if (LOG_LEVEL >= VERBOSE)
-    cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << endl;
+    std::cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << std::endl;
 #endif
     
 }

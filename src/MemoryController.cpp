@@ -107,7 +107,7 @@ MemoryController::memoryAllocate (int numOfByte)
     for (int i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
     {
         if (availablePageList.empty()){
-            log_W("MemoryController::memoryAllocate()", "Out of DRAM Size");
+            log_I("MemoryController::memoryAllocate()", "Out of DRAM Size");
             createPage();
         }
 
@@ -125,12 +125,12 @@ MemoryController::memoryAllocate (int numOfByte)
 
 #if (PRINT_MEMORY_ALLOCATION)
     prevPage = headPage;
-    cout << "Physical Pages: ";
+    std::cout << "Physical Pages: ";
     while(prevPage != nullptr) {
-        cout << prevPage->pageIndex << ", ";
+        std::cout << prevPage->pageIndex << ", ";
         prevPage = prevPage->nextPage;
     }
-    cout << endl;
+    std::cout << std::endl;
 #endif
 
     return headPage;

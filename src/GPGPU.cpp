@@ -60,23 +60,54 @@ GPGPU::~GPGPU()
 void 
 GPGPU::run ()
 {
+	timeval start, end;
     bool Finish = false;
 	while (!Finish)
     {       
         int clock_mask = next_clock_domain();
 
 		if (clock_mask & MC_MASK) {
+#if (PRINT_TIME_STEP)
+			gettimeofday(&start, NULL);
+#endif
 			mMC.cycle();
+#if (PRINT_TIME_STEP)
+			gettimeofday(&end, NULL);
+			std::cout << "MC cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
+#endif
+
 		}
 		if (clock_mask & GMMU_MASK) {
+#if (PRINT_TIME_STEP)
+			gettimeofday(&start, NULL);
+#endif
 			mGMMU->cycle();
+#if (PRINT_TIME_STEP)
+			gettimeofday(&end, NULL);
+			std::cout << "GMMU cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
+#endif
 		}
 		if (clock_mask & GPU_MASK) {
+#if (PRINT_TIME_STEP)
+			gettimeofday(&start, NULL);
+#endif
 			mGPU.cycle();
+#if (PRINT_TIME_STEP)
+			gettimeofday(&end, NULL);
+			std::cout << "GPU cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
+#endif
+
 			total_gpu_cycle++;
 		}
 		if (clock_mask & CPU_MASK) {
+#if (PRINT_TIME_STEP)
+			gettimeofday(&start, NULL);
+#endif
 			mCPU.cycle();
+#if (PRINT_TIME_STEP)
+			gettimeofday(&end, NULL);
+			std::cout << "CPU cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
+#endif
 		}
 
     	// ASSERT(total_gpu_cycle != 150);

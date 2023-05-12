@@ -107,7 +107,7 @@ Model::memoryAllocate(MMU* mmu)
 vector<Kernel>&
 Model::compileToKernel()
 {
-    log_D("Model", "compileToKernel");
+    log_T("Model", "compileToKernel");
     
     kernelContainer.reserve(numOfLayer);
     auto dependencyKernels = modelGraph->compileToKernel(appID, modelID, kernelContainer, {});
@@ -226,7 +226,7 @@ Model::getModelInfo(const char* model_type)
 void
 Model::buildLayerGraph(const char* model_type)
 {
-    log_D("Model", "buildLayerGraph");
+    log_T("Model", "buildLayerGraph");
 
     if (strcmp(model_type, "Test") == 0) {
         Test();
@@ -252,7 +252,7 @@ Model::buildLayerGraph(const char* model_type)
  *    1     Conv2D    3 x 3      512       14 x 14     1          1          ReLU
  *    2       Pool    2 x 2      512        7 x 7      2          0
  *    3    Flatten             25088        1 x 1
- *    4      Dense    1 x 1     4096        1 x 1                            ReLU
+ *    4      Dense    1 x 1     1000        1 x 1                            ReLU
  * ================================================================================================
  */
 void 
@@ -265,7 +265,7 @@ Model::Test()
                                                       
     modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
                                                         
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 2048));
+    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 1000));
 
     numOfLayer = 4;
     

@@ -29,8 +29,7 @@ int main (int argc, char** argv)
         std::cout << "GPGPU Done!" << std::endl;
 
     gettimeofday(&end, NULL);
-    unsigned long long spendTime = (1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.000001;
-    log_I("Total spend time", to_string(spendTime) + " s");
+    std::cout << "Total spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
     
 
     return 0;

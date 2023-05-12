@@ -62,7 +62,7 @@ CPU::~CPU()
 void
 CPU::cycle()
 {
-    log_W("CPU Cycle", to_string(total_gpu_cycle));
+    log_I("CPU Cycle", to_string(total_gpu_cycle));
 
     Check_Finish_Kernel();
 
@@ -90,7 +90,7 @@ CPU::cycle()
 void
 CPU::Dynamic_Batch_Admission()
 {
-    log_D("CPU", "Dynamic_Batching_Algorithm");
+    log_T("CPU", "Dynamic_Batching_Algorithm");
 
     /* *******************************************************************
      * Assign SM to each application according to its model needed pages
@@ -155,7 +155,7 @@ CPU::Dynamic_Batch_Admission()
         int SM_count = 0;
         for (auto& app_pair : APP_list)
         {
-            cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << endl;
+            std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
             /* Avoid starvation, at least assign 1 SM to application */
             if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
             {
@@ -179,12 +179,12 @@ CPU::Dynamic_Batch_Admission()
 #if (LOG_LEVEL >= VERBOSE)
     for (auto& app : mAPPs)
     {
-        cout << "APP: " << app->appID << " get SM: ";
+        std::cout << "APP: " << app->appID << " get SM: ";
         for (auto sm_id : app->SM_budget)
         {
-            cout << sm_id << ", ";
+            std::cout << sm_id << ", ";
         }
-        cout << endl;
+        std::cout << std::endl;
     }
 #endif
     /* Check allocation correct */
@@ -241,7 +241,7 @@ CPU::Dynamic_Batch_Admission()
 void
 CPU::Kernek_Inference_Scheduler()
 {
-    log_D("CPU", "Kernek_Inference_Scheduler");
+    log_T("CPU", "Kernek_Inference_Scheduler");
 
     // handle the kernel dependency, and launch next kernel
 
@@ -260,7 +260,7 @@ CPU::Kernek_Inference_Scheduler()
     }
 
     /* print ready list */
-#if (LOG_LEVEL > VERBOSE)
+#if (LOG_LEVEL >= VERBOSE)
     std::cout << "Ready kernel list: ";
     for (auto& kernel : readyKernels)
     {
@@ -279,7 +279,7 @@ CPU::Kernek_Inference_Scheduler()
             
         } else {
             
-            log_W("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
+            log_I("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
         }
     }    
 }
@@ -302,7 +302,7 @@ CPU::Check_Finish_Kernel()
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
-        log_I("Kernel", to_string(kernel->kernelID) + " is finished");
+        log_W("Kernel", to_string(kernel->kernelID) + " is finished");
         kernel->finish = true;
         kernel->running = false;
 
@@ -318,11 +318,11 @@ CPU::Check_Finish_Kernel()
         for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
             if ((*model)->checkFinish())
             {
+                log_W("Model", to_string((*model)->modelID) + " is finished");
                 delete *model;
                 model = app->runningModels.erase(model);
             }
         }
-        // app->runningModels.remove_if([](Model* m){return m->checkFinish();});
     }
 }
 

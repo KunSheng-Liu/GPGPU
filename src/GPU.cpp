@@ -57,9 +57,8 @@ GPU::~GPU()
 void
 GPU::cycle()
 {
-    log_W("GPU Cycle", to_string(total_gpu_cycle));
+    log_I("GPU Cycle", to_string(total_gpu_cycle));
 
-    
     /* cycle() */
 	for (auto& sm : mSMs) {
 		sm.second.cycle();
@@ -95,7 +94,7 @@ GPU::cycle()
 void
 GPU::Runtime_Block_Scheduling()
 {  
-    log_D("GPU", "Runtime_Block_Scheduling");
+    log_T("GPU", "Runtime_Block_Scheduling");
     /* Iterate all kernels inside the command Queue */
     queue<Kernel*> remainingKernels;
     while(!commandQueue.empty())
@@ -111,7 +110,7 @@ GPU::Runtime_Block_Scheduling()
 
         if (success) {
             runningKernels.push_back(kernel);
-            mGMMU.setCGroupSize(kernel->modelID, kernel->requests.size());
+            mGMMU.setCGroupSize(kernel->modelID, kernel->requests.size() * kernel->requests.front()->readPages.size());
         } else {
             remainingKernels.push(kernel);
         }
@@ -134,7 +133,7 @@ GPU::Runtime_Block_Scheduling()
 void
 GPU::Check_Finish_Kernel()
 {  
-    log_D("GPU", "Check_Finish_Kernel");
+    log_T("GPU", "Check_Finish_Kernel");
     for (Kernel* kernel : runningKernels)
     {
         if (kernel->requests.empty())

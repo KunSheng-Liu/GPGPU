@@ -70,11 +70,14 @@ class Request;
  * ************************************************************************************************
  */
 /* Logger level */
-#define ERROR                               0
-#define WARNNING                            1
-#define INFO                                2
-#define DEBUG                               3
-#define VERBOSE                             4
+#define LOG_OFF                             0
+#define ERROR                               1
+#define WARNNING                            2
+#define INFO                                3
+#define DEBUG                               4
+#define TRACE                               5
+#define VERBOSE                             6
+#define LOG_ALL                             7
 
 #define SEQUENTIAL                          0
 #define PARALLEL                            1
@@ -83,7 +86,8 @@ class Request;
  * Print-Out Configuration
  * ************************************************************************************************
  */
-#define LOG_LEVEL                           INFO
+#define LOG_LEVEL                           TRACE
+#define PRINT_TIME_STEP                     true
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_ACCESS_PATTERN                false

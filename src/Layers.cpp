@@ -152,11 +152,11 @@ void
 Layer::memoryAllocate(MMU* mmu)
 {
     log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
-    if (LOG_LEVEL >= VERBOSE) cout << "iFMap ";
+    if (LOG_LEVEL >= VERBOSE) std::cout << "iFMap ";
     if(iFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&iFMap) + iFMap->size() * layerID,  iFMap->size()  * sizeof(unsigned char));
-    if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
+    if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
     if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * layerID,  oFMap->size()  * sizeof(unsigned char));
-    if (LOG_LEVEL >= VERBOSE) cout << "filter ";
+    if (LOG_LEVEL >= VERBOSE) std::cout << "filter ";
     if(filter) mmu->memoryAllocate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID, filter->size() * sizeof(unsigned char));
 
 }
@@ -278,9 +278,9 @@ Layer::Compile(MMU* mmu, Kernel* targetKernel)
     }
 
     Kernel::Info info = targetKernel->getKernelInfo();
-    log_D("Num of request", to_string(info.numOfRequest));
-    log_D("Num of read address", to_string(info.numOfRead));
-    log_D("Num of write address", to_string(info.numOfWrite));
+    log_T("Num of request", to_string(info.numOfRequest));
+    log_T("Num of read address", to_string(info.numOfRead));
+    log_T("Num of write address", to_string(info.numOfWrite));
 }
 
 
@@ -301,7 +301,7 @@ Layer::threadCompile(void* arg)
 
 #if (LOG_LEVEL >= VERBOSE)
     pthread_mutex_lock ( ioMutex );
-        log_D(threadArg->srcLayer->layerType, "issueLayer");
+        log_T(threadArg->srcLayer->layerType, "issueLayer");
     pthread_mutex_unlock ( ioMutex );
 #endif
     threadArg->srcLayer->issueLayer(move(threadArg));
@@ -429,9 +429,9 @@ Conv2D::calculateOFMapSize()
 // Conv2D::memoryAllocate(MMU* mmu)
 // {
 //     Layer::memoryAllocate(mmu);
-//     if (LOG_LEVEL >= VERBOSE) cout << "stride ";
+//     if (LOG_LEVEL >= VERBOSE) std::cout << "stride ";
 //     if(stride)  mmu->memoryAllocate(stride)),  stride->size()  * sizeof(unsigned char));
-//     if (LOG_LEVEL >= VERBOSE) cout << "padding ";
+//     if (LOG_LEVEL >= VERBOSE) std::cout << "padding ";
 //     if(padding)  mmu->memoryAllocate(padding)),  padding->size()  * sizeof(unsigned char));
 
 // }

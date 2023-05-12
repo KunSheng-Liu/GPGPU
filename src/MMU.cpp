@@ -44,7 +44,7 @@ MMU::memoryAllocate (intptr_t va, int numOfByte)
     pair<Page*, int> dummy;
     if (mTLB.lookup(va, dummy)) 
     {
-        log_E("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte) + "The virtual address already been allocated");
+        log_I("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte) + " The virtual address already been allocated");
 
     } else {
         log_V("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));

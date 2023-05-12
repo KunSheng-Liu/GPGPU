@@ -57,6 +57,14 @@ inline void log_D (std::string tag, std::string logInfo)
 #endif
 }
 
+/* TRACE */
+inline void log_T (std::string tag, std::string logInfo)
+{
+#if LOG_LEVEL >= TRACE
+    std::cout << "\033[1;33m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+#endif
+}
+
 /* VERBOSE */
 inline void log_V (std::string tag, std::string logInfo)
 {

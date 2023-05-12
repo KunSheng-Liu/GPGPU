@@ -60,7 +60,7 @@ SM::~SM()
 void
 SM::cycle()
 {    
-    log_I("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
+    log_T("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
 
     /* SM statistic */
     if (isRunning()) {
@@ -101,6 +101,7 @@ SM::cycle()
                         {
                             MemoryAccess* temp = thread.access;
                             thread.access = nullptr;
+                            temp->pageIDs.clear();
                             delete temp;
                             thread.state = Idle;
 
@@ -191,12 +192,12 @@ SM::cycle()
                 if (!thread.access->pageIDs.empty())
                 {
 #if (PRINT_ACCESS_PATTERN)
-                    cout << "New access page: ";
+                    std::cout << "New access page: ";
                     for (auto page_id : thread.access->pageIDs)
                     {
-                        cout << page_id << ", ";
+                        std::cout << page_id << ", ";
                     }
-                    cout << endl;
+                    std::cout << endl;
 #endif
                     access_count += thread.access->pageIDs.size();
                     warp->sm_to_gmmu_queue.push_back(thread.access);
@@ -245,7 +246,7 @@ SM::bindKernel(Kernel* kernel)
         }
         
 #if (LOG_LEVEL >= VERBOSE)
-        cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
+        std::cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
 #endif
         runningBlocks.emplace_back(move(b));
         resource.remaining_blocks--;
@@ -300,7 +301,7 @@ SM::recycleResource(Block* block)
     ASSERT(block->isFinish);
 
 #if (LOG_LEVEL >= VERBOSE)
-    cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
+    std::cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
 #endif
 
     for (auto& warp : block->warps)

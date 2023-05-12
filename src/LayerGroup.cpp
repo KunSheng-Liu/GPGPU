@@ -187,7 +187,7 @@ LayerGroup::memoryAllocate(MMU* mmu)
     }
 
     /* The memory sapce for merge layer */
-    if (LOG_LEVEL >= VERBOSE) cout << "oFMap ";
+    if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
     if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * 30,  oFMap->size()  * sizeof(unsigned char));
 }
 
@@ -294,11 +294,11 @@ void::
 LayerGroup::printInfo ()
 {
 #if PRINT_MODEL_DETIAL
-    cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " start -------------" << std::endl;
+    std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " start -------------" << std::endl;
     for (auto& layer: layers){
         layer->printInfo();
     }
-    cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
+    std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
 #else
     std::cout << "(" 
               << std::right << std::setw(3)  << (*iFMapSize)[BATCH]             << ", " \
