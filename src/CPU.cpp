@@ -65,10 +65,10 @@ CPU::cycle()
     log_I("CPU Cycle", to_string(total_gpu_cycle));
 
     Check_Finish_Kernel();
-
-    Kernek_Inference_Scheduler();
     
     Dynamic_Batch_Admission();
+
+    Kernek_Inference_Scheduler();
 
     /* check new task */
     for (auto& app: mAPPs)
@@ -92,26 +92,26 @@ CPU::Dynamic_Batch_Admission()
 {
     log_T("CPU", "Dynamic_Batching_Algorithm");
 
+    /*  Get avaiable SM list */
+    list<int> available_sm = mGPU->getIdleSMs();
+    if (available_sm.empty()) return;
+
     /* *******************************************************************
      * Assign SM to each application according to its model needed pages
      * *******************************************************************
      */
 #if (INFERENCE_METHOD == SEQUENTIAL)
 
-    /* Only one application can get SM resource allocation when the GPU is idle */
-    for (auto& app : mAPPs)
+    /* Only one application can get SM resource when the GPU is totally idle */
+    if (SM_MODE == SM_Dispatch::Greedy && available_sm.size() == GPU_SM_NUM)
     {
-        app->SM_budget = {};
-        if (mGPU->idle() && !app->tasks.empty())
-        {
-            for (int i = 0; i < GPU_SM_NUM; i++)
-            {
-                app->SM_budget.push_back(i);
-            }
-            break;
-        }
+        for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+    } 
+    /* Baseline allocation... */
+    else if (SM_MODE == SM_Dispatch::Baseline) {
+
     }
-    
+
 #elif (INFERENCE_METHOD == PARALLEL)
 
     if (SM_MODE == SM_Dispatch::Baseline)
@@ -175,18 +175,15 @@ CPU::Dynamic_Batch_Admission()
 
 #endif
 
-    /* Print SM allocation result */
-#if (LOG_LEVEL >= VERBOSE)
+#if (PRINT_SM_ALLCOATION_RESULT)
     for (auto& app : mAPPs)
     {
         std::cout << "APP: " << app->appID << " get SM: ";
-        for (auto sm_id : app->SM_budget)
-        {
-            std::cout << sm_id << ", ";
-        }
+        for (auto& sm_id : app->SM_budget) std::cout << sm_id << ", ";
         std::cout << std::endl;
     }
 #endif
+
     /* Check allocation correct */
     // ASSERT(SM_count == GPU_SM_NUM);
 
@@ -196,7 +193,7 @@ CPU::Dynamic_Batch_Admission()
      */
     for (auto& app : mAPPs)
     {
-        if (app->runningModels.empty() && !app->tasks.empty() && !app->SM_budget.empty())
+        if (app->runningModels.empty() && !app->SM_budget.empty() && !app->tasks.empty())
         {
             int batchSize = 0;
 #if (BATCH_INFERENCE)
@@ -209,7 +206,7 @@ CPU::Dynamic_Batch_Admission()
                 
             Model* model = app->runningModels.back();
 
-            model->record.SM_List = move(app->SM_budget);
+            model->recorder.SM_List = move(app->SM_budget);
 
             model->buildLayerGraph(app->modelType);
             model->memoryAllocate(&mMMU);
@@ -252,7 +249,7 @@ CPU::Kernek_Inference_Scheduler()
         {
             for (auto& kernel : model->findReadyKernels())
             {
-                kernel->record = &model->record;
+                kernel->recorder = &model->recorder;
                 readyKernels.push_back(kernel);
             }
             
@@ -271,7 +268,7 @@ CPU::Kernek_Inference_Scheduler()
     /* launch kernel into gpu */
     for (auto& kernel : readyKernels)
     {
-        ASSERT(kernel->record->SM_List.size());
+        ASSERT(kernel->recorder->SM_List.size());
 
         if (kernel->compileRequest(&mMMU))
         {
@@ -319,6 +316,7 @@ CPU::Check_Finish_Kernel()
             if ((*model)->checkFinish())
             {
                 log_W("Model", to_string((*model)->modelID) + " is finished");
+                mGPU->getGMMU()->freeCGroup((*model)->modelID);
                 delete *model;
                 model = app->runningModels.erase(model);
             }

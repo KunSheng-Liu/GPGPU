@@ -29,6 +29,7 @@ struct RuntimeInfo
  * ************************************************************************************************
  */
 typedef enum {
+	Greedy,
 	Baseline,
 	Balance,
 	SMD,

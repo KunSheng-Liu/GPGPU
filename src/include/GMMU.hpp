@@ -49,6 +49,7 @@ public:
     void cycle ();
 
     void setCGroupSize (int model_id, unsigned capacity);
+    void freeCGroup (int model_id);
 
 private:
     void Access_Processing ();

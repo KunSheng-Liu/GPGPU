@@ -86,9 +86,11 @@ public:
     void cycle ();
 
     bool launchKernel (Kernel* kernel);
+    void statistic();
 
-    bool idle() {return runningKernels.empty() && commandQueue.empty();}
+    bool isIdle() {return runningKernels.empty() && commandQueue.empty();}
     GMMU* getGMMU() {return &mGMMU;}
+    list<int> getIdleSMs();
 
 private:
     void Runtime_Block_Scheduling();
@@ -101,16 +103,17 @@ private:
 public:
     bool canIssueKernel;
 
-    queue<Kernel*> commandQueue;
-    list<Kernel*> finishedKernels;
+    queue<Kernel*> commandQueue = {};
+    list<Kernel*> finishedKernels = {};
 
 private:
     GMMU mGMMU;
+
     MemoryController* mMC;
-    
+
     map<int, SM> mSMs;
 
-    list<Kernel*> runningKernels;
+    list<Kernel*> runningKernels = {};
 
 friend GMMU;
 };

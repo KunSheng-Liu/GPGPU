@@ -77,6 +77,19 @@ GMMU::Access_Processing()
         log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
         gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
     }
+    
+
+    /* *******************************************************************
+     * Return finished access to SM
+     * *******************************************************************
+     */
+    if(!gmmu_to_sm_queue.empty()) log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
+    while(!gmmu_to_sm_queue.empty())
+    {
+        MemoryAccess* access = gmmu_to_sm_queue.front();
+        mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_sm_queue.push_back(access);
+        gmmu_to_sm_queue.pop_front();
+    }
 
 
     /* *******************************************************************
@@ -97,48 +110,19 @@ GMMU::Access_Processing()
      * *******************************************************************
      */
     if(!sm_to_gmmu_queue.empty()) log_T("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
-    for (auto access : sm_to_gmmu_queue)
+    while(!sm_to_gmmu_queue.empty())
     {
-        int count = 0;
+        MemoryAccess* access = sm_to_gmmu_queue.front();
         auto model_id = access->model_id;
 
-        /* This lookup won't trigger the LRU */
-        for (auto page_id : access->pageIDs)
-        {
-            !mCGroups[model_id].second.lookup(page_id) && ++count;
-        }
+        /* Check whether the page of current access is in the memory */
+        bool hit = true;
+        for (auto page_id : access->pageIDs) hit &= mCGroups[model_id].second.lookup(page_id);
 
-        /* Record the access info */
-        if (!count) 
-        {
-            Page* page;
-            for (auto page_id : access->pageIDs)
-            {
-                mCGroups[model_id].second.lookup(page_id, page);
-                ++page->info.access_count;
-                (access->type == Read) ? ++page->info.read_counter : ++page->info.write_counter;
-            }
+        /* Classify the access into correspond handling queue */
+        hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
 
-            mMC->gmmu_to_mc_queue.push_back(access);
-        } 
-        /* If one of the page miss, all page are push into MSHRs */
-        else {
-            MSHRs.push_back(access);
-        }
-    }
-    sm_to_gmmu_queue.clear();
-    
-
-    /* *******************************************************************
-     * Return finished access to SM
-     * *******************************************************************
-     */
-    if(!gmmu_to_sm_queue.empty()) log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
-    while(!gmmu_to_sm_queue.empty())
-    {
-        MemoryAccess* access = gmmu_to_sm_queue.front();
-        mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_sm_queue.push_back(access);
-        gmmu_to_sm_queue.pop_front();
+        sm_to_gmmu_queue.pop_front();
     }
 }
 
@@ -185,17 +169,18 @@ GMMU::Page_Fault_Handler()
                     /* Migration from DRAM to VRAM */
                     page = mMC->refer(page_id);
                     page->info.location = SPACE_VRAM;
-                    ++page->info.swap_count;
+                    page->info.swap_count++;
                     page = mCGroups[model_id].second.insert(page_id, page);
 
                     /* Eviction happen */
                     if (page)
                     {
                         page->info.location = SPACE_DRAM;
-                        ++page->info.swap_count;
+                        page->info.swap_count++;
                     }
                 }
             }
+            page_fault_process_queue.clear();
             /* *******************************************************************
             * Handle return
             * *******************************************************************
@@ -251,3 +236,19 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
 }
 
 
+/** ===============================================================================================
+ * \name    freeCGroup
+ * 
+ * \brief   Free up the CGroup of specific model
+ * 
+ * \param   model_id    the index of model
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+GMMU::freeCGroup (int model_id)
+{
+    auto it = mCGroups.find(model_id);
+    if (it != mCGroups.end()) mCGroups.erase(it);
+}

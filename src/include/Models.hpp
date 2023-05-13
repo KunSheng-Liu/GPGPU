@@ -112,7 +112,7 @@ public:
     /* The index of model. Each model have a unique index */
     const int modelID;
 
-    RuntimeInfo record;
+    RuntimeInfo recorder;
 
 protected:
 

@@ -24,18 +24,19 @@
  * ************************************************************************************************
  */
 typedef enum {
-    Idle    = 0,
-	Busy    = 1,
-    Waiting = 2,
+    Idle, 
+	Busy, 
+    Waiting
 }Thread_State;
 
 struct AccessThread {
-    /* Read index for avoiding the erase overhead */
-    int readIndex = 0;
-    Thread_State state = Idle;
+
+    int readIndex = 0;  // Read index for avoiding the erase overhead
 
     Request* request;
     MemoryAccess* access;
+
+    Thread_State state = Idle;
 };
 
 
@@ -62,6 +63,15 @@ public:
    ~Warp() {}
 
 /* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct WarpInfo {
+	unsigned long long computing_cycle = 0;
+	unsigned long long wait_cycle = 0;
+};
+
+/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -75,6 +85,8 @@ public:
 
     bool isIdle;
     bool isBusy;
+
+    WarpInfo info;
 
     /* The thread queues that handle the access state machine */
     vector<AccessThread> mthreads;

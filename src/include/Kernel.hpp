@@ -46,7 +46,7 @@ public:
  * Type Define
  * ************************************************************************************************
  */
-struct Info {
+struct KernelInfo {
     int numOfRead    = 0;
     int numOfWrite   = 0;
     int numOfCycle   = 0;
@@ -69,7 +69,7 @@ public:
     bool isReady();
     bool isFinish()  {return finish;}
     bool isRunning() {return running;}
-    Info getKernelInfo() const {return kernelInfo;}
+    KernelInfo getKernelInfo() const {return kernelInfo;}
 
 /* ************************************************************************************************
  * Parameter
@@ -93,9 +93,9 @@ public:
 
     Layer* srcLayer;
 
-    Info kernelInfo;
+    KernelInfo kernelInfo;
 
-    RuntimeInfo* record;
+    RuntimeInfo* recorder;
 
     queue<Request*> requests;
 

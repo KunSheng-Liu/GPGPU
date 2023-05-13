@@ -70,7 +70,6 @@ SM::cycle()
     {
         log_V("SM", to_string(smID) + " Execute block: " + to_string(block->block_id));
 
-        int access_count = 0;
         for (auto& warp : block->warps)
         {
             /* *******************************************************************
@@ -102,8 +101,6 @@ SM::cycle()
                 ++it;
             }
 
-
-
             /* *******************************************************************
              * Handle the warp status
              * *******************************************************************
@@ -113,22 +110,29 @@ SM::cycle()
             {
                 warp->isBusy |= !(thread.state == Idle);
             }
+            if (!warp->isBusy) continue;
 
 
             /* *******************************************************************
-             * Bind request to idel threads
+             * Bind request to idel threads by following the SIMT policy
              * *******************************************************************
              */
-            for (auto& thread : warp->mthreads)
-            {
-                if (thread.state == Idle && !block->runningKernel->requests.empty())
+            bool sync = true;
+            for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
+
+            if (sync) {
+                for (auto& thread : warp->mthreads)
                 {
-                    thread.request = block->runningKernel->accessRequest();
-                    log_V("Executing request", to_string(thread.request->requst_id));
-                    thread.readIndex = 0;
-                    thread.state = Busy;
+                    if (!block->runningKernel->requests.empty())
+                    {
+                        thread.request = block->runningKernel->accessRequest();
+                        log_V("Executing request", to_string(thread.request->requst_id));
+                        thread.readIndex = 0;
+                        thread.state = Busy;
+                    }
                 }
             }
+            
 
 
             /* *******************************************************************
@@ -178,7 +182,9 @@ SM::cycle()
                 }
 
                 /* push access to gmmu */
-                access_count += thread.access->pageIDs.size();
+                block->info.launch_access_counter++;
+                block->info.access_page_counter += thread.access->pageIDs.size();
+
                 warp->sm_to_gmmu_queue.push_back(thread.access);
                 thread.state = Waiting;
                 
@@ -192,7 +198,8 @@ SM::cycle()
 #endif
             }            
         }
-        log_V("Total Access Request", to_string(access_count));
+        log_V("Total Access", to_string(block->info.launch_access_counter));
+        log_V("Total Access Pages", to_string(block->info.access_page_counter));
     }
 }
 
@@ -224,8 +231,10 @@ SM::bindKernel(Kernel* kernel)
             if(warp.second.isIdle)
             {
                 b->warps.push_back(&warp.second);
+                b->info.launch_warp_counter++;
+
                 warp.second.isIdle = false;
-                --resource.remaining_warps;
+                resource.remaining_warps--;
             }
             if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
         }
@@ -251,15 +260,12 @@ SM::bindKernel(Kernel* kernel)
 void
 SM::checkFinish()
 {
-    for (auto block = runningBlocks.begin(); block != runningBlocks.end(); ++block)
+    for (auto block = runningBlocks.begin(); block != runningBlocks.end(); block++)
     {
-        (*block)->isFinish = true;
-        for (auto& warp : (*block)->warps)
-        {
-            (*block)->isFinish &= !warp->isBusy;
-        }
+        bool finish = true;
+        for (auto& warp : (*block)->warps) finish &= !warp->isBusy;
 
-        if((*block)->isFinish)
+        if(finish)
         {
             recycleResource(*block);
 
@@ -283,15 +289,13 @@ SM::checkFinish()
 void
 SM::recycleResource(Block* block)
 {
-    ASSERT(block->isFinish);
-
 #if (LOG_LEVEL >= VERBOSE)
     std::cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
 #endif
 
     for (auto& warp : block->warps)
     {
-        ++resource.remaining_warps;
+        resource.remaining_warps++;
         warp->isIdle = true;
     }
 
@@ -310,18 +314,11 @@ SM::recycleResource(Block* block)
 void
 SM::statistic()
 {
-    if (isRunning()) {
-        info.exec_cycle++;
+    isIdel() ? ++info.exec_cycle : ++info.idle_cycle;
 
-        if (isComputing()) {
-            info.computing_cycle++;
-        }
-        else {
-            info.wait_cycle++;
-        }
-    }
-    else {
-        info.idle_cycle++;
+    for (auto& warp : mWarps)
+    {
+        warp.second.isBusy ? ++warp.second.info.computing_cycle : ++warp.second.info.wait_cycle;
     }
 }
 
@@ -329,7 +326,7 @@ SM::statistic()
 /** ===============================================================================================
  * \name    isComputing
  * 
- * \brief   Check whether the SM is computing or idle in this cycle.
+ * \brief   Check whether the SM is computing or waiting in this cycle.
  * 
  * \endcond
  * ================================================================================================
@@ -338,33 +335,27 @@ bool
 SM::isComputing()
 {
     bool Computing = true;
-    for (auto& warp : mWarps)
-    {
-        Computing &= warp.second.isBusy;
-    }
+    for (auto& warp : mWarps) Computing &= warp.second.isBusy;
 
     return Computing;
 }
 
 
 /** ===============================================================================================
- * \name    isRunning
+ * \name    isIdel
  * 
- * \brief   Check whether there still SM is running.
+ * \brief   Check whether there still SM is idle.
  * 
  * \endcond
  * ================================================================================================
  */
 bool
-SM::isRunning()
+SM::isIdel()
 {
-    bool running = true;
-    for (auto& warp : mWarps)
-    {
-        running &= !warp.second.isIdle;
-    }
+    bool idle = true;
+    for (auto& warp : mWarps) idle &= warp.second.isIdle;
 
-    return running;
+    return idle;
 }
 
 
@@ -380,10 +371,7 @@ bool
 SM::checkIsComplete(Kernel* kernel)
 {
     bool complete = true;
-    for (auto& block : runningBlocks)
-    {
-        complete &= !(block->runningKernel == kernel);
-    }
+    for (auto& block : runningBlocks) complete &= !(block->runningKernel == kernel);
 
     return complete;
 }

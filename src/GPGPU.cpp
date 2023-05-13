@@ -12,7 +12,7 @@
  * ************************************************************************************************
  */
 /* Approach */
-SM_Dispatch  SM_MODE  = SM_Dispatch::Baseline;
+SM_Dispatch  SM_MODE  = SM_Dispatch::Greedy;
 MEM_Allocate MEM_MODE = MEM_Allocate::None;
 
 /* Statistic */

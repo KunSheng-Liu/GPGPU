@@ -59,6 +59,8 @@ GPU::cycle()
 {
     log_I("GPU Cycle", to_string(total_gpu_cycle));
 
+    Runtime_Block_Scheduling();
+
     /* cycle() */
 	for (auto& sm : mSMs) {
 		sm.second.cycle();
@@ -71,14 +73,8 @@ GPU::cycle()
 
     Check_Finish_Kernel();
 
-    Runtime_Block_Scheduling();
-
     /* gpu statistic */
-    bool isBusy = false;
-    for (auto& sm : mSMs) {
-		isBusy |= sm.second.isRunning();
-	}
-
+    statistic();
 }
 
 
@@ -103,7 +99,7 @@ GPU::Runtime_Block_Scheduling()
         commandQueue.pop();
 
         bool success = false;
-        for (auto sm_id : kernel->record->SM_List)
+        for (auto sm_id : kernel->recorder->SM_List)
         {
             success |= mSMs[sm_id].bindKernel(kernel);
         }
@@ -139,7 +135,7 @@ GPU::Check_Finish_Kernel()
         if (kernel->requests.empty())
         {
             kernel->finish = true;
-            for (int sm_id : kernel->record->SM_List)
+            for (int sm_id : kernel->recorder->SM_List)
             {
                 kernel->finish &= mSMs[sm_id].checkIsComplete(kernel);
             }
@@ -184,4 +180,43 @@ GPU::launchKernel(Kernel* kernel)
     log_V("launchKernel", "kernel: " + to_string(kernel->kernelID) + " launch success");
 
     return true;
+}
+
+
+/** ===============================================================================================
+ * \name    statistic
+ * 
+ * \brief   Record the SM runtime information
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+GPU::statistic()
+{
+    // bool isBusy = false;
+    // for (auto& sm : mSMs) {
+	// 	isBusy |= sm.second.isRunning();
+	// }
+}
+
+
+/** ===============================================================================================
+ * \name    getIdleSMs
+ * 
+ * \brief   Return the available SM index list
+ * 
+ * \return  list of sm index
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+list<int>
+GPU::getIdleSMs()
+{
+    list<int> available_list = {};
+    
+    for (auto& sm : mSMs) if (sm.second.isIdel()) available_list.push_back(sm.first);    
+
+    return available_list;
 }

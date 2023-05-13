@@ -24,13 +24,6 @@
  * Type Define
  * ************************************************************************************************
  */
-struct SMInfo {
-    unsigned long long exec_cycle = 0;
-	unsigned long long computing_cycle = 0;
-	unsigned long long wait_cycle = 0;
-	unsigned long long idle_cycle = 0;
-};
-
 struct ComputingResource {
     int remaining_blocks  = GPU_MAX_BLOCK_PER_SM;
     int remaining_warps   = GPU_MAX_WARP_PER_SM;
@@ -56,7 +49,18 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel), isFinish(false) {};
+    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel) {};
+
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct BlockInfo {
+	unsigned launch_warp_counter = 0;
+    unsigned long long access_page_counter = 0;
+	unsigned long long launch_access_counter = 0; 
+	unsigned long long return_access_counter = 0;
+};
 
 /* ************************************************************************************************
  * Parameter
@@ -65,15 +69,11 @@ public:
 public:
     int block_id;
 
-    bool isFinish;
-
-	unsigned launch_warp_counter = 0;
-	unsigned long long launch_access_counter = 0; 
-	unsigned long long return_access_counter = 0;
-
-	Kernel* runningKernel = nullptr;
+    BlockInfo info;
 
     list<Warp*> warps;
+
+	Kernel* runningKernel = nullptr;
 
 private:
     /* Number of block be created */
@@ -102,6 +102,15 @@ public:
    ~SM();
 
 /* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct SMInfo {
+    unsigned long long exec_cycle = 0;
+	unsigned long long idle_cycle = 0;
+};
+
+/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -114,7 +123,7 @@ public:
     void statistic();
 
     bool isComputing();
-    bool isRunning();
+    bool isIdel();
     bool checkIsComplete(Kernel* kernel);
 
     void setGMMU (GMMU* gmmu) {mGMMU = gmmu;}

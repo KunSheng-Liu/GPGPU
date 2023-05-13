@@ -277,7 +277,7 @@ Layer::Compile(MMU* mmu, Kernel* targetKernel)
         }
     }
 
-    Kernel::Info info = targetKernel->getKernelInfo();
+    Kernel::KernelInfo info = targetKernel->getKernelInfo();
     log_T("Num of request", to_string(info.numOfRequest));
     log_T("Num of read address", to_string(info.numOfRead));
     log_T("Num of write address", to_string(info.numOfWrite));
