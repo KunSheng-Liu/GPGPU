@@ -99,7 +99,7 @@ GPU::Runtime_Block_Scheduling()
         commandQueue.pop();
 
         bool success = false;
-        for (auto sm_id : kernel->recorder->SM_List)
+        for (auto sm_id : *kernel->SM_List)
         {
             success |= mSMs[sm_id].bindKernel(kernel);
         }
@@ -135,7 +135,7 @@ GPU::Check_Finish_Kernel()
         if (kernel->requests.empty())
         {
             kernel->finish = true;
-            for (int sm_id : kernel->recorder->SM_List)
+            for (int sm_id : *kernel->SM_List)
             {
                 kernel->finish &= mSMs[sm_id].checkIsComplete(kernel);
             }

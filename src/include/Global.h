@@ -13,7 +13,7 @@
  * Type Define
  * ************************************************************************************************
  */
-struct RuntimeInfo
+struct RuntimeRecord
 {
     // Size of GPU batch processing
 	float batch_size = 0;
@@ -21,7 +21,6 @@ struct RuntimeInfo
 	unsigned PF_pages = 0;
 	unsigned n_previous_access_page = 0;
 
-    std::list<int> SM_List;
 };
 
 /* ************************************************************************************************

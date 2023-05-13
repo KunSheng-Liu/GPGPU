@@ -62,9 +62,6 @@ SM::cycle()
 {    
     log_T("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
 
-    /* SM statistic */
-    statistic();
-
     /* Computing */
     for (auto& block : runningBlocks)
     {
@@ -83,6 +80,7 @@ SM::cycle()
                 {
                     if (thread.state == Waiting && thread.access == access)
                     {
+                        warp->record.return_access_counter++;
                         delete thread.access;
 
                         /* Is the last access ? */
@@ -100,6 +98,7 @@ SM::cycle()
                 }
                 ++it;
             }
+            
 
             /* *******************************************************************
              * Handle the warp status
@@ -182,8 +181,8 @@ SM::cycle()
                 }
 
                 /* push access to gmmu */
-                block->info.launch_access_counter++;
-                block->info.access_page_counter += thread.access->pageIDs.size();
+                warp->record.launch_access_counter++;
+                warp->record.access_page_counter += thread.access->pageIDs.size();
 
                 warp->sm_to_gmmu_queue.push_back(thread.access);
                 thread.state = Waiting;
@@ -196,11 +195,14 @@ SM::cycle()
                 }
                 std::cout << endl;
 #endif
-            }            
+            } 
+            log_V("Total Access", to_string(warp->record.launch_access_counter));
+            log_V("Total Access Pages", to_string(warp->record.access_page_counter));
         }
-        log_V("Total Access", to_string(block->info.launch_access_counter));
-        log_V("Total Access Pages", to_string(block->info.access_page_counter));
     }
+
+    /* SM statistic */
+    statistic();
 }
 
 
@@ -224,16 +226,23 @@ SM::bindKernel(Kernel* kernel)
     for (int i = 0; i < launch_block_num; i++)
     {
         Block* b = new Block(kernel);
+        b->record.sm_id = smID;
+        b->record.block_id = b->block_id;
+        b->record.start_cycle = total_gpu_cycle;
 
         /* Greedy bind all available warp to current block */
         for (auto& warp : mWarps)
         {
             if(warp.second.isIdle)
             {
-                b->warps.push_back(&warp.second);
-                b->info.launch_warp_counter++;
-
                 warp.second.isIdle = false;
+                warp.second.record = Warp::WarpRecord();
+                warp.second.record.warp_id = warp.second.warpID;
+                warp.second.record.start_cycle = total_gpu_cycle;
+
+                b->warps.push_back(&warp.second);
+                b->record.launch_warp_counter++;
+
                 resource.remaining_warps--;
             }
             if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
@@ -267,6 +276,19 @@ SM::checkFinish()
 
         if(finish)
         {
+            /* Passing the runtime record */
+            for (auto& warp : (*block)->warps) 
+            {
+                warp->record.end_cycle = total_gpu_cycle;
+                (*block)->record.access_page_counter += warp->record.access_page_counter;
+                (*block)->record.launch_access_counter += warp->record.launch_access_counter;
+                (*block)->record.return_access_counter += warp->record.return_access_counter; 
+                (*block)->record.warp_record.push_back(move(warp->record));
+            }
+            ASSERT((*block)->record.launch_access_counter == (*block)->record.return_access_counter, "Block finish error");
+            
+            (*block)->record.end_cycle = total_gpu_cycle;
+            (*block)->runningKernel->block_record.push_back(move((*block)->record));
             recycleResource(*block);
 
             delete *block;
@@ -314,11 +336,11 @@ SM::recycleResource(Block* block)
 void
 SM::statistic()
 {
-    isIdel() ? ++info.exec_cycle : ++info.idle_cycle;
+    isIdel() ? record.exec_cycle++ : record.idle_cycle++;
 
     for (auto& warp : mWarps)
     {
-        warp.second.isBusy ? ++warp.second.info.computing_cycle : ++warp.second.info.wait_cycle;
+        warp.second.isBusy ? warp.second.record.computing_cycle++ : warp.second.record.wait_cycle++;
     }
 }
 

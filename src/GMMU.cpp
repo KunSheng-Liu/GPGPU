@@ -167,16 +167,16 @@ GMMU::Page_Fault_Handler()
                 {
                     Page* page;
                     /* Migration from DRAM to VRAM */
-                    page = mMC->refer(page_id);
-                    page->info.location = SPACE_VRAM;
-                    page->info.swap_count++;
+                    ASSERT(mMC->refer(page_id), "page ptr doesn't exist");
+                    page->record.location = SPACE_VRAM;
+                    page->record.swap_count++;
                     page = mCGroups[model_id].second.insert(page_id, page);
 
                     /* Eviction happen */
                     if (page)
                     {
-                        page->info.location = SPACE_DRAM;
-                        page->info.swap_count++;
+                        page->record.location = SPACE_DRAM;
+                        page->record.swap_count++;
                     }
                 }
             }

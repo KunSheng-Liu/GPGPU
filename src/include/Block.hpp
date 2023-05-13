@@ -1,13 +1,13 @@
 /**
- * \name    Warp.hpp
+ * \name    Block.hpp
  * 
- * \brief   Declare the structure of Warp
+ * \brief   Declare the structure of Block
  * 
- * \date    May 9, 2023
+ * \date    May 14, 2023
  */
 
-#ifndef _WARP_HPP_
-#define _WARP_HPP_
+#ifndef _BLOCK_HPP_
+#define _BLOCK_HPP_
 
 /* ************************************************************************************************
  * Include Library
@@ -17,90 +17,62 @@
 #include "Log.h"
 
 #include "Kernel.hpp"
-#include "Memory.hpp"
-
-/* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-typedef enum {
-    Idle, 
-	Busy, 
-    Waiting
-}Thread_State;
-
-struct AccessThread {
-
-    int readIndex = 0;  // Read index for avoiding the erase overhead
-
-    Request* request;
-    MemoryAccess* access;
-
-    Thread_State state = Idle;
-};
-
+#include "Warp.hpp"
 
 /** ===============================================================================================
- * \name    Warp
+ * \name    Block
  * 
  * \brief   The class of ...
  * 
  * \endcond
  * ================================================================================================
  */
-class Warp
+class Block
 {
-
 /* ************************************************************************************************
  * Class Constructor
  * ************************************************************************************************
  */ 
 public:
 
-    Warp(int id = -1) : warpID(id), mthreads(vector<AccessThread>(GPU_MAX_THREAD_PER_WARP))
-           , isIdle(true), isBusy(false) {} 
+    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel) {}
 
-   ~Warp() {}
+   ~Block() {}
 
 /* ************************************************************************************************
  * Type Define
  * ************************************************************************************************
  */
-struct WarpRecord {
-    int warp_id;
-
+struct BlockRecord {
+    int block_id, sm_id;
+    
+	unsigned launch_warp_counter = 0;
     unsigned long long start_cycle = 0, end_cycle = 0;
-	unsigned long long computing_cycle = 0, wait_cycle = 0;
-
     unsigned long long access_page_counter = 0;
 	unsigned long long launch_access_counter = 0; 
 	unsigned long long return_access_counter = 0;
-};
+    
+    list<Warp::WarpRecord> warp_record;
 
-/* ************************************************************************************************
- * Functions
- * ************************************************************************************************
- */
+    BlockRecord(int block_id = -1) : block_id(block_id) {};
+};
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 public:
-    const int warpID;
+    int block_id;
 
-    bool isIdle;
-    bool isBusy;
+    BlockRecord record;
 
-    WarpRecord record;
+    list<Warp*> warps;
 
-    /* The thread queues that handle the access state machine */
-    vector<AccessThread> mthreads;
-    
-	list<MemoryAccess*> sm_to_gmmu_queue;
-	list<MemoryAccess*> gmmu_to_sm_queue;
+	Kernel* runningKernel = nullptr;
 
-friend GMMU;
+private:
+    /* Number of block be created */
+    static int blockCount;
 };
 
 

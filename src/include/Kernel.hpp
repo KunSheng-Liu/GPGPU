@@ -16,10 +16,9 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Block.hpp"
 #include "GPU.hpp"
-#include "Kernel.hpp"
 #include "Layers.hpp"
-#include "SM.hpp"
 
 
 /** ===============================================================================================
@@ -95,7 +94,10 @@ public:
 
     KernelInfo kernelInfo;
 
-    RuntimeInfo* recorder;
+    // RuntimeInfo* recorder;
+    list<int>* SM_List;
+
+    list<Block::BlockRecord> block_record;
 
     queue<Request*> requests;
 

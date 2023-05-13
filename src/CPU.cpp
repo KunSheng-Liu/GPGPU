@@ -206,7 +206,7 @@ CPU::Dynamic_Batch_Admission()
                 
             Model* model = app->runningModels.back();
 
-            model->recorder.SM_List = move(app->SM_budget);
+            model->SM_budget = move(app->SM_budget);
 
             model->buildLayerGraph(app->modelType);
             model->memoryAllocate(&mMMU);
@@ -249,7 +249,7 @@ CPU::Kernek_Inference_Scheduler()
         {
             for (auto& kernel : model->findReadyKernels())
             {
-                kernel->recorder = &model->recorder;
+                kernel->SM_List = &model->SM_budget;
                 readyKernels.push_back(kernel);
             }
             
@@ -268,7 +268,7 @@ CPU::Kernek_Inference_Scheduler()
     /* launch kernel into gpu */
     for (auto& kernel : readyKernels)
     {
-        ASSERT(kernel->recorder->SM_List.size());
+        ASSERT(kernel->SM_List->size());
 
         if (kernel->compileRequest(&mMMU))
         {
@@ -299,15 +299,39 @@ CPU::Check_Finish_Kernel()
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
-        log_W("Kernel", to_string(kernel->kernelID) + " is finished");
-        kernel->finish = true;
-        kernel->running = false;
-
         /* recording... */
+#if (PRINT_BLOCK_RECORD)
+                std::cout << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
+            for (auto& b_record : kernel->block_record)
+            {
+                std::cout << "Finish block" << std::right << setw(4) << b_record.block_id << ": [" 
+                          << b_record.sm_id                 << ", "
+                          << b_record.start_cycle           << ", "
+                          << b_record.end_cycle             << ", "
+                          << b_record.launch_access_counter << ", "
+                          << b_record.return_access_counter << ", "
+                          << b_record.access_page_counter   << "]"
+                          << std::endl;
+    #if (PRINT_WARP_RECORD)
+                for (auto& w_record : b_record.warp_record)
+                {
+                    std::cout << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
+                              << w_record.start_cycle         << ", "
+                              << w_record.end_cycle           << ", "
+                              << w_record.computing_cycle     << ", "
+                              << w_record.wait_cycle          << "]"
+                              << std::endl;
+                }
+    #endif
+            }
+#endif        
 
         /* release */
         kernel->release();
-        
+
+        kernel->finish = true;
+        kernel->running = false;
+        log_W("Kernel", to_string(kernel->kernelID) + " is finished");
     }
 
     for (auto& app : mAPPs)

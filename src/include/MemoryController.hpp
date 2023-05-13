@@ -27,19 +27,18 @@ typedef enum {
 	SPACE_DRAM  = 1,
 }Page_Location;
 
-struct PageInfo {
+struct PageRecord {
     unsigned long long write_counter = 0;
 	unsigned long long read_counter = 0;
 
     unsigned long access_count = 0;
     unsigned long swap_count = 0;
-
     Page_Location location = SPACE_DRAM;
 };
 
 struct Page {
     unsigned long long pageIndex;
-    PageInfo info;
+    PageRecord record;
     Page* nextPage;
 
     Page(unsigned page_index = -1, Page* next_page = nullptr) : pageIndex(page_index), nextPage(next_page) {}

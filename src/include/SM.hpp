@@ -17,6 +17,7 @@
 #include "Log.h"
 
 #include "Kernel.hpp"
+#include "Block.hpp"
 #include "Memory.hpp"
 #include "Warp.hpp"
 
@@ -30,54 +31,6 @@ struct ComputingResource {
     int remaining_threads = GPU_MAX_THREAD_PER_SM;
     int remaining_shmem   = GPU_SHARED_MEMORY_PER_SM;
     int remaining_regs    = GPU_REGISTER_PER_SM;
-};
-
-
-/** ===============================================================================================
- * \name    Block
- * 
- * \brief   The class of ...
- * 
- * \endcond
- * ================================================================================================
- */
-class Block
-{
-/* ************************************************************************************************
- * Class Constructor
- * ************************************************************************************************
- */ 
-public:
-
-    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel) {};
-
-/* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-struct BlockInfo {
-	unsigned launch_warp_counter = 0;
-    unsigned long long access_page_counter = 0;
-	unsigned long long launch_access_counter = 0; 
-	unsigned long long return_access_counter = 0;
-};
-
-/* ************************************************************************************************
- * Parameter
- * ************************************************************************************************
- */
-public:
-    int block_id;
-
-    BlockInfo info;
-
-    list<Warp*> warps;
-
-	Kernel* runningKernel = nullptr;
-
-private:
-    /* Number of block be created */
-    static int blockCount;
 };
 
 
@@ -105,9 +58,9 @@ public:
  * Type Define
  * ************************************************************************************************
  */
-struct SMInfo {
-    unsigned long long exec_cycle = 0;
-	unsigned long long idle_cycle = 0;
+struct SMRecord {
+    unsigned long long start_cycle = 0, end_cycle = 0;
+    unsigned long long exec_cycle = 0, idle_cycle = 0;
 };
 
 /* ************************************************************************************************
@@ -141,7 +94,7 @@ private:
 
     GMMU* mGMMU;
 
-    SMInfo info;
+    SMRecord record;
 
     map<int, Warp> mWarps;
 

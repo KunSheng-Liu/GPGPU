@@ -92,6 +92,8 @@ class Request;
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_ACCESS_PATTERN                false
+#define PRINT_BLOCK_RECORD                  true
+#define PRINT_WARP_RECORD                   true
 
 
 /* ************************************************************************************************
