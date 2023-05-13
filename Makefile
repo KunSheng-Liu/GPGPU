@@ -1,7 +1,7 @@
 CXX 			:= g++
 SRC 			:= $(wildcard ./src/*.cpp)
 OBJ				:= $(patsubst %.cpp, %.o, $(SRC))
-CXXFLAGS 		:= -std=c++11 -pipe -g -O3
+CXXFLAGS 		:= -std=c++17 -pipe -g -O3
 SHARED_LIBRARY 	=
 
 # Add needed header path
