@@ -354,61 +354,21 @@ Model::LeNet()
  * 
  * \endcond
  * 
- * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
- *                    Size       Map        Size
- *            Data                3       224 x 224
- *    1     Conv2D    7 x 7      64       112 x 112    2          3          ReLU
- *    2       Pool    3 x 3      64        56 x 56     2          1          
- *   / \
- *  |   3   Conv2D    3 x 3      64        56 x 56     1          1          ReLU
- *  |   4   Conv2D    3 x 3      64        56 x 56     1          1        
- *  5   |   ByPass               64        56 x 56
- *   \ /
- *    |
- *   / \
- *  |   6   Conv2D    3 x 3      64        56 x 56     1          1          ReLU
- *  |   7   Conv2D    3 x 3      64        56 x 56     1          1             
- *  8   |   ByPass               64        56 x 56
- *   \ /
- *    |
- *   / \
- *  |   9   Conv2D    3 x 3     128        28 x 28     2          1          ReLU
- *  |  10   Conv2D    3 x 3     128        28 x 28     1          1           
- * 11   |   Conv2D    3 x 3     128        28 x 28     2          1          ReLU
- *   \ /
- *    |        
- *   / \
- *  |  12   Conv2D    3 x 3     128        28 x 28     1          1          ReLU
- *  |  13   Conv2D    3 x 3     128        28 x 28     1          1               
- * 14   |   ByPass              128        28 x 28
- *   \ /
- *    |
- *   / \
- *  |  15   Conv2D    3 x 3     256        14 x 14     2          1          ReLU
- *  |  16   Conv2D    3 x 3     256        14 x 14     1          1           
- * 17   |   Conv2D    3 x 3     256        14 x 14     2          1          ReLU
- *   \ /
- *    | 
- *   / \
- *  |  18   Conv2D    3 x 3     256        14 x 14     1          1          ReLU
- *  |  19   Conv2D    3 x 3     256        14 x 14     1          1                    
- * 20   |   ByPass              256        14 x 14
- *   \ /
- *    |  
- *   / \
- *  |  21   Conv2D    3 x 3     512         7 x 7      2          1          ReLU
- *  |  22   Conv2D    3 x 3     512         7 x 7      1          1       
- * 23   |   Conv2D    3 x 3     512         7 x 7      2          1          ReLU    
- *   \ /
- *    |
- *   / \
- *  |  24   Conv2D    3 x 3     512         7 x 7      1          1          ReLU
- *  |  25   Conv2D    3 x 3     512         7 x 7      1          1                             
- * 26   |   ByPass              512         7 x 7 
- *   \ /
- *    |
- *   27       Pool    7 x 7    1024         1 x 1      2          1          ReLU
- *   28      Dense    1 x 1    1000         1 x 1
+ * #Index          Type   Kernel    Feature     Output    Stride    Padding    Activation
+ *                         Size       Map        Size
+ *                 Data                3       224 x 224
+ *    1          Conv2D    7 x 7      64       112 x 112    2          3          ReLU
+ *    2            Pool    3 x 3      64        56 x 56     2          1           Max  
+ *    3      BasicBlock               64        56 x 56
+ *    6      BasicBlock               64        56 x 56   
+ *    9 BottleNeckBlock              128        28 x 28
+ *   12      BasicBlock              128        28 x 28
+ *   15 BottleNeckBlock              256        14 x 14
+ *   18      BasicBlock              256        14 x 14
+ *   21 BottleNeckBlock              512         7 x 7
+ *   24      BasicBlock              512         7 x 7
+ *   27            Pool    7 x 7    1024         1 x 1      2          1           Avg
+ *   28           Dense    1 x 1    1000         1 x 1
  * ================================================================================================
  */
 void
@@ -417,109 +377,21 @@ Model::ResNet18()
     modelName = (char*)"ResNet18";
 
     modelGraph->addLayer(new Conv2D ({batchSize, 3, 224, 224} , {64,  3, 7, 7}, (char*)"ReLU", 2, 3));
-    modelGraph->addLayer(new Pooling({batchSize, 64, 112, 112}, {64, 64, 3, 3}, (char*)"None", 2, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 64, 112, 112}, {64, 64, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    /* Stage 1_1 */
-    LayerGroup* sequential_1_1 = new LayerGroup();
-    LayerGroup* branch_1_1     = new LayerGroup(Group_t::CaseCode); 
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 64, 56, 56}, false));
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 64, 56, 56}, false));
 
-    sequential_1_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_1_1->addLayer(sequential_1_1);
-    branch_1_1->addLayer(new ByPass({batchSize, 64, 56, 56}));
+    modelGraph->addLayer(new ResNetBlock18({batchSize,  64, 56, 56}, true));
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 128, 28, 28}, false));
 
-    modelGraph->addLayer(branch_1_1);
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 128, 28, 28}, true));
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 256, 14, 14}, false));
 
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 256, 14, 14}, true));
+    modelGraph->addLayer(new ResNetBlock18({batchSize, 512,  7,  7}, false));
 
-    /* Stage 1_2 */
-    LayerGroup* sequential_1_2 = new LayerGroup();
-    LayerGroup* branch_1_2 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential_1_2->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_2->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_1_2->addLayer(sequential_1_2);
-    branch_1_2->addLayer(new ByPass({batchSize, 64, 56, 56}));
-
-    modelGraph->addLayer(branch_1_2);
-
-    
-    /* Stage 2_1 */
-    LayerGroup* sequential_2_1 = new LayerGroup();
-    LayerGroup* branch_2_1 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential_2_1->addLayer(new Conv2D({batchSize,  64, 56, 56}, {128,  64, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_2_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_2_1->addLayer(sequential_2_1);
-    branch_2_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {128, 64, 3, 3},  (char*)"ReLU", 2, 1));
-
-    modelGraph->addLayer(branch_2_1);
-    
-    /* Stage 2_2 */
-    LayerGroup* sequential_2_2 = new LayerGroup();
-    LayerGroup* branch_2_2 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential_2_2->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_2_2->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_2_2->addLayer(sequential_2_2);
-    branch_2_2->addLayer(new ByPass({batchSize, 128, 28, 28}));
-
-    modelGraph->addLayer(branch_2_2);
-
-
-    /* Stage 3_1 */
-    LayerGroup* sequential_3_1 = new LayerGroup();
-    LayerGroup* branch_3_1 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential_3_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {256, 128, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_3_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_3_1->addLayer(sequential_3_1);
-    branch_3_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {256, 128, 3, 3},  (char*)"ReLU", 2, 1));
-
-    modelGraph->addLayer(branch_3_1);
-    
-    /* Stage 3_2 */
-    LayerGroup* sequential_3_2 = new LayerGroup();
-    LayerGroup* branch_3_2 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential_3_2->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_3_2->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch_3_2->addLayer(sequential_3_2);
-    branch_3_2->addLayer(new ByPass({batchSize, 256, 14, 14}));
-
-    modelGraph->addLayer(branch_3_2);
-
-
-    /* Stage _4_1 */
-    LayerGroup* sequential__4_1 = new LayerGroup();
-    LayerGroup* branch__4_1 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential__4_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {512, 256, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential__4_1->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch__4_1->addLayer(sequential__4_1);
-    branch__4_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {512, 256, 3, 3},  (char*)"ReLU", 2, 1));
-
-    modelGraph->addLayer(branch__4_1);
-    
-    /* Stage _4_2 */
-    LayerGroup* sequential__4_2 = new LayerGroup();
-    LayerGroup* branch__4_2 = new LayerGroup(Group_t::CaseCode); 
-
-    sequential__4_2->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential__4_2->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
-    
-    branch__4_2->addLayer(sequential__4_2);
-    branch__4_2->addLayer(new ByPass({batchSize, 512, 7, 7}));
-
-    modelGraph->addLayer(branch__4_2);
-
-    modelGraph->addLayer(new Pooling({batchSize, 512, 7, 7}, {1024, 512, 7, 7}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 7, 7}, {1024, 512, 7, 7}, (char*)"Avg_Pool", 2, 0));
     modelGraph->addLayer(new Dense({batchSize, 1024, 1, 1}, 1000));
 
     numOfLayer = 28;

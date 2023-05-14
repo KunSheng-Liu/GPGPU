@@ -70,7 +70,7 @@ private:
     void addCaseCade (Layer*);
     void addCaseCode (Layer*);
 
-    void calculateOFMapSize() override;
+    void calculateOFMapSize() override {};
 
 
 /* ************************************************************************************************
@@ -82,6 +82,34 @@ public:
 
     /* The container of the layers */
     vector<Layer*> layers;
+};
+
+
+
+/** ===============================================================================================
+ * \name    ResNetBlock18
+ * 
+ * \brief   The layergroup prototype used in ResNet18
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+class ResNetBlock18: public LayerGroup
+{
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+    ResNetBlock18(vector<int>, bool = false);
+
+private:
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+    void BasicBlock(vector<int>);
+    void BottleNeckBlock(vector<int>);
 };
 
 
@@ -105,7 +133,7 @@ public:
     Inception(vector<int>, int, int, int, int, int, int);
     
 /* ************************************************************************************************
- * Functions
+ * Parameter
  * ************************************************************************************************
  */
 private:
@@ -115,7 +143,6 @@ private:
     int channel_reduce_5x5;
     int channel_5x5;
     int channel_pooling;
-
 };
 
 #endif

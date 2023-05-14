@@ -55,7 +55,7 @@ void::
 LayerGroup::addLayer (Layer* layer)
 {
     ASSERT(layer != NULL, "Add empty layer into group");
-
+    
     /* Dimension check */
     bool check = !layer->getIFMapSize().empty() && !layer->getOFMapSize().empty();
     ASSERT(check, "Add layer with empty I/O feature map");
@@ -286,15 +286,15 @@ LayerGroup::printInfo ()
     std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
 #else
     std::cout << "(" 
-              << std::right << std::setw(3)  << iFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(3)  << iFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << iFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << iFMapSize[WIDTH]                     \
-              << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
-              << std::right << std::setw(3)  << oFMapSize[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << oFMapSize[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
+              << std::right << std::setw(3)  << iFMapSize[BATCH]   << ", "
+              << std::right << std::setw(3)  << iFMapSize[CHANNEL] << ", "
+              << std::right << std::setw(4)  << iFMapSize[HEIGHT]  << ", "
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]          
+              << std::left  << std::setw(10) << ")" << "("                
+              << std::right << std::setw(3)  << oFMapSize[BATCH]   << ", "
+              << std::right << std::setw(3)  << oFMapSize[CHANNEL] << ", "
+              << std::right << std::setw(4)  << oFMapSize[HEIGHT]  << ", "
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]          
               << std::left  << std::setw(10) << ")"; 
               
     std::cout << std::endl;
@@ -302,20 +302,89 @@ LayerGroup::printInfo ()
 }
 
 
+
 /** ===============================================================================================
- * \name    init
+ * \name    BasicBlock18
  *
- * \brief   Initial the oFMapSize, defualt height and width is "1"
+ * \brief   The layergroup prototype used in ResNet18
+ * 
+ * \param   input_size          [batch, channel, height, width]
+ * \param   down_sample         whether downsampling the dimension
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+ResNetBlock18::ResNetBlock18(vector<int> input_size, bool down_sample) : LayerGroup(Group_t::CaseCode)
+{
+    down_sample ? BottleNeckBlock(input_size) : BasicBlock(input_size);
+}
+
+
+/** ===============================================================================================
+ * \name    BasicBlock
+ *
+ * \brief   The basicblock for ResNet18
+ * 
+ * \param   input_size          [batch, channel, height, width]
  * 
  * \endcond
  * 
+ * #Index    Type     Kernel    Feature     Output    Stride    Padding    Activation
+ *                     Size       Map        Size
+ *    |       Data                 c       n  x  n
+ *   / \                                    
+ *  |   1   Conv2D    3 x 3        c       n  x  n     1          1          ReLU
+ *  |   2   Conv2D    3 x 3        c       n  x  n     1          1        
+ *  3   |   ByPass                 c       n  x  n
+ *   \ /
+ *    |
  * ================================================================================================
  */
 void
-LayerGroup::calculateOFMapSize()
+ResNetBlock18::BasicBlock(vector<int> input_size)
 {
-    
+    int channel = input_size[CHANNEL];
+    LayerGroup* sequential = new LayerGroup();
+    sequential->addLayer(new Conv2D(input_size, {channel, channel, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential->addLayer(new Conv2D(input_size, {channel, channel, 3, 3},  (char*)"None", 1, 1));
+
+    addLayer(sequential);
+    addLayer(new ByPass(input_size));
 }
+
+
+/** ===============================================================================================
+ * \name    BasicBlock
+ *
+ * \brief   The basicblock for ResNet18
+ * 
+ * \param   input_size          [batch, channel, height, width]
+ * 
+ * \endcond
+ * 
+ * #Index    Type     Kernel    Feature     Output    Stride    Padding    Activation
+ *                     Size       Map        Size
+ *    |       Data                 c        n x n 
+ *   / \                                    
+ *  |   1   Conv2D    3 x 3        c        n x n      2          1          ReLU
+ *  |   2   Conv2D    3 x 3        c        n x n      1          1        
+ *  3   |   Conv2D    3 x 3        c        n x n      2          1          ReLU
+ *   \ /
+ *    |
+ * ================================================================================================
+ */
+void
+ResNetBlock18::BottleNeckBlock(vector<int> input_size)
+{
+    int channel = input_size[CHANNEL];
+    LayerGroup* sequential = new LayerGroup();
+    sequential->addLayer(new Conv2D(input_size, {channel * 2, channel, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential->addLayer(new Conv2D(sequential->getOFMapSize(), {channel * 2, channel * 2, 3, 3},  (char*)"None", 1, 1));
+
+    addLayer(sequential);
+    addLayer(new Conv2D(input_size, {channel * 2, channel, 3, 3},  (char*)"ReLU", 2, 1));
+}
+
 
 
 /** ===============================================================================================
@@ -323,6 +392,7 @@ LayerGroup::calculateOFMapSize()
  *
  * \brief   The layergroup prototype used in GoogleNet
  * 
+ * \param   input_size          [batch, channel, height, width]
  * \param   channel_1x1         the channel for the    1x1 layers
  * \param   channel_reduce_3x3  the channel for first  3x3 layers
  * \param   channel_3x3         the channel for second 3x3 layers
