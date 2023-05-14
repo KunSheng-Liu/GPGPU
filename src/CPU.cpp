@@ -23,13 +23,22 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
 
 #if (TASK_SET == TEST)
-    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
-    mAPPs.push_back(new Application ((char*)"Test"));
-    // mAPPs.push_back(new Application ((char*)"VGG16"));
+    // mAPPs.push_back(new Application ((char*)"Test"));
+    mAPPs.push_back(new Application ((char*)"LeNet"));
     // mAPPs.push_back(new Application ((char*)"ResNet18"));
+    // mAPPs.push_back(new Application ((char*)"VGG16"));
+    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
 #elif (TASK_SET == LIGHT)
+    // mAPPs.push_back(new Application ((char*)"LeNet"));
+    // mAPPs.push_back(new Application ((char*)"ResNet18"));
 #elif (TASK_SET == HEAVY)
+    // mAPPs.push_back(new Application ((char*)"VGG16"));
+    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
 #elif (TASK_SET == MIX)
+    // mAPPs.push_back(new Application ((char*)"LeNet"));
+    // mAPPs.push_back(new Application ((char*)"ResNet18"));
+    // mAPPs.push_back(new Application ((char*)"VGG16"));
+    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
 #endif
 
     

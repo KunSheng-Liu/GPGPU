@@ -4,8 +4,10 @@
  * \brief   Declare the model API 
  *          
  * \note    Available model type:
- *          - \b VGG16
+ *          - \b Test
+ *          - \b LeNet
  *          - \b ResNet18
+ *          - \b VGG16
  *          = \b GoogleNet
  * 
  * \date    APR 4, 2023
@@ -96,10 +98,10 @@ public:
     void buildLayerGraph (const char* model_type);
 
     void Test();
-    // void LeNet();
+    void LeNet();
+    void ResNet18();
     void VGG16();
     // void VGG19();
-    void ResNet18();
     void GoogleNet();
 
 /* ************************************************************************************************

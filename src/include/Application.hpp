@@ -36,7 +36,7 @@ class Application
  */ 
 public:
 
-    Application(char* model_type);
+    Application(char* model_type, int count = 1);
 
    ~Application();
 

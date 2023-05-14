@@ -187,16 +187,16 @@ Model::getModelInfo(const char* model_type)
     ModelInfo Info (model_type);
 
     if (strcmp(model_type, "Test") == 0) {
-        Info.numOfLayers    = 3;
-        Info.ioMemCount     = 7375872;
-        Info.filterMemCount = 54976;
+        Info.numOfLayers    = 4;
+        Info.ioMemCount     = -1;
+        Info.filterMemCount = -1;
         Info.inputSize      = { 3, 224, 224};
         Info.outputSize     = {1000};
 
-    } else if (strcmp(model_type, "VGG16") == 0) {
-        Info.numOfLayers    = 22;
-        Info.ioMemCount     = 15262696;
-        Info.filterMemCount = 17151680;
+    } else if (strcmp(model_type, "LeNet") == 0) {
+        Info.numOfLayers    = 8;
+        Info.ioMemCount     = -1;
+        Info.filterMemCount = -1;
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 
@@ -207,8 +207,15 @@ Model::getModelInfo(const char* model_type)
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 
+    } else if (strcmp(model_type, "VGG16") == 0) {
+        Info.numOfLayers    = 22;
+        Info.ioMemCount     = 15262696;
+        Info.filterMemCount = 17151680;
+        Info.inputSize      = {3, 224, 224};
+        Info.outputSize     = {1000};
+
     } else if (strcmp(model_type, "GoogleNet") == 0) {
-        Info.numOfLayers    = 72;
+        Info.numOfLayers    = 108;
         Info.ioMemCount     = -1;
         Info.filterMemCount = -1;
         Info.inputSize      = {3, 224, 224};
@@ -238,17 +245,21 @@ Model::buildLayerGraph(const char* model_type)
     if (strcmp(model_type, "Test") == 0) {
         Test();
 
-    } else if (strcmp(model_type, "VGG16") == 0) {
-        VGG16();
+    } else if (strcmp(model_type, "LeNet") == 0) {
+        LeNet();
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         ResNet18();
+
+    } else if (strcmp(model_type, "VGG16") == 0) {
+        VGG16();
 
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         GoogleNet();
 
     }
 }
+
 
 /** ===============================================================================================
  * \name    Test
@@ -290,75 +301,42 @@ Model::Test()
 
 
 /** ===============================================================================================
- * \name    VGG16
+ * \name    LeNet
  * 
- * \brief   Build the VGG16 layer graph
+ * \brief   Build the test graph
  * 
  * \endcond
  * 
- * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
- *                    Size       Map        Size
- *            Data                3       224 x 224
- *    1     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
- *    2     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
- *    3       Pool    2 x 2      64       112 x 112    2          0
- *    4     Conv2D    3 x 3     128       112 x 112    1          1          ReLU
- *    5     Conv2D    3 x 3     128       112 x 112    1          1          ReLU
- *    6       Pool    2 x 2     128        56 x 56     2          0
- *    7     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
- *    8     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
- *    9     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
- *   10       Pool    2 x 2     256        28 x 28     2          0
- *   11     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
- *   12     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
- *   13     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
- *   14       Pool    2 x 2     512        14 x 14     2          0
- *   15     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
- *   16     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
- *   17     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
- *   18       Pool    2 x 2     512         7 x 7      2          0
- *   19    Flatten            25088         1 x 1
- *   20      Dense    1 x 1    4096         1 x 1                            ReLU
- *   21      Dense    1 x 1    4096         1 x 1                            ReLU 
- *   22      Dense    1 x 1    1000         1 x 1    
- * 
+ * #Index    Type    Kernel    Feature      Output   Stride    Padding    Activation
+ *                    Size       Map         Size
+ *                                1        32 x 32 
+ *    1     Conv2D    5 x 5       6        28 x 28     1          0          Tanh
+ *    2       Pool    2 x 2       6        14 x 14     2          0
+ *    3     Conv2D    5 x 5      16        10 x 10     1          0          Tanh
+ *    4       Pool    2 x 2      16         5 x 5      2          0
+ *    5    Flatten              400         1 x 1
+ *    6      Dense    1 x 1     120         1 x 1                            Tanh
+ *    7      Dense    1 x 1      84         1 x 1                            Tanh
+ *    8      Dense    1 x 1      10         1 x 1                         SoftMax
  * ================================================================================================
  */
-void
-Model::VGG16()
+void 
+Model::LeNet()
 {
-    modelName = (char*)"VGG16";
+    modelName = (char*)"LeNet";
     
-    modelGraph->addLayer(new Conv2D ({batchSize,  3, 224, 224}, {64,  3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 64, 224, 224}, {64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 64, 224, 224}, {64, 64, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,  1, 32, 32}, { 6,  1, 5, 5}, (char*)"Tanh", 1, 0));
+    modelGraph->addLayer(new Pooling({batchSize,  6, 28, 28}, { 6,  6, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,  6, 14, 14}, {16,  6, 5, 5}, (char*)"Tanh", 1, 0));
+    modelGraph->addLayer(new Pooling({batchSize, 16, 10, 10}, {16, 16, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D ({batchSize,  64, 112, 112}, {128,  64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 128, 112, 112}, {128, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 128, 112, 112}, {128, 128, 2, 2}, (char*)"None", 2, 0));
-                                                      
-    modelGraph->addLayer(new Conv2D ({batchSize, 128, 56, 56}, {256, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 256, 56, 56}, {256, 256, 2, 2}, (char*)"None", 2, 0));
-                                                      
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 28, 28}, {512, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 512, 28, 28}, {512, 512, 2, 2}, (char*)"None", 2, 0));
-                                                      
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
-                                                      
-    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
+    modelGraph->addLayer(new Flatten({batchSize, 16, 5, 5}));
                                                         
-    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 1000));
+    modelGraph->addLayer(new Dense({batchSize, 400, 1, 1}, 120));
+    modelGraph->addLayer(new Dense({batchSize, 120, 1, 1},  84));
+    modelGraph->addLayer(new Dense({batchSize,  84, 1, 1},  10));
 
-    numOfLayer = 22;
+    numOfLayer = 8;
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
@@ -551,6 +529,86 @@ Model::ResNet18()
 #endif
     
     compileToKernel();
+}
+
+
+/** ===============================================================================================
+ * \name    VGG16
+ * 
+ * \brief   Build the VGG16 layer graph
+ * 
+ * \endcond
+ * 
+ * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
+ *                    Size       Map        Size
+ *            Data                3       224 x 224
+ *    1     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
+ *    2     Conv2D    3 x 3      64       224 x 224    1          1          ReLU
+ *    3       Pool    2 x 2      64       112 x 112    2          0
+ *    4     Conv2D    3 x 3     128       112 x 112    1          1          ReLU
+ *    5     Conv2D    3 x 3     128       112 x 112    1          1          ReLU
+ *    6       Pool    2 x 2     128        56 x 56     2          0
+ *    7     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
+ *    8     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
+ *    9     Conv2D    3 x 3     256        56 x 56     1          1          ReLU
+ *   10       Pool    2 x 2     256        28 x 28     2          0
+ *   11     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
+ *   12     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
+ *   13     Conv2D    3 x 3     512        28 x 28     1          1          ReLU
+ *   14       Pool    2 x 2     512        14 x 14     2          0
+ *   15     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
+ *   16     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
+ *   17     Conv2D    3 x 3     512        14 x 14     1          1          ReLU
+ *   18       Pool    2 x 2     512         7 x 7      2          0
+ *   19    Flatten            25088         1 x 1
+ *   20      Dense    1 x 1    4096         1 x 1                            ReLU
+ *   21      Dense    1 x 1    4096         1 x 1                            ReLU 
+ *   22      Dense    1 x 1    1000         1 x 1    
+ * 
+ * ================================================================================================
+ */
+void
+Model::VGG16()
+{
+    modelName = (char*)"VGG16";
+    
+    modelGraph->addLayer(new Conv2D ({batchSize,  3, 224, 224}, {64,  3, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 64, 224, 224}, {64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 64, 224, 224}, {64, 64, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Conv2D ({batchSize,  64, 112, 112}, {128,  64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 128, 112, 112}, {128, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 128, 112, 112}, {128, 128, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Conv2D ({batchSize, 128, 56, 56}, {256, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 256, 56, 56}, {256, 256, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 28, 28}, {512, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 28, 28}, {512, 512, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
+                                                        
+    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 1000));
+
+    numOfLayer = 22;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
+    compileToKernel();
+
 }
 
 

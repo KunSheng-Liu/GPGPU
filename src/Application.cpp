@@ -21,16 +21,21 @@ int Application::appCount = 0;
  * \brief   Construct a model
  * 
  * \param   model_type    the model type
+ * \param   count         the task number
  * 
  * \endcond
  * ================================================================================================
  */
-Application::Application(char* model_type)
+Application::Application(char* model_type, int count)
     : appID(appCount++), modelType(model_type), modelInfo(Model::getModelInfo(model_type))
     , SM_budget(0), finish(false)
 {
     /* Baseline, all application needs to execute once */
-    tasks.push(Task(total_gpu_cycle, -1, appID, vector<unsigned char> (3*224*224, 1)));
+    for (int  i = 0; i < count; i++)
+    {
+        tasks.push(Task(total_gpu_cycle, -1, appID, vector<unsigned char> (3*224*224, 1)));      
+    }
+    
 }
 
 

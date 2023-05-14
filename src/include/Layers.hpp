@@ -60,6 +60,7 @@ enum class Layer_t{
 enum class Activation_t{
     None,
     ReLU,
+    Tanh,
     Sigmoid,
     SoftMax,
     Max_Pool,
