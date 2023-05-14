@@ -23,8 +23,9 @@
  * ************************************************************************************************
  */
 typedef enum {
-    SPACE_VRAM  = 0,
-	SPACE_DRAM  = 1,
+    SPACE_NONE,
+    SPACE_VRAM,
+	SPACE_DRAM,
 }Page_Location;
 
 struct PageRecord {
@@ -33,15 +34,15 @@ struct PageRecord {
 
     unsigned long access_count = 0;
     unsigned long swap_count = 0;
-    Page_Location location = SPACE_DRAM;
 };
 
 struct Page {
     unsigned long long pageIndex;
+    Page_Location location;
     PageRecord record;
     Page* nextPage;
 
-    Page(unsigned page_index = -1, Page* next_page = nullptr) : pageIndex(page_index), nextPage(next_page) {}
+    Page(unsigned long long page_index = -1, Page_Location location = SPACE_NONE, Page* next_page = nullptr) : pageIndex(page_index), location(location), nextPage(next_page) {}
 };
 
 
@@ -70,7 +71,7 @@ public:
     
     void cycle ();
 
-    Page* refer (int page_id) {return &mPages[page_id];}
+    Page* refer (unsigned long long page_id) {return &mPages[page_id];}
 
     Page* memoryAllocate (int numByte);
 
@@ -90,7 +91,7 @@ private:
 
     unsigned long long pageIndex = 0;
 
-    map<int, Page> mPages;
+    map<unsigned long long , Page> mPages;
 
     list<Page*> availablePageList;
     list<Page*> usedPageList;

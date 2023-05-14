@@ -107,7 +107,7 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */
-#define INFERENCE_METHOD                    PARALLSEEL
+#define INFERENCE_METHOD                    SEQUENTIAL
 #define BATCH_INFERENCE                     false
 #define THREAD_KERNEL_COMPILE               true
 #define THREAD_NUM                          8

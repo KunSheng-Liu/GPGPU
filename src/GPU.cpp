@@ -96,7 +96,7 @@ GPU::Runtime_Block_Scheduling()
     while(!commandQueue.empty())
     {
         Kernel* kernel = commandQueue.front();
-        commandQueue.pop();
+        ASSERT(kernel, "Receive null kernel ptr");
 
         bool success = false;
         for (auto sm_id : *kernel->SM_List)
@@ -111,6 +111,7 @@ GPU::Runtime_Block_Scheduling()
             remainingKernels.push(kernel);
         }
 
+        commandQueue.pop();
     }
 
     commandQueue = remainingKernels;

@@ -76,7 +76,7 @@ MemoryController::createPage()
 {
     ASSERT(pageIndex << pageFrameOffset <= storageLimit, "Cannot create anymore physical page");
 
-    mPages.insert(make_pair(pageIndex, Page(pageIndex)));
+    mPages.insert(make_pair(pageIndex, Page(pageIndex, SPACE_DRAM)));
     availablePageList.push_back(&mPages[pageIndex++]);
 
 }
