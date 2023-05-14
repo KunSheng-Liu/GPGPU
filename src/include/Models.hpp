@@ -5,7 +5,8 @@
  *          
  * \note    Available model type:
  *          - \b VGG16
- *          - \b RESNET18
+ *          - \b ResNet18
+ *          = \b GoogleNet
  * 
  * \date    APR 4, 2023
  */
@@ -82,8 +83,8 @@ public:
 
     vector<unsigned char>* getIFMap  (void) {return modelGraph->getIFMap();}
     vector<unsigned char>* getOFMap  (void) {return modelGraph->getOFMap();}
-    vector<int>* getIFMapSize  (void) {return modelGraph->getIFMapSize();}
-    vector<int>* getOFMapSize  (void) {return modelGraph->getOFMapSize();}
+    vector<int> getIFMapSize  (void) const  {return modelGraph->getIFMapSize();}
+    vector<int> getOFMapSize  (void) const  {return modelGraph->getOFMapSize();}
 
     static ModelInfo getModelInfo (const char* model_type);
     
@@ -99,7 +100,7 @@ public:
     void VGG16();
     // void VGG19();
     void ResNet18();
-    // void GoogLeNet();
+    void GoogleNet();
 
 /* ************************************************************************************************
  * Parameter

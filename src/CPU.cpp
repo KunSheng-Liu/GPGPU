@@ -23,9 +23,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
 
 #if (TASK_SET == TEST)
+    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
     mAPPs.push_back(new Application ((char*)"Test"));
-    mAPPs.push_back(new Application ((char*)"VGG16"));
-    mAPPs.push_back(new Application ((char*)"ResNet18"));
+    // mAPPs.push_back(new Application ((char*)"VGG16"));
+    // mAPPs.push_back(new Application ((char*)"ResNet18"));
 #elif (TASK_SET == LIGHT)
 #elif (TASK_SET == HEAVY)
 #elif (TASK_SET == MIX)
@@ -304,7 +305,7 @@ CPU::Check_Finish_Kernel()
                 std::cout << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
             for (auto& b_record : kernel->block_record)
             {
-                std::cout << "Finish block" << std::right << setw(4) << b_record.block_id << ": [" 
+                std::cout << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
                           << b_record.sm_id                 << ", "
                           << b_record.start_cycle           << ", "
                           << b_record.end_cycle             << ", "
@@ -325,7 +326,6 @@ CPU::Check_Finish_Kernel()
     #endif
             }
 #endif        
-
         /* release */
         kernel->release();
 

@@ -61,6 +61,9 @@ enum class Activation_t{
     None,
     ReLU,
     Sigmoid,
+    SoftMax,
+    Max_Pool,
+    Avg_Pool,
 };
 
 
@@ -80,7 +83,7 @@ class Layer
  */ 
 public:
 
-    Layer(char* = (char*)"None", vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None");
+    Layer(char* = (char*)"None", vector<int> = {}, vector<int> = {}, char* = (char*)"None");
 
    ~Layer();
 
@@ -154,9 +157,9 @@ public:
     virtual void setFilter (vector<unsigned char>* data);
 
     int getMemoryUsage();
-    vector<int>* getIFMapSize  (void) {return iFMapSize;}
-    vector<int>* getOFMapSize  (void) {return oFMapSize;}
-    vector<int>* getFilterSize (void) {return filterSize;}
+    vector<int> getIFMapSize  (void) const {return iFMapSize;}
+    vector<int> getOFMapSize  (void) const {return oFMapSize;}
+    vector<int> getFilterSize (void) const {return filterSize;}
     vector<unsigned char>* getOFMap  (void) {return oFMap;}
     vector<unsigned char>* getIFMap  (void) {return iFMap;}
     vector<unsigned char>* getFilter (void) {return filter;}
@@ -182,9 +185,9 @@ protected:
     static int layerCount;
 
     /* The dimensions of feature map and filter */
-    vector<int>* iFMapSize;     // In order "batch", "channel", "height", and "width"
-    vector<int>* oFMapSize;     // In order "batch", "channel", "height", and "width"
-    vector<int>* filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
+    vector<int> iFMapSize;     // In order "batch", "channel", "height", and "width"
+    vector<int> oFMapSize;     // In order "batch", "channel", "height", and "width"
+    vector<int> filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
     vector<unsigned char>* iFMap;       // Reference to input data
@@ -210,11 +213,11 @@ class Conv2D: public Layer
  */ 
 public:
 
-    Conv2D(char*, vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
+    Conv2D(char*, vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Conv2D(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
+    Conv2D(vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Conv2D(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", int = 1, int = 0);
+    Conv2D(vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 1, int = 0);
 
     ~Conv2D();
 
@@ -235,8 +238,8 @@ private:
  * ************************************************************************************************
  */
 protected:
-    vector<int>* stride;
-    vector<int>* padding;
+    vector<int> stride;
+    vector<int> padding;
 };
 
 
@@ -257,9 +260,9 @@ class Pooling: public Conv2D
  */ 
 public:
 
-    Pooling(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", vector<int>* = {}, vector<int>* = {});
+    Pooling(vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Pooling(vector<int>* = nullptr, vector<int>* = nullptr, char* = (char*)"None", int = 0, int = 0);
+    Pooling(vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 0, int = 0);
 
 /* ************************************************************************************************
  * Functions
@@ -288,7 +291,7 @@ class Flatten: public Layer
  */ 
 public:
 
-    Flatten(vector<int>*);
+    Flatten(vector<int> = {});
 
 /* ************************************************************************************************
  * Functions
@@ -321,7 +324,8 @@ class ByPass: public Layer
  */ 
 public:
 
-    ByPass(vector<int>*);
+    ByPass(vector<int>);
+    ByPass(vector<int>, vector<int>);
 
 /* ************************************************************************************************
  * Functions
@@ -332,7 +336,7 @@ public:
     void issueLayer(ThreadArg* threadArg) override;
     
 private:
-    void calculateOFMapSize() override;
+    void calculateOFMapSize() override {};
 
 };
 
@@ -354,9 +358,9 @@ class Dense: public Layer
  */ 
 public:
 
-    Dense(vector<int>*, vector<int>*, char* = (char*)"None");
+    Dense(vector<int> = {}, vector<int> = {}, char* = (char*)"None");
 
-    Dense(vector<int>*, int);
+    Dense(vector<int>, int);
 
     // Dense(int, int, char* = (char*)"None");
 

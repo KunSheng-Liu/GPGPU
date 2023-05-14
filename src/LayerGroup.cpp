@@ -13,12 +13,12 @@
  *
  * \brief   Construct a layerGroup
  * 
- * \param   group_type      Group_t::CaseCade / Group_t::CaseCode
+ * \param   group_type      Group_t::CaseCade | Group_t::CaseCode
  * 
  * \endcond
  * ================================================================================================
  */
-LayerGroup::LayerGroup(Group_t group_type): Layer(), groupType(group_type)
+LayerGroup::LayerGroup(Group_t group_type): Layer((char*)"LayerGroup"), groupType(group_type)
 {
     /* Group not in count of a layer */
     layerCount--;
@@ -38,22 +38,8 @@ LayerGroup::LayerGroup(Group_t group_type): Layer(), groupType(group_type)
  */
 LayerGroup::~LayerGroup()
 {
-    if (groupType == Group_t::CaseCade)
-    {
-        for (auto layer = layers.begin(); layer != layers.end(); ++layer) {
-            delete (*layer)->getOFMap();
-            delete *layer;
-        }
-
-    } else {
-        
-        for (auto layer = layers.begin(); layer != layers.end(); ++layer) {
-            delete (*layer)->getOFMap();
-            delete *layer;
-        }
-        delete oFMap;
-    }
-    
+    if (groupType == Group_t::CaseCode) delete oFMap;
+    for (auto layer = layers.begin(); layer != layers.end(); ++layer) delete *layer;
 }
 
 
@@ -71,7 +57,7 @@ LayerGroup::addLayer (Layer* layer)
     ASSERT(layer != NULL, "Add empty layer into group");
 
     /* Dimension check */
-    bool check = (layer->getIFMapSize() != NULL) && (layer->getOFMapSize() != NULL);
+    bool check = !layer->getIFMapSize().empty() && !layer->getOFMapSize().empty();
     ASSERT(check, "Add layer with empty I/O feature map");
 
     /* Handle the I/O feature map*/
@@ -91,22 +77,21 @@ void::
 LayerGroup::addCaseCade (Layer* layer)
 {
     /* Handle the I/O feature map*/
-    if (layers.size() == 0)
+    if (layers.empty())
     {
-        iFMapSize = new vector<int>{*layer->getIFMapSize()};
-        oFMapSize = new vector<int>{*layer->getOFMapSize()};
+        iFMapSize = layer->getIFMapSize();
+        oFMapSize = layer->getOFMapSize();
         oFMap     = layer->getOFMap();
 
     } else {
 
         /* Dimension check */
-        vector<int>* nextIFMapSize = layer->getIFMapSize();
-        bool check = ((*oFMapSize)[BATCH] == (*nextIFMapSize)[BATCH]) && ((*oFMapSize)[CHANNEL] == (*nextIFMapSize)[CHANNEL]) && ((*oFMapSize)[HEIGHT] == (*nextIFMapSize)[HEIGHT]) && ((*oFMapSize)[WIDTH] == (*nextIFMapSize)[WIDTH]);
-        ASSERT(check, "Layer " + to_string(layer->layerID) + " has error iFMapSize to the existing oFMapSize.");
+        vector<int> nextIFMapSize = layer->getIFMapSize();
+        bool check = (oFMapSize[BATCH] == nextIFMapSize[BATCH]) && (oFMapSize[CHANNEL] == nextIFMapSize[CHANNEL] && (oFMapSize[HEIGHT] == nextIFMapSize[HEIGHT]) && (oFMapSize[WIDTH] == nextIFMapSize[WIDTH]));
+        ASSERT(check, "Layer " + to_string(layer->layerID) + " (" + layer->layerType + ") has error iFMapSize to the existing oFMapSize.");
 
         layer->setIFMap(oFMap);
-        delete oFMapSize;
-        oFMapSize = new vector<int>{*layer->getOFMapSize()};
+        oFMapSize = layer->getOFMapSize();
         oFMap     = layer->getOFMap();
     }
 
@@ -126,21 +111,21 @@ void::
 LayerGroup::addCaseCode (Layer* layer)
 {
     /* Handle the I/O feature map*/
-    if (layers.size() == 0)
+    if (layers.empty())
     {
-        iFMapSize = new vector<int>{*layer->getIFMapSize()};
-        oFMapSize = new vector<int>{*layer->getOFMapSize()};
+        iFMapSize = layer->getIFMapSize();
+        oFMapSize = layer->getOFMapSize();
 
-        int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+        int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
         oFMap = new vector<unsigned char>(size);
 
     } else {
 
         /* Dimension check */
-        vector<int>* nextIFMapSize = layer->getIFMapSize();
-        vector<int>* nextOFMapSize = layer->getOFMapSize();
-        bool check  = ((*iFMapSize)[BATCH] == (*nextIFMapSize)[BATCH]) && ((*iFMapSize)[CHANNEL] == (*nextIFMapSize)[CHANNEL]) && ((*iFMapSize)[HEIGHT] == (*nextIFMapSize)[HEIGHT]) && ((*iFMapSize)[WIDTH] == (*nextIFMapSize)[WIDTH])
-                   && ((*oFMapSize)[BATCH] == (*nextOFMapSize)[BATCH]) && ((*oFMapSize)[CHANNEL] == (*nextOFMapSize)[CHANNEL]) && ((*oFMapSize)[HEIGHT] == (*nextOFMapSize)[HEIGHT]) && ((*oFMapSize)[WIDTH] == (*nextOFMapSize)[WIDTH]);
+        vector<int> nextIFMapSize = layer->getIFMapSize();
+        vector<int> nextOFMapSize = layer->getOFMapSize();
+        bool check  = (iFMapSize[BATCH] == nextIFMapSize[BATCH]) && (iFMapSize[CHANNEL] == nextIFMapSize[CHANNEL]) && (iFMapSize[HEIGHT] == nextIFMapSize[HEIGHT]) && (iFMapSize[WIDTH] == nextIFMapSize[WIDTH])
+                   && (oFMapSize[BATCH] == nextOFMapSize[BATCH]) && (oFMapSize[CHANNEL] == nextOFMapSize[CHANNEL]) && (oFMapSize[HEIGHT] == nextOFMapSize[HEIGHT]) && (oFMapSize[WIDTH] == nextOFMapSize[WIDTH]);
         ASSERT(check, "Casecoded layer has error iFMapSize or oFMapSize to the existing layer");
 
         layer->setIFMap(iFMap);
@@ -301,15 +286,15 @@ LayerGroup::printInfo ()
     std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;
 #else
     std::cout << "(" 
-              << std::right << std::setw(3)  << (*iFMapSize)[BATCH]             << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << (*iFMapSize)[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]                     \
+              << std::right << std::setw(3)  << iFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(3)  << iFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << iFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")" << "("                           \
-              << std::right << std::setw(3)  << (*oFMapSize)[BATCH]             << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[CHANNEL]           << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
+              << std::right << std::setw(3)  << oFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(3)  << oFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(4)  << oFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
               
     std::cout << std::endl;
@@ -331,3 +316,71 @@ LayerGroup::calculateOFMapSize()
 {
     
 }
+
+
+/** ===============================================================================================
+ * \name    Inception
+ *
+ * \brief   The layergroup prototype used in GoogleNet
+ * 
+ * \param   channel_1x1         the channel for the    1x1 layers
+ * \param   channel_reduce_3x3  the channel for first  3x3 layers
+ * \param   channel_3x3         the channel for second 3x3 layers
+ * \param   channel_reduce_5x5  the channel for first  5x5 layers
+ * \param   channel_5x5         the channel for second 5x5 layers
+ * \param   channel_pooling     the channel for the pooling layers
+ * 
+ * \endcond
+ * 
+ *  #Index     Type   Kernel           Feature     Output    Stride    Padding    Activation
+ *                     Size              Map        Size
+ *     |       Data                       c         n x n
+ *  / / \ \  
+ * 1 |   | | Conv2D    1 x 1        channel_1x1     n x n      1          0          ReLU
+ * | 3   | | Conv2D    3 x 3 channel_reduce_3x3     n x n      1          1          ReLU
+ * | 4   | | Conv2D    3 x 3        channel_3x3     n x n      1          1          ReLU
+ * | |   6 | Conv2D    5 x 5 channel_reduce_5x5     n x n      1          2          ReLU
+ * | |   7 | Conv2D    5 x 5        channel_5x5     n x n      1          2          ReLU
+ * | |   | 9   Pool    3 x 3    channel_pooling     n x n      1          1           Max
+ * | |   |10 Conv2D    1 x 1    channel_pooling     n x n      1          0          ReLU
+ * | |   | |
+ * 2 |   | | ByPass    channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling     n x n
+ * | 5   | | ByPass    channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling     n x n
+ * | |   8 | ByPass    channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling     n x n
+ * | |   |11 ByPass    channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling     n x n
+ *  \ \ / /
+ *     |    
+ * ================================================================================================
+ */
+Inception::Inception(vector<int> input_size, int channel_1x1, int channel_reduce_3x3, int channel_3x3, int channel_reduce_5x5, int channel_5x5, int channel_pooling)
+        : LayerGroup(Group_t::CaseCode), channel_1x1(channel_1x1), channel_reduce_3x3(channel_reduce_3x3), channel_3x3(channel_3x3), channel_reduce_5x5(channel_reduce_5x5)
+        , channel_5x5(channel_5x5), channel_pooling(channel_pooling)
+{
+    int height = input_size[HEIGHT];
+    int weight = input_size[WIDTH];
+    int final_dim = channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling;
+
+    LayerGroup* sequential_1x1 = new LayerGroup();
+    sequential_1x1->addLayer(new Conv2D(input_size, {channel_1x1, input_size[CHANNEL], 1, 1},  (char*)"ReLU", 1, 0));
+    sequential_1x1->addLayer(new ByPass(sequential_1x1->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+
+    LayerGroup* sequential_3x3 = new LayerGroup();
+    sequential_3x3->addLayer(new Conv2D(input_size, {channel_reduce_3x3, input_size[CHANNEL], 3, 3} ,  (char*)"ReLU", 1, 1));
+    sequential_3x3->addLayer(new Conv2D(sequential_3x3->getOFMapSize(), {channel_3x3, channel_reduce_3x3, 3, 3}        ,  (char*)"ReLU", 1, 1));
+    sequential_3x3->addLayer(new ByPass(sequential_3x3->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+    
+    LayerGroup* sequential_5x5 = new LayerGroup();
+    sequential_5x5->addLayer(new Conv2D(input_size, {channel_reduce_5x5, input_size[CHANNEL], 5, 5} ,  (char*)"ReLU", 2, 2));
+    sequential_5x5->addLayer(new Conv2D(sequential_5x5->getOFMapSize(), {channel_5x5, channel_reduce_5x5, 5, 5}        ,  (char*)"ReLU", 2, 2));
+    sequential_5x5->addLayer(new ByPass(sequential_5x5->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+    
+    LayerGroup* sequential_pooling = new LayerGroup();
+    sequential_pooling->addLayer(new Conv2D(input_size, {channel_pooling, input_size[CHANNEL], 3, 3},  (char*)"Max", 1, 1));
+    sequential_pooling->addLayer(new Conv2D(sequential_pooling->getOFMapSize(), {channel_pooling, channel_pooling, 1, 1},  (char*)"ReLU", 1, 0));
+    sequential_pooling->addLayer(new ByPass(sequential_pooling->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+
+    addLayer(sequential_3x3);
+    addLayer(sequential_5x5);
+    addLayer(sequential_pooling);
+}
+

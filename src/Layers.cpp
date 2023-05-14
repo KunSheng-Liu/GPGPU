@@ -27,12 +27,12 @@ int Layer::layerCount = 0;
  * \endcond
  * ================================================================================================
  */
-Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type)
+Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap(nullptr), filter(nullptr), oFMapSize(nullptr), oFMap(nullptr), layerID(layerCount++)
+        , iFMap(nullptr), filter(nullptr), oFMapSize({}), oFMap(nullptr), layerID(layerCount++)
 {
-    if (iFMapSize  != nullptr)  iFMap = new vector<unsigned char> ((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
-    if (filterSize != nullptr) filter = new vector<unsigned char> ((*filterSize)[BATCH] * (*filterSize)[CHANNEL] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH]);
+    if (!iFMapSize.empty())  iFMap = new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
+    if (!filterSize.empty()) filter = new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]);
 }
 
 
@@ -49,9 +49,6 @@ Layer::Layer(char* layer_type, vector<int>* input_size, vector<int>* filter_size
  */
 Layer::~Layer()
 {
-    delete iFMapSize;
-    delete oFMapSize;
-    delete filterSize;
     delete filter;
 }
 
@@ -131,10 +128,10 @@ Layer::setFilter(vector<unsigned char>* data)
 void
 Layer::changeBatch(int new_batch_size)
 {
-    (*iFMapSize)[BATCH] = new_batch_size;
-    (*oFMapSize)[BATCH] = new_batch_size;
-    if (iFMap  != nullptr)  iFMap->resize((*iFMapSize)[BATCH]  * (*iFMapSize)[CHANNEL]  * (*iFMapSize)[HEIGHT]  * (*iFMapSize)[WIDTH]);
-    if (oFMap  != nullptr)  oFMap->resize((*oFMapSize)[BATCH]  * (*oFMapSize)[CHANNEL]  * (*oFMapSize)[HEIGHT]  * (*oFMapSize)[WIDTH]);
+    iFMapSize[BATCH] = new_batch_size;
+    oFMapSize[BATCH] = new_batch_size;
+    if (iFMap  != nullptr)  iFMap->resize(iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
+    if (oFMap  != nullptr)  oFMap->resize(oFMapSize[BATCH]  * oFMapSize[CHANNEL]  * oFMapSize[HEIGHT]  * oFMapSize[WIDTH]);
 }
 
 
@@ -220,20 +217,20 @@ void
 Layer::printInfo()
 {
     std::cout << "(" 
-              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]             << ", " \
-              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL]           << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]                     \
+              << std::right << std::setw(4)  << iFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")" << "("                              \
-              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_O] << ", " \
-              << std::right << std::setw(4)  << (*filterSize)[FILTER_CHANNEL_I] << ", " \
-              << std::right << std::setw(3)  << (*filterSize)[HEIGHT]           << ", " \
-              << std::right << std::setw(3)  << (*filterSize)[WIDTH]                    \
+              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_O] << ", " \
+              << std::right << std::setw(4)  << filterSize[FILTER_CHANNEL_I] << ", " \
+              << std::right << std::setw(3)  << filterSize[HEIGHT]           << ", " \
+              << std::right << std::setw(3)  << filterSize[WIDTH]                    \
               << std::left  << std::setw(10) << ")" << "("                              \
-              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]             << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL]           << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]            << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]                     \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]             << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL]           << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]            << ", " \
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]                     \
               << std::left  << std::setw(10) << ")"; 
 }
 
@@ -326,12 +323,12 @@ Layer::threadCompile(void* arg)
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(char* layer_type, vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+Conv2D::Conv2D(char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
         : Layer(layer_type, input_size, filter_size, activation_type)
         , stride(_stride), padding(_padding)
 {
     calculateOFMapSize();
-    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
     oFMap = new vector<unsigned char>(size);
 }
 
@@ -350,7 +347,7 @@ Conv2D::Conv2D(char* layer_type, vector<int>* input_size, vector<int>* filter_si
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+Conv2D::Conv2D(vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
         : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, _stride, _padding)
 {
 
@@ -371,8 +368,8 @@ Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activati
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, move(new vector<int>{_stride,_stride}), move(new vector<int>{_padding, _padding}))
+Conv2D::Conv2D(vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
 {
     
 }
@@ -388,8 +385,7 @@ Conv2D::Conv2D(vector<int>* input_size, vector<int>* filter_size, char* activati
  */
 Conv2D::~Conv2D()
 {
-    delete stride;
-    delete padding;
+
 }
 
 
@@ -404,14 +400,13 @@ Conv2D::~Conv2D()
 void
 Conv2D::calculateOFMapSize()
 {
-    bool check = (!iFMapSize->empty()) && (!filterSize->empty()) && (!stride->empty()) && (!padding->empty());
+    bool check = !iFMapSize.empty() && !filterSize.empty() && !stride.empty() && !padding.empty();
     ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
 
-    oFMapSize = new vector<int>();
-    oFMapSize->emplace_back((*iFMapSize)[BATCH]);
-    oFMapSize->emplace_back((*filterSize)[FILTER_CHANNEL_O]);
-    oFMapSize->emplace_back((double) ((*iFMapSize)[HEIGHT] + 2 * (*padding)[STRIDE_PADDING_HEIGHT] - (*filterSize)[HEIGHT]) / (double) ((*stride)[STRIDE_PADDING_HEIGHT]) + 1);
-    oFMapSize->emplace_back((double) ((*iFMapSize)[WIDTH]  + 2 * (*padding)[STRIDE_PADDING_WIDTH]  - (*filterSize)[WIDTH])  / (double) ((*stride)[STRIDE_PADDING_WIDTH])  + 1);
+    oFMapSize.emplace_back(iFMapSize[BATCH]);
+    oFMapSize.emplace_back(filterSize[FILTER_CHANNEL_O]);
+    oFMapSize.emplace_back((double) (iFMapSize[HEIGHT] + 2 * padding[STRIDE_PADDING_HEIGHT] - filterSize[HEIGHT]) / (double) stride[STRIDE_PADDING_HEIGHT] + 1);
+    oFMapSize.emplace_back((double) (iFMapSize[WIDTH]  + 2 * padding[STRIDE_PADDING_WIDTH]  - filterSize[WIDTH])  / (double) stride[STRIDE_PADDING_WIDTH]  + 1);
 }
 
 
@@ -452,11 +447,11 @@ Conv2D::printInfo()
     std::cout << std::left << std::setw(16) << layerType; 
     std::cout << std::left << std::setw(13) << activationType;
     Layer::printInfo();
-    std::cout << "(" << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_HEIGHT]  << ", " \
-                     << std::right << std::setw(2)  << (*stride)[STRIDE_PADDING_WIDTH]           \
-                     << std::left  << std::setw(10) << ")" << "("                                \
-                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_HEIGHT] << ", " \
-                     << std::right << std::setw(2)  << (*padding)[STRIDE_PADDING_WIDTH]  << ")";
+    std::cout << "(" << std::right << std::setw(2)  << stride[STRIDE_PADDING_HEIGHT]  << ", "
+                     << std::right << std::setw(2)  << stride[STRIDE_PADDING_WIDTH]   
+                     << std::left  << std::setw(10) << ")" << "("
+                     << std::right << std::setw(2)  << padding[STRIDE_PADDING_HEIGHT] << ", "
+                     << std::right << std::setw(2)  << padding[STRIDE_PADDING_WIDTH]  << ")";
                      
     std::cout << std::endl;
 }
@@ -491,22 +486,22 @@ Conv2D::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int w_o = start_index; w_o < end_index; w_o++)
     {
-        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
         {
-            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
             {
-                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                for (int b = 0; b < oFMapSize[BATCH]; b++)
                 {                   
                     Request* request = new Request();
 
                     /* read filter pages */
-                    int f_count  = (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
+                    int f_count  = filterSize[FILTER_CHANNEL_I] * filterSize[HEIGHT] * filterSize[WIDTH];
                     int f_offset  = c_o * f_count;
                     while (f_count != 0)
                     {
@@ -518,17 +513,17 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     }
 
                     /* read input pages */
-                    const int h_start = h_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
-                    const int w_start = w_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+                    const int h_start = h_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
 
-                    for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
+                    for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
                     {
-                        for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
+                        for (int h_i = max(0, h_start); h_i < min(h_start + filterSize[HEIGHT], iFMapSize[HEIGHT]); h_i++)
                         {
 
-                            for (int w_i = max(0, w_start); w_i < min(w_start + (*filterSize)[WIDTH], (*iFMapSize)[WIDTH]); w_i++)
+                            for (int w_i = max(0, w_start); w_i < min(w_start + filterSize[WIDTH], iFMapSize[WIDTH]); w_i++)
                             {
-                                const int index = floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i) / PAGE_SIZE);
+                                const int index = floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_i * iFMapSize[WIDTH] + w_i) / PAGE_SIZE);
                                 
                                 if (request->readPages.back().first != iFMapPages[index]) 
                                 {
@@ -543,10 +538,10 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     }
 
                     /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
                     
                     // Conv2D perfrom the element multiplication on iFMap to filter at each place
-                    // request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / GPU_MAX_THREAD_PER_WARP;
+                    // request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH] / GPU_MAX_THREAD_PER_WARP;
                     request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
@@ -581,7 +576,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activation_type, vector<int>* _stride, vector<int>* _padding)
+Pooling::Pooling(vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
         : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, _stride, _padding)
 {
     
@@ -602,8 +597,8 @@ Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activa
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(vector<int>* input_size, vector<int>* filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, move(new vector<int>{_stride,_stride}), move(new vector<int>{_padding, _padding}))
+Pooling::Pooling(vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
 {
     
 }
@@ -638,22 +633,22 @@ Pooling::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int w_o = start_index; w_o < end_index; w_o++)
     {
-        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
         {
-            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
             {
-                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                for (int b = 0; b < oFMapSize[BATCH]; b++)
                 {                   
                     Request* request = new Request();
 
                     /* read filter pages */
-                    int f_count  = (*filterSize)[FILTER_CHANNEL_I] * (*filterSize)[HEIGHT] * (*filterSize)[WIDTH];
+                    int f_count  = filterSize[FILTER_CHANNEL_I] * filterSize[HEIGHT] * filterSize[WIDTH];
                     int f_offset  = c_o * f_count;
                     while (f_count != 0)
                     {
@@ -665,16 +660,16 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     }
 
                     /* read input pages */
-                    const int h_start = h_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
-                    const int w_start = w_o * (*stride)[STRIDE_PADDING_HEIGHT] - (*padding)[STRIDE_PADDING_HEIGHT];
+                    const int h_start = h_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
 
-                    for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
+                    for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
                     {
-                        for (int h_i = max(0, h_start); h_i < min(h_start + (*filterSize)[HEIGHT], (*iFMapSize)[HEIGHT]); h_i++)
+                        for (int h_i = max(0, h_start); h_i < min(h_start + filterSize[HEIGHT], iFMapSize[HEIGHT]); h_i++)
                         {
-                            for (int w_i = max(0, w_start); w_i < min(w_start + (*filterSize)[WIDTH], (*iFMapSize)[WIDTH]); w_i++)
+                            for (int w_i = max(0, w_start); w_i < min(w_start + filterSize[WIDTH], iFMapSize[WIDTH]); w_i++)
                             {
-                                const int index = floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_i * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_i * (*iFMapSize)[WIDTH] + w_i) / PAGE_SIZE);
+                                const int index = floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_i * iFMapSize[WIDTH] + w_i) / PAGE_SIZE);
                                 
                                 if (request->readPages.back().first != iFMapPages[index]) 
                                 {
@@ -688,10 +683,10 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     }
 
                     /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Pooling layer find the maxinum input data in the field masked by filter
-                    // request->numOfInstructions += (*filterSize)[HEIGHT] * (*filterSize)[WIDTH] / GPU_MAX_THREAD_PER_WARP;
+                    // request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH] / GPU_MAX_THREAD_PER_WARP;
                     request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
@@ -722,11 +717,11 @@ Pooling::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Flatten::Flatten(vector<int>* input_size)
+Flatten::Flatten(vector<int> input_size)
         : Layer((char*)"Flatten", input_size)
 {
     calculateOFMapSize();
-    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
     oFMap = new vector<unsigned char>(size);
 }
 
@@ -742,14 +737,12 @@ Flatten::Flatten(vector<int>* input_size)
 void
 Flatten::calculateOFMapSize()
 {
-    bool check = (!iFMapSize->empty());
-    ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
+    ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
 
-    oFMapSize = new vector<int>();
-    (*oFMapSize).emplace_back((*iFMapSize)[BATCH]);
-    (*oFMapSize).emplace_back((*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH]);
-    (*oFMapSize).emplace_back(1);
-    (*oFMapSize).emplace_back(1);
+    oFMapSize.emplace_back(iFMapSize[BATCH]);
+    oFMapSize.emplace_back(iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]);
+    oFMapSize.emplace_back(1);
+    oFMapSize.emplace_back(1);
 }
 
 
@@ -765,22 +758,22 @@ void
 Flatten::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerID \
-              << std::left << std::setw(16) << layerType  \
+    std::cout << std::left << std::setw(10) << layerID
+              << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
 
     std::cout << "(" 
-              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::right << std::setw(4)  << iFMapSize[BATCH]   << ", "
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL] << ", "
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]  << ", "
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]   
               << std::left  << std::setw(10) << ")"         
-              << std::right << std::setw(22) << "None"                        \
+              << std::right << std::setw(22) << "None"  
               << std::right << setw(10) << "("
-              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", "
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " 
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " 
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]   
               << std::left  << std::setw(10) << ")";  
 
     std::cout << std::endl;
@@ -814,24 +807,24 @@ Flatten::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int w_o = start_index; w_o < end_index; w_o++)
     {
-        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
         {
-            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
             {
-                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                for (int b = 0; b < oFMapSize[BATCH]; b++)
                 {                   
                     Request* request = new Request();
                     /* read input pages */
-                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_o * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_o * iFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Performs data copy
                     request->numOfInstructions = 1;
@@ -879,29 +872,33 @@ Flatten::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-ByPass::ByPass(vector<int>* input_size)
+ByPass::ByPass(vector<int> input_size)
         : Layer((char*)"ByPass", input_size)
 {
-    calculateOFMapSize();
-    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
-    oFMap = new vector<unsigned char>(size);
+    
+    ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
+    oFMapSize = iFMapSize;
+    oFMap = new vector<unsigned char>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]);
 }
 
+
+
 /** ===============================================================================================
- * \name    init
+ * \name    ByPass
  *
- * \brief   Initial the oFMapSize, defualt height and width is "1"
+ * \brief   Construct a flatten layer
+ * 
+ * \param   input_size          [batch, channel, height, width]
  * 
  * \endcond
- * 
  * ================================================================================================
  */
-void
-ByPass::calculateOFMapSize()
+ByPass::ByPass(vector<int> input_size, vector<int> output_size)
+        : Layer((char*)"ByPass", input_size)
 {
-    bool check = (!iFMapSize->empty());
-    ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
-    oFMapSize = iFMapSize;
+    ASSERT(!output_size.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
+    oFMapSize = output_size;
+    oFMap = new vector<unsigned char>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]);
 }
 
 
@@ -917,22 +914,22 @@ void
 ByPass::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerID \
-              << std::left << std::setw(16) << layerType  \
+    std::cout << std::left << std::setw(10) << layerID
+              << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
 
     std::cout << "(" 
-              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::right << std::setw(4)  << iFMapSize[BATCH]   << ", " 
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL] << ", " 
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]  << ", " 
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]  
               << std::left  << std::setw(10) << ")"  
-              << std::right << std::setw(22) << "None"                        \
+              << std::right << std::setw(22) << "None"                        
               << std::right << setw(10) << "("
-              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " 
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " 
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " 
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]  
               << std::left  << std::setw(10) << ")";  
 
     std::cout << std::endl;
@@ -966,24 +963,24 @@ ByPass::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = ((*oFMapSize)[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = ((*oFMapSize)[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int w_o = start_index; w_o < end_index; w_o++)
     {
-        for (int h_o = 0; h_o < (*oFMapSize)[HEIGHT]; h_o++)
+        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
         {
-            for (int c_o = 0; c_o < (*oFMapSize)[CHANNEL]; c_o++)
+            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
             {
-                for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+                for (int b = 0; b < oFMapSize[BATCH]; b++)
                 {                   
                     Request* request = new Request();
                     /* read input pages */
-                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[CHANNEL] * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + c_o * (*iFMapSize)[HEIGHT] * (*iFMapSize)[WIDTH] + h_o * (*iFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_o * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_o * iFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + c_o * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH] + h_o * (*oFMapSize)[WIDTH] + w_o) / PAGE_SIZE)], 1));
+                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Performs data copy
                     request->numOfInstructions = 1;
@@ -1033,7 +1030,7 @@ ByPass::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(vector<int>* input_size, vector<int>* filter_size, char* activation_type)
+Dense::Dense(vector<int> input_size, vector<int> filter_size, char* activation_type)
         : Layer((char*)"Dense", input_size, filter_size, activation_type)
 {
     calculateOFMapSize();
@@ -1051,11 +1048,11 @@ Dense::Dense(vector<int>* input_size, vector<int>* filter_size, char* activation
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(vector<int>* input_size, int output_width)
-        : Dense(input_size, new vector<int>{output_width, (*input_size)[CHANNEL], 1, 1}, (char*)"Relu")
+Dense::Dense(vector<int> input_size, int output_width)
+        : Dense(input_size, {output_width, input_size[CHANNEL], 1, 1}, (char*)"Relu")
 {
     calculateOFMapSize();
-    int size = (*oFMapSize)[BATCH] * (*oFMapSize)[CHANNEL] * (*oFMapSize)[HEIGHT] * (*oFMapSize)[WIDTH];
+    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
     oFMap = new vector<unsigned char>(size);
 }
 
@@ -1072,14 +1069,12 @@ Dense::Dense(vector<int>* input_size, int output_width)
 void
 Dense::calculateOFMapSize()
 {
-    bool check = (!iFMapSize->empty());
-    ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
+    ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
 
-    oFMapSize = new vector<int>();
-    (*oFMapSize).emplace_back((*iFMapSize)[BATCH]);
-    (*oFMapSize).emplace_back((*filterSize)[FILTER_CHANNEL_O]);
-    (*oFMapSize).emplace_back(1);
-    (*oFMapSize).emplace_back(1);
+    oFMapSize.emplace_back(iFMapSize[BATCH]);
+    oFMapSize.emplace_back(filterSize[FILTER_CHANNEL_O]);
+    oFMapSize.emplace_back(1);
+    oFMapSize.emplace_back(1);
 }
 
 
@@ -1095,22 +1090,22 @@ void
 Dense::printInfo()
 {
 
-    std::cout << std::left << std::setw(10) << layerID \
-              << std::left << std::setw(16) << layerType  \
+    std::cout << std::left << std::setw(10) << layerID 
+              << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
 
     std::cout << "(" 
-              << std::right << std::setw(4)  << (*iFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*iFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*iFMapSize)[WIDTH]           \
+              << std::right << std::setw(4)  << iFMapSize[BATCH]   << ", " 
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL] << ", " 
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]  << ", " 
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]  
               << std::left  << std::setw(10) << ")"
-              << std::right << std::setw(22) << "None"                        \
-              << std::right << setw(10) << "("                                \
-              << std::right << std::setw(4)  << (*oFMapSize)[BATCH]   << ", " \
-              << std::right << std::setw(4)  << (*oFMapSize)[CHANNEL] << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[HEIGHT]  << ", " \
-              << std::right << std::setw(3)  << (*oFMapSize)[WIDTH]           \
+              << std::right << std::setw(22) << "None"   
+              << std::right << setw(10) << "("  
+              << std::right << std::setw(4)  << oFMapSize[BATCH]   << ", " 
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL] << ", " 
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]  << ", " 
+              << std::right << std::setw(3)  << oFMapSize[WIDTH] 
               << std::left  << std::setw(10) << ")"; 
 
     std::cout << std::endl;
@@ -1145,49 +1140,49 @@ Dense::issueLayer(ThreadArg* threadArg)
         log_V("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
-    ASSERT((*iFMapSize)[HEIGHT] == 1 && (*iFMapSize)[WIDTH] == 1, "Dimension error!");
+    ASSERT(iFMapSize[HEIGHT] == 1 && iFMapSize[WIDTH] == 1, "Dimension error!");
 
     /* Thread compile start and end index */
-    int start_index = ((*oFMapSize)[CHANNEL] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = ((*oFMapSize)[CHANNEL] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (oFMapSize[CHANNEL] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (oFMapSize[CHANNEL] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int c_o = start_index; c_o < end_index; c_o++)
     {
-        for (int b = 0; b < (*oFMapSize)[BATCH]; b++)
+        for (int b = 0; b < oFMapSize[BATCH]; b++)
         {                   
             Request* request = new Request();
 
-            for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I]; c_i++)
+            for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
             {
                 /* read input pages */
-                request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
+                request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
 
                 /* filter pages */
-                request->readPages.emplace_back(make_pair(filterPages[floor((c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
+                request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
 
                 // Performs dot product
                 // request->numOfInstructions += 1;
                 request->numOfInstructions = 1;
             }
-            // for (int c_i = 0; c_i < (*filterSize)[FILTER_CHANNEL_I] / PAGE_SIZE;)
+            // for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I] / PAGE_SIZE;)
             // {
-            //     int count = min((*filterSize)[FILTER_CHANNEL_I] - c_i, PAGE_SIZE);
+            //     int count = min(filterSize[FILTER_CHANNEL_I] - c_i, PAGE_SIZE);
 
             //     /* read input pages */
-            //     request->readPages.emplace_back(make_pair(iFMapPages[floor((b * (*iFMapSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
+            //     request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
 
             //     /* filter pages */
-            //     request->readPages.emplace_back(make_pair(filterPages[floor((c_o * (*filterSize)[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
+            //     request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
 
             //     // Performs dot product
-            //     request->numOfInstructions = (*filterSize)[FILTER_CHANNEL_O] * (*filterSize)[FILTER_CHANNEL_I];
+            //     request->numOfInstructions = filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I];
 
             //     c_i += count;
             // }
 
             /* write result to pages */
-            request->writePages.emplace_back(make_pair(oFMapPages[floor((b * (*oFMapSize)[CHANNEL] + c_o) / PAGE_SIZE)], 1));
+            request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] + c_o) / PAGE_SIZE)], 1));
 
             threadArg->requestQueue->push(move(request));
 

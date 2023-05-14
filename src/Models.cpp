@@ -191,21 +191,28 @@ Model::getModelInfo(const char* model_type)
         Info.ioMemCount     = 7375872;
         Info.filterMemCount = 54976;
         Info.inputSize      = { 3, 224, 224};
-        Info.outputSize     = {64, 112, 112};
+        Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
         Info.ioMemCount     = 15262696;
         Info.filterMemCount = 17151680;
         Info.inputSize      = {3, 224, 224};
-        Info.inputSize      = {1000};
+        Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
         Info.ioMemCount     = 4166632;
         Info.filterMemCount = 38270144;
         Info.inputSize      = {3, 224, 224};
-        Info.inputSize      = {1000};
+        Info.outputSize     = {1000};
+
+    } else if (strcmp(model_type, "GoogleNet") == 0) {
+        Info.numOfLayers    = 72;
+        Info.ioMemCount     = -1;
+        Info.filterMemCount = -1;
+        Info.inputSize      = {3, 224, 224};
+        Info.outputSize     = {1000};
 
     }
 
@@ -236,13 +243,17 @@ Model::buildLayerGraph(const char* model_type)
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         ResNet18();
+
+    } else if (strcmp(model_type, "GoogleNet") == 0) {
+        GoogleNet();
+
     }
 }
 
 /** ===============================================================================================
- * \name    None
+ * \name    Test
  * 
- * \brief   Build the None layer graph
+ * \brief   Build the test graph
  * 
  * \endcond
  * 
@@ -260,12 +271,12 @@ Model::Test()
 {
     modelName = (char*)"Test";
     
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,   3, 14, 14}, new vector<int>{512,   3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,   3, 14, 14}, {512,   3, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
+    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
                                                         
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 1000));
+    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 1000));
 
     numOfLayer = 4;
     
@@ -318,34 +329,34 @@ Model::VGG16()
 {
     modelName = (char*)"VGG16";
     
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  3, 224, 224}, new vector<int>{64,  3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 224, 224}, new vector<int>{64, 64, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,  3, 224, 224}, {64,  3, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 64, 224, 224}, {64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 64, 224, 224}, {64, 64, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize,  64, 112, 112}, new vector<int>{128,  64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 128, 112, 112}, new vector<int>{128, 128, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,  64, 112, 112}, {128,  64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 128, 112, 112}, {128, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 128, 112, 112}, {128, 128, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 128, 56, 56}, new vector<int>{256, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 256, 56, 56}, new vector<int>{256, 256, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize, 128, 56, 56}, {256, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 256, 56, 56}, {256, 256, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 256, 28, 28}, new vector<int>{512, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 28, 28}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize, 256, 28, 28}, {512, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 28, 28}, {512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 14, 14}, new vector<int>{512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Flatten(new vector<int>{batchSize, 512, 7, 7}));
+    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
                                                         
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 25088, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize,  4096, 1, 1}, 1000));
+    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 4096));
+    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 1000));
 
     numOfLayer = 22;
     
@@ -427,18 +438,18 @@ Model::ResNet18()
 {
     modelName = (char*)"ResNet18";
 
-    modelGraph->addLayer(new Conv2D (new vector<int>{batchSize, 3, 224, 224} , new vector<int>{64,  3, 7, 7}, (char*)"ReLU", 2, 3));
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 64, 112, 112}, new vector<int>{64, 64, 3, 3}, (char*)"None", 2, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize, 3, 224, 224} , {64,  3, 7, 7}, (char*)"ReLU", 2, 3));
+    modelGraph->addLayer(new Pooling({batchSize, 64, 112, 112}, {64, 64, 3, 3}, (char*)"None", 2, 1));
 
     /* Stage 1_1 */
     LayerGroup* sequential_1_1 = new LayerGroup();
     LayerGroup* branch_1_1     = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_1_1->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_1->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_1_1->addLayer(sequential_1_1);
-    branch_1_1->addLayer(new ByPass(new vector<int>{batchSize, 64, 56, 56}));
+    branch_1_1->addLayer(new ByPass({batchSize, 64, 56, 56}));
 
     modelGraph->addLayer(branch_1_1);
 
@@ -447,11 +458,11 @@ Model::ResNet18()
     LayerGroup* sequential_1_2 = new LayerGroup();
     LayerGroup* branch_1_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_1_2->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_1_2->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_2->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_1_2->addLayer(new Conv2D({batchSize, 64, 56, 56}, {64, 64, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_1_2->addLayer(sequential_1_2);
-    branch_1_2->addLayer(new ByPass(new vector<int>{batchSize, 64, 56, 56}));
+    branch_1_2->addLayer(new ByPass({batchSize, 64, 56, 56}));
 
     modelGraph->addLayer(branch_1_2);
 
@@ -460,11 +471,11 @@ Model::ResNet18()
     LayerGroup* sequential_2_1 = new LayerGroup();
     LayerGroup* branch_2_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_2_1->addLayer(new Conv2D(new vector<int>{batchSize,  64, 56, 56}, new vector<int>{128,  64, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_2_1->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_1->addLayer(new Conv2D({batchSize,  64, 56, 56}, {128,  64, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential_2_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_2_1->addLayer(sequential_2_1);
-    branch_2_1->addLayer(new Conv2D(new vector<int>{batchSize, 64, 56, 56}, new vector<int>{128, 64, 3, 3},  (char*)"ReLU", 2, 1));
+    branch_2_1->addLayer(new Conv2D({batchSize, 64, 56, 56}, {128, 64, 3, 3},  (char*)"ReLU", 2, 1));
 
     modelGraph->addLayer(branch_2_1);
     
@@ -472,11 +483,11 @@ Model::ResNet18()
     LayerGroup* sequential_2_2 = new LayerGroup();
     LayerGroup* branch_2_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_2_2->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_2_2->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_2->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_2_2->addLayer(new Conv2D({batchSize, 128, 28, 28}, {128, 128, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_2_2->addLayer(sequential_2_2);
-    branch_2_2->addLayer(new ByPass(new vector<int>{batchSize, 128, 28, 28}));
+    branch_2_2->addLayer(new ByPass({batchSize, 128, 28, 28}));
 
     modelGraph->addLayer(branch_2_2);
 
@@ -485,11 +496,11 @@ Model::ResNet18()
     LayerGroup* sequential_3_1 = new LayerGroup();
     LayerGroup* branch_3_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_3_1->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{256, 128, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential_3_1->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {256, 128, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential_3_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_3_1->addLayer(sequential_3_1);
-    branch_3_1->addLayer(new Conv2D(new vector<int>{batchSize, 128, 28, 28}, new vector<int>{256, 128, 3, 3},  (char*)"ReLU", 2, 1));
+    branch_3_1->addLayer(new Conv2D({batchSize, 128, 28, 28}, {256, 128, 3, 3},  (char*)"ReLU", 2, 1));
 
     modelGraph->addLayer(branch_3_1);
     
@@ -497,11 +508,11 @@ Model::ResNet18()
     LayerGroup* sequential_3_2 = new LayerGroup();
     LayerGroup* branch_3_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential_3_2->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential_3_2->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_2->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential_3_2->addLayer(new Conv2D({batchSize, 256, 14, 14}, {256, 256, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch_3_2->addLayer(sequential_3_2);
-    branch_3_2->addLayer(new ByPass(new vector<int>{batchSize, 256, 14, 14}));
+    branch_3_2->addLayer(new ByPass({batchSize, 256, 14, 14}));
 
     modelGraph->addLayer(branch_3_2);
 
@@ -510,11 +521,11 @@ Model::ResNet18()
     LayerGroup* sequential__4_1 = new LayerGroup();
     LayerGroup* branch__4_1 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential__4_1->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{512, 256, 3, 3},  (char*)"ReLU", 2, 1));
-    sequential__4_1->addLayer(new Conv2D(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {512, 256, 3, 3},  (char*)"ReLU", 2, 1));
+    sequential__4_1->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch__4_1->addLayer(sequential__4_1);
-    branch__4_1->addLayer(new Conv2D(new vector<int>{batchSize, 256, 14, 14}, new vector<int>{512, 256, 3, 3},  (char*)"ReLU", 2, 1));
+    branch__4_1->addLayer(new Conv2D({batchSize, 256, 14, 14}, {512, 256, 3, 3},  (char*)"ReLU", 2, 1));
 
     modelGraph->addLayer(branch__4_1);
     
@@ -522,16 +533,16 @@ Model::ResNet18()
     LayerGroup* sequential__4_2 = new LayerGroup();
     LayerGroup* branch__4_2 = new LayerGroup(Group_t::CaseCode); 
 
-    sequential__4_2->addLayer(new Conv2D(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
-    sequential__4_2->addLayer(new Conv2D(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_2->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
+    sequential__4_2->addLayer(new Conv2D({batchSize, 512, 7, 7}, {512, 512, 3, 3},  (char*)"ReLU", 1, 1));
     
     branch__4_2->addLayer(sequential__4_2);
-    branch__4_2->addLayer(new ByPass(new vector<int>{batchSize, 512, 7, 7}));
+    branch__4_2->addLayer(new ByPass({batchSize, 512, 7, 7}));
 
     modelGraph->addLayer(branch__4_2);
 
-    modelGraph->addLayer(new Pooling(new vector<int>{batchSize, 512, 7, 7}, new vector<int>{1024, 512, 7, 7}, (char*)"None", 2, 0));
-    modelGraph->addLayer(new Dense(new vector<int>{batchSize, 1024, 1, 1}, 1000));
+    modelGraph->addLayer(new Pooling({batchSize, 512, 7, 7}, {1024, 512, 7, 7}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Dense({batchSize, 1024, 1, 1}, 1000));
 
     numOfLayer = 28;
 
@@ -541,6 +552,92 @@ Model::ResNet18()
     
     compileToKernel();
 }
+
+
+/** ===============================================================================================
+ * \name    GoogleNet
+ * 
+ * \brief   Build the GoogleNet layer graph
+ * 
+ * \endcond
+ * 
+ * #Index     Type    Kernel    Feature     Output    Stride    Padding    Activation
+ *                    Size       Map         Size
+ *            Data                3       224 x 224
+ *    1     Conv2D    7 x 7      64       112 x 112    2          3          ReLU
+ *    2       Pool    3 x 3      64        56 x 56     2          1           Max
+ *    3     Conv2D    1 x 1      64        56 x 56     1          1          ReLU
+ *    4     Conv2D    3 x 3     192        56 x 56     1          0          ReLU
+ *    5       Pool    3 x 3     192        28 x 28     2          1           Max
+ *    6  Inception              256        28 x 28                           ReLU
+ *                              {64,  96, 128,  16,  32,  32} 
+ *   17  Inception              480        28 x 28                           ReLU
+ *                              {128, 128, 192,  32,  96,  64} 
+ *
+ *   28       Pool    3 x 3     480        14 x 14     2          1           Max
+ *   29  Inception              512        14 x 14                           ReLU
+ *                              {192,  96, 208,  16,  48,  64} 
+ *
+ *   40  Inception              512        14 x 14                           ReLU
+ *                              {160, 112, 224,  24,  64,  64} 
+ *
+ *   51  Inception              512        14 x 14                           ReLU
+ *                              {128, 128, 256,  24,  64,  64} 
+ *
+ *   62  Inception              528        14 x 14                           ReLU
+ *                              {112, 144, 288,  32,  64,  64} 
+ *
+ *   73  Inception              832        14 x 14                           ReLU
+ *                              {256, 160, 320,  32, 128, 128} 
+ *
+ *   84       Pool    3 x 3     832         7 x 7      2          1           Max
+ *   85  Inception              832         7 x 7                            ReLU
+ *                              {256, 160, 320,  32, 128, 128} 
+ *
+ *   96  Inception             1024         7 x 7                            ReLU
+ *                              {384, 192, 384,  48, 128, 128} 
+ *  107       Pool    3 x 3     832         7 x 7      2          1           AVG
+ *  108      Dense    1 x 1    1000         1 x 1                         SoftMax
+ * ================================================================================================
+ */
+void 
+Model::GoogleNet()
+{
+    modelName = (char*)"GoogleNet";
+    
+    modelGraph->addLayer(new Conv2D ({batchSize,   3, 224, 224}, { 64,   3, 7, 7}, (char*)"ReLU",     2, 3));
+    modelGraph->addLayer(new Pooling({batchSize,  64, 112, 112}, { 64,  64, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Conv2D ({batchSize,  64,  56,  56}, { 64,  64, 1, 1}, (char*)"ReLU",     1, 0));
+    modelGraph->addLayer(new Conv2D ({batchSize,  64,  56,  56}, {192,  64, 3, 3}, (char*)"ReLU",     1, 1));
+    modelGraph->addLayer(new Pooling({batchSize, 192,  56,  56}, {192, 192, 3, 3}, (char*)"Max_Pool", 2, 1));
+    
+    modelGraph->addLayer(new Inception({batchSize, 192, 28, 28}, 64, 96, 128, 16, 32, 32));
+    modelGraph->addLayer(new Inception({batchSize, 256, 28, 28}, 128, 128, 192, 32, 96, 64));
+    modelGraph->addLayer(new Pooling  ({batchSize, 480, 28, 28}, {480, 480, 3, 3}, (char*)"Max_Pool", 2, 1));
+
+    modelGraph->addLayer(new Inception({batchSize, 480, 14, 14}, 192, 96, 208, 16, 48, 64));
+    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 160, 112, 224, 24, 64, 64));
+    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 128, 128, 256, 24, 64, 64));
+    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 112, 114, 288, 32, 64, 64));
+    modelGraph->addLayer(new Inception({batchSize, 528, 14, 14}, 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Pooling  ({batchSize, 832, 14, 14}, {832, 832, 3, 3}, (char*)"Max_Pool", 2, 1));
+
+    modelGraph->addLayer(new Inception({batchSize,  832, 7, 7}, 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Inception({batchSize,  832, 7, 7}, 384, 192, 384, 48, 128, 128));
+    modelGraph->addLayer(new Pooling  ({batchSize, 1024, 7, 7}, {1024, 1024, 7, 7}, (char*)"Avg_Pool", 2, 0));
+   
+    modelGraph->addLayer(new Dense({batchSize, 1024, 1, 1}, 1000));
+
+    numOfLayer = 108;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
+    compileToKernel();
+
+}
+
 
 
 /** ===============================================================================================
