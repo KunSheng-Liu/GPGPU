@@ -120,6 +120,11 @@ public:
     virtual Value insert(Key key, Value value) 
     {
         Value evict_value;
+        if constexpr (std::is_pointer_v<Value>) {
+            evict_value = nullptr;
+        } else {
+            evict_value = Value{};
+        }
 
         auto it = table.find(key);
         if (it == table.end())

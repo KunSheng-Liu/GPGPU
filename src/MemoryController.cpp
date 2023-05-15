@@ -68,6 +68,8 @@ MemoryController::cycle()
  * 
  * \brief   Create new page into availablePageList if not excess the storageLimit.
  * 
+ * \note    the pageIndex is start from 1, due to the zero page is always unusable in the system
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -106,11 +108,12 @@ MemoryController::memoryAllocate (int numOfByte)
     Page* prevPage;
     for (int i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
     {
-        if (availablePageList.empty()){
-            log_I("MemoryController::memoryAllocate()", "Out of DRAM Size");
+        // ASSERT(!availablePageList.empty(), "Out of DRAM Space");
+        if (availablePageList.empty()) 
+        {
+            log_W("memoryAllocate", "Out of DRAM Space");
             createPage();
         }
-
         usedPageList.push_back(availablePageList.front());
         availablePageList.pop_front();
         Page* tempPage = usedPageList.back();

@@ -196,6 +196,7 @@ SM::cycle()
                 std::cout << endl;
 #endif
             } 
+            log_V("Warp ID", to_string(warp->warpID));
             log_V("Total Access", to_string(warp->record.launch_access_counter));
             log_V("Total Access Pages", to_string(warp->record.access_page_counter));
         }

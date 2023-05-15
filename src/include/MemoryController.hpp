@@ -42,7 +42,7 @@ struct Page {
     PageRecord record;
     Page* nextPage;
 
-    Page(unsigned long long page_index = -1, Page_Location location = SPACE_NONE, Page* next_page = nullptr) : pageIndex(page_index), location(location), nextPage(next_page) {}
+    Page(unsigned long long page_index = 0, Page_Location location = SPACE_NONE, Page* next_page = nullptr) : pageIndex(page_index), location(location), nextPage(next_page) {}
 };
 
 
@@ -89,7 +89,8 @@ private:
     const unsigned long long storageLimit;
     const unsigned pageFrameOffset;
 
-    unsigned long long pageIndex = 0;
+    /* The pageIndex is start from 1, due to the zero page is always unusable in the system */
+    unsigned long long pageIndex = 1;
 
     map<unsigned long long , Page> mPages;
 
