@@ -91,6 +91,32 @@ void
 Model::memoryAllocate(MMU* mmu)
 {
     modelGraph->memoryAllocate(mmu);
+
+
+}
+
+
+/** ===============================================================================================
+ * \name    memoryRelease
+ * 
+ * \brief   Release the used resource.
+ * 
+ * \param   mmu     the pointer of memory manager unit from CPU
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Model::memoryRelease(MMU* mmu)
+{
+    PageRecord record;
+    for(auto& kernel : kernelContainer)
+    {
+        record += kernel.memoryRelease(mmu);
+    }
+    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+        file << "PageRecord: [" << record.read_counter << ", " << record.write_counter << ", " << record.access_count << ", " << record.swap_count << "]" << endl;
+    file.close();
 }
 
 
@@ -195,29 +221,29 @@ Model::getModelInfo(const char* model_type)
 
     } else if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
-        Info.ioMemCount     = -1;
-        Info.filterMemCount = -1;
+        Info.ioMemCount     = 9518;
+        Info.filterMemCount = 62638;
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
         Info.ioMemCount     = 4166632;
-        Info.filterMemCount = 38270144;
+        Info.filterMemCount = 39294144;
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
         Info.ioMemCount     = 15262696;
-        Info.filterMemCount = 17151680;
+        Info.filterMemCount = 140785344;
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
-        Info.ioMemCount     = -1;
-        Info.filterMemCount = -1;
+        Info.ioMemCount     = 8394704;
+        Info.filterMemCount = 107286016;
         Info.inputSize      = {3, 224, 224};
         Info.outputSize     = {1000};
 

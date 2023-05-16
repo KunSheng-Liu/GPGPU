@@ -59,7 +59,24 @@ void
 MemoryController::cycle()
 {
     log_I("MemoryController Cycle", to_string(total_gpu_cycle));
-    mc_to_gmmu_queue.splice(mc_to_gmmu_queue.end(), gmmu_to_mc_queue);
+
+    while (!gmmu_to_mc_queue.empty())
+    {
+        auto access = gmmu_to_mc_queue.front();
+        auto type = access->type;
+
+        for (auto& page_id : access->pageIDs)
+        {
+            Page& page = mPages[page_id];
+            ASSERT(page.location == SPACE_VRAM, "Memory access error: should in VRAM");
+
+            (type == Read) ? page.record.read_counter++ : page.record.write_counter++;
+            page.record.access_count++;
+        }
+
+        gmmu_to_mc_queue.pop_front();
+        mc_to_gmmu_queue.push_back(access);
+    }
 }
 
 
@@ -152,14 +169,11 @@ MemoryController::memoryAllocate (int numOfByte)
  * \endcond
  * ================================================================================================
  */
-PageRecord
+void
 MemoryController::memoryRelease (Page* page)
 {
-    if (page == nullptr) return PageRecord();
+    if (page == nullptr) return;
 
-    PageRecord record = page->record + memoryRelease(page->nextPage);
-    
-    page->record = PageRecord();
     page->location = SPACE_DRAM;
     page->nextPage = nullptr;
 
@@ -167,8 +181,6 @@ MemoryController::memoryRelease (Page* page)
     usedPageList.erase(it);
 
     availablePageList.push_back(page);
-
-    return record;
 }
 
 

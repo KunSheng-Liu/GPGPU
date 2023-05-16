@@ -145,7 +145,7 @@ Kernel::isReady()
 
 
 /** ===============================================================================================
- * \name    release
+ * \name    memoryRelease
  * 
  * \brief   Release no used memory space
  * 
@@ -154,13 +154,14 @@ Kernel::isReady()
  * \endcond
  * ================================================================================================
  */
-void
-Kernel::release(MMU* mmu)
+PageRecord
+Kernel::memoryRelease(MMU* mmu)
 {
     ASSERT(requests.empty()); 
 
-    srcLayer->release(mmu);
     dependencyKernels.clear(); 
+
+    return srcLayer->memoryRelease(mmu);    
 }
 
 

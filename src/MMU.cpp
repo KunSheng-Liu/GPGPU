@@ -19,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<intptr_t, pair<Page*, int>>(DRAM_SPACE / PAGE_SIZE))
+MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(DRAM_SPACE / PAGE_SIZE))
 {
 
 }
@@ -37,9 +37,9 @@ MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<intptr_t, pair<Page*, int>>(DR
  * ================================================================================================
  */
 void 
-MMU::memoryAllocate (intptr_t va, int numOfByte)
+MMU::memoryAllocate (int va, int numOfByte)
 {
-    if (va == 0 || numOfByte == 0) return;
+    if (numOfByte == 0) return;
     
     pair<Page*, int> dummy;
     if (mTLB.lookup(va, dummy)) 
@@ -59,22 +59,21 @@ MMU::memoryAllocate (intptr_t va, int numOfByte)
  * 
  * \brief   Release memory for CPU virtual address to physical address.
  * 
- * \param   va          the virtual address going to allcate
+ * \param   va      the virtual address going to allcate
+ * 
+ * \note    all the pages used in this va will be release, note the casecode layers
  * 
  * \endcond
  * ================================================================================================
  */
-PageRecord 
-MMU::memoryRelease (intptr_t va)
+void 
+MMU::memoryRelease (int va)
 {
     pair<Page*, int> pa_pair;
-    if (!mTLB.lookup(va, pa_pair)) return PageRecord();
+    if (!mTLB.lookup(va, pa_pair)) return;
 
-    /* Perform release */
-    PageRecord record = mMC->memoryRelease(pa_pair.first);
+    mMC->memoryRelease(pa_pair.first);
     mTLB.erase(va);
-
-    return record;
 }
 
 
@@ -91,7 +90,7 @@ MMU::memoryRelease (intptr_t va)
  * ================================================================================================
  */
 vector<unsigned long long>
-MMU::addressTranslate (intptr_t va)
+MMU::addressTranslate (int va)
 {
     /* lookup wheather VA has been cached */
     log_V("addressTranslate", to_string(va));
@@ -109,4 +108,39 @@ MMU::addressTranslate (intptr_t va)
     }
 
     return move(pa_list);
+}
+
+
+/** ===============================================================================================
+ * \name    getPageSummary
+ * 
+ * \brief   Summary the page information used in specific virtual address.
+ * 
+ * \param   va      the virtual address
+ * 
+ * \return  the page information
+ * 
+ * \note    the recorded information will be reset after summary
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+PageRecord 
+MMU::getPageSummary (int va)
+{
+    pair<Page*, int> pa_pair;
+    if (!mTLB.lookup(va, pa_pair)) return PageRecord();
+
+    /* Perform release */
+    PageRecord record;
+    Page* page = pa_pair.first;
+    while(page)
+    {
+        record += page->record;
+        page->record = PageRecord();
+        page = page->nextPage;
+    }
+    
+    return record;
+
 }

@@ -22,8 +22,8 @@
  * ************************************************************************************************
  */ 
 typedef enum {
-	Write = 0,
-	Read  = 1,
+	Read,
+	Write,
 }AccessType;
 
 struct MemoryAccess {

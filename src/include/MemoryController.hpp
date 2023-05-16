@@ -93,7 +93,7 @@ public:
 
     Page* memoryAllocate (int numByte);
 
-    PageRecord memoryRelease (Page* page);
+    void memoryRelease (Page* page);
 
     void printInfo();
 

@@ -58,11 +58,12 @@ struct KernelInfo {
  * ************************************************************************************************
  */
 public:
-    bool compileRequest (MMU* mmu);
-    void addRequest (Request* request);
     Request* accessRequest ();
 
-    void release (MMU* mmu);
+    void addRequest (Request* request);
+    bool compileRequest (MMU* mmu);
+    PageRecord memoryRelease  (MMU* mmu);
+
     void printInfo (bool title = false);
 
     bool isReady();

@@ -13,6 +13,7 @@
  * ************************************************************************************************
  */
 int Layer::layerCount = 0;
+int Layer::vaCount = 0;
 
 /** ===============================================================================================
  * \name    Layer
@@ -29,10 +30,10 @@ int Layer::layerCount = 0;
  */
 Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap(nullptr), filter(nullptr), oFMapSize({}), oFMap(nullptr), layerID(layerCount++)
+        , iFMap({}), filter({}), oFMapSize({}), oFMap({}), layerID(layerCount++)
 {
-    if (!iFMapSize.empty())  iFMap = new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
-    if (!filterSize.empty()) filter = new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]);
+    if (!iFMapSize.empty())  iFMap  = make_pair(vaCount++, new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
+    if (!filterSize.empty()) filter = make_pair(vaCount++, new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
 }
 
 
@@ -49,7 +50,7 @@ Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, 
  */
 Layer::~Layer()
 {
-    delete filter;
+    delete filter.second;
 }
 
 
@@ -66,23 +67,28 @@ Layer::~Layer()
  * ================================================================================================
  */
 PageRecord
-Layer::release(MMU* mmu)
+Layer::memoryRelease(MMU* mmu)
 {
     PageRecord record;
-    record += mmu->memoryRelease(reinterpret_cast<intptr_t>(&iFMap));
-    record += mmu->memoryRelease(reinterpret_cast<intptr_t>(&filter));
+    record += mmu->getPageSummary(iFMap.first);
+    record += mmu->getPageSummary(oFMap.first);
+    record += mmu->getPageSummary(filter.first);
 
-    if (iFMap)
+    mmu->memoryRelease(iFMap.first);
+    mmu->memoryRelease(oFMap.first);
+    mmu->memoryRelease(filter.first);
+
+    if (iFMap.second)
     {
-        iFMap->clear();
-        iFMap->shrink_to_fit();
+        iFMap.second->clear();
+        iFMap.second->shrink_to_fit();
     }
-    if (filter)
+    if (filter.second)
     {
-        filter->clear();
-        filter->shrink_to_fit();  
+        filter.second->clear();
+        filter.second->shrink_to_fit();  
     }
-    
+
     return record;
 }
 
@@ -98,10 +104,10 @@ Layer::release(MMU* mmu)
  * ================================================================================================
  */
 void
-Layer::setIFMap(vector<unsigned char>* data)
+Layer::setIFMap(pair<int, vector<unsigned char>*> data)
 {
-    if (iFMap) delete iFMap;
-    iFMap  = data;
+    if (iFMap.second) delete iFMap.second;
+    iFMap = data;
 }
 
 
@@ -116,9 +122,9 @@ Layer::setIFMap(vector<unsigned char>* data)
  * ================================================================================================
  */
 void
-Layer::setFilter(vector<unsigned char>* data)
+Layer::setFilter(pair<int, vector<unsigned char>*> data)
 {
-    if (filter) delete filter;
+    if (filter.second) delete filter.second;
     filter = data;    
 }
 
@@ -138,8 +144,8 @@ Layer::changeBatch(int new_batch_size)
 {
     iFMapSize[BATCH] = new_batch_size;
     oFMapSize[BATCH] = new_batch_size;
-    if (iFMap  != nullptr)  iFMap->resize(iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
-    if (oFMap  != nullptr)  oFMap->resize(oFMapSize[BATCH]  * oFMapSize[CHANNEL]  * oFMapSize[HEIGHT]  * oFMapSize[WIDTH]);
+    if (iFMap.second != nullptr)  iFMap.second->resize(iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
+    if (oFMap.second != nullptr)  oFMap.second->resize(oFMapSize[BATCH]  * oFMapSize[CHANNEL]  * oFMapSize[HEIGHT]  * oFMapSize[WIDTH]);
 }
 
 
@@ -150,6 +156,8 @@ Layer::changeBatch(int new_batch_size)
  * 
  * \param   mmu     the memory management unit
  * 
+ * \note    can open the log to get the memory usage of the model
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -158,11 +166,11 @@ Layer::memoryAllocate(MMU* mmu)
 {
     log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
     if (LOG_LEVEL >= VERBOSE) std::cout << "iFMap ";
-    if(iFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&iFMap) + iFMap->size() * layerID,  iFMap->size()  * sizeof(unsigned char));
+    if(iFMap.second)  mmu->memoryAllocate(iFMap.first,  iFMap.second->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
-    if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * layerID,  oFMap->size()  * sizeof(unsigned char));
+    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(unsigned char));
     if (LOG_LEVEL >= VERBOSE) std::cout << "filter ";
-    if(filter) mmu->memoryAllocate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID, filter->size() * sizeof(unsigned char));
+    if(filter.second) mmu->memoryAllocate(filter.first, filter.second->size() * sizeof(unsigned char));
 
 }
 
@@ -205,9 +213,9 @@ int
 Layer::getMemoryUsage()
 {
     int usage = 0;
-    if(iFMap)  usage += ceil(iFMap->size()  * sizeof(unsigned char) / PAGE_SIZE);
-    if(oFMap)  usage += ceil(oFMap->size()  * sizeof(unsigned char) / PAGE_SIZE);
-    if(filter) usage += ceil(filter->size() * sizeof(unsigned char) / PAGE_SIZE);
+    if(iFMap.second)  usage += ceil(iFMap.second->size()  * sizeof(unsigned char) / PAGE_SIZE);
+    if(oFMap.second)  usage += ceil(oFMap.second->size()  * sizeof(unsigned char) / PAGE_SIZE);
+    if(filter.second) usage += ceil(filter.second->size() * sizeof(unsigned char) / PAGE_SIZE);
 
     return usage;
 }
@@ -337,7 +345,7 @@ Conv2D::Conv2D(char* layer_type, vector<int> input_size, vector<int> filter_size
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = new vector<unsigned char>(size);
+    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
 }
 
 
@@ -485,9 +493,9 @@ Conv2D::issueLayer(ThreadArg* threadArg)
     MMU* mmu = threadArg->mmu;
 
     pthread_mutex_lock ( ioMutex );
-        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
-        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
-        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(filter.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_V("filterPages Num" , to_string(filterPages.size()));
@@ -632,9 +640,9 @@ Pooling::issueLayer(ThreadArg* threadArg)
     MMU* mmu = threadArg->mmu;
 
     pthread_mutex_lock ( ioMutex );
-        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
-        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
-        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(filter.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_V("filterPages Num" , to_string(filterPages.size()));
@@ -730,7 +738,7 @@ Flatten::Flatten(vector<int> input_size)
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = new vector<unsigned char>(size);
+    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
 }
 
 /** ===============================================================================================
@@ -808,8 +816,8 @@ Flatten::issueLayer(ThreadArg* threadArg)
     MMU* mmu = threadArg->mmu;
 
     pthread_mutex_lock ( ioMutex );
-        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
-        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
@@ -886,7 +894,7 @@ ByPass::ByPass(vector<int> input_size)
     
     ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = iFMapSize;
-    oFMap = new vector<unsigned char>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]);
+    oFMap = make_pair(vaCount++, new vector<unsigned char>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
 }
 
 
@@ -906,7 +914,7 @@ ByPass::ByPass(vector<int> input_size, vector<int> output_size)
 {
     ASSERT(!output_size.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = output_size;
-    oFMap = new vector<unsigned char>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]);
+    oFMap = make_pair(vaCount++, new vector<unsigned char>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]));
 }
 
 
@@ -964,8 +972,8 @@ ByPass::issueLayer(ThreadArg* threadArg)
     MMU* mmu = threadArg->mmu;
     
     pthread_mutex_lock ( ioMutex );
-        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
-        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
     pthread_mutex_unlock ( ioMutex );
@@ -1061,7 +1069,7 @@ Dense::Dense(vector<int> input_size, int output_width)
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = new vector<unsigned char>(size);
+    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
 }
 
 
@@ -1140,9 +1148,9 @@ Dense::issueLayer(ThreadArg* threadArg)
     MMU* mmu = threadArg->mmu;
 
     pthread_mutex_lock ( ioMutex );
-        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&iFMap)  + iFMap->size() * layerID);
-        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(reinterpret_cast<intptr_t>(&oFMap)  + oFMap->size() * layerID);
-        vector<unsigned long long> filterPages  = mmu->addressTranslate(reinterpret_cast<intptr_t>(&filter) + filter->size() * layerID);
+        vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
+        vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
+        vector<unsigned long long> filterPages  = mmu->addressTranslate(filter.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
         log_V("filterPages Num" , to_string(filterPages.size()));

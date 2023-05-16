@@ -23,44 +23,55 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
     if (command.TASK_MODE == TASK_SET::LIGHT)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"));
-        mAPPs.push_back(new Application ((char*)"ResNet18"));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
     }
     else if (command.TASK_MODE == TASK_SET::HEAVY)
     {
-        mAPPs.push_back(new Application ((char*)"VGG16"));
-        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
     }
     else if (command.TASK_MODE == TASK_SET::MIX)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"));
-        mAPPs.push_back(new Application ((char*)"ResNet18"));
-        mAPPs.push_back(new Application ((char*)"VGG16"));
-        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
     }
     else if (command.TASK_MODE == TASK_SET::ALL)
     {
-        mAPPs.push_back(new Application ((char*)"Test"  , 1));
-        mAPPs.push_back(new Application ((char*)"LeNet" , 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
         mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
         mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
         mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
     }
     else if (command.TASK_MODE == TASK_SET::LeNet)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
     }
     else if (command.TASK_MODE == TASK_SET::ResNet18)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18"));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
-        mAPPs.push_back(new Application ((char*)"VGG16"));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
     }
     else if (command.TASK_MODE == TASK_SET::GoogleNet)
     {
-        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+    }
+    else if (command.TASK_MODE == TASK_SET::TEST1)
+    {
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+    }
+    else if (command.TASK_MODE == TASK_SET::TEST2)
+    {
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 3));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 2));
     }
     else {
         ASSERT(false, "Test set error");
@@ -363,10 +374,6 @@ CPU::Check_Finish_Kernel()
             }
             file.close();
 #endif
-        
-
-        /* release */
-        kernel->release(&mMMU);
 
         kernel->finish = true;
         kernel->running = false;
@@ -378,8 +385,18 @@ CPU::Check_Finish_Kernel()
         for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
             if ((*model)->checkFinish())
             {
-                log_W("Model", to_string((*model)->modelID) + " is finished");
+                /* release the used resource */
+                (*model)->memoryRelease(&mMMU);
                 mGPU->getGMMU()->freeCGroup((*model)->modelID);
+
+                /* log out */
+                log_W("Model", to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished");
+                
+                ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                    file << "Model " + to_string((*model)->modelID) + ": " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished" << endl;
+                file.close();
+
+                /* delete the model */
                 delete *model;
                 model = app->runningModels.erase(model);
             }

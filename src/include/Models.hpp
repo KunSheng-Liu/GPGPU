@@ -73,18 +73,20 @@ public:
 
     void setBatchSize (int batch_size);
     void memoryAllocate (MMU* mmu);
+    void memoryRelease  (MMU* mmu);
     void printSummary ();
 
     bool checkFinish ();
 
     int   getNumOfLayer (void) {return numOfLayer;}
+    int   getBatchSize  (void) {return batchSize;}
     char* getModelName  (void) {return modelName;}
 
     list<Kernel*> findReadyKernels ();
     vector<Kernel>& compileToKernel ();
 
-    vector<unsigned char>* getIFMap  (void) {return modelGraph->getIFMap();}
-    vector<unsigned char>* getOFMap  (void) {return modelGraph->getOFMap();}
+    pair<int, vector<unsigned char>*> getIFMap  (void) {return modelGraph->getIFMap();}
+    pair<int, vector<unsigned char>*> getOFMap  (void) {return modelGraph->getOFMap();}
     vector<int> getIFMapSize  (void) const  {return modelGraph->getIFMapSize();}
     vector<int> getOFMapSize  (void) const  {return modelGraph->getOFMapSize();}
 

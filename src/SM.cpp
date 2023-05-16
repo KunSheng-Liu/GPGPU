@@ -156,7 +156,6 @@ SM::cycle()
                     }
                     ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
                 } 
-
                 /* Executing the request */
                 else if (thread.request->numOfInstructions-- != 0) {
                     continue;

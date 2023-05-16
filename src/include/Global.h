@@ -49,6 +49,8 @@ typedef enum {
     VGG16,
     GoogleNet,
     ALL,
+    TEST1,
+    TEST2,
 
 	TASK_SET_END
 }TASK_SET;

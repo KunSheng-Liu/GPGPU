@@ -38,7 +38,7 @@ LayerGroup::LayerGroup(Group_t group_type): Layer((char*)"LayerGroup"), groupTyp
  */
 LayerGroup::~LayerGroup()
 {
-    if (groupType == Group_t::CaseCode) delete oFMap;
+    if (groupType == Group_t::CaseCode) delete oFMap.second;
     for (auto layer = layers.begin(); layer != layers.end(); ++layer) delete *layer;
 }
 
@@ -55,7 +55,7 @@ void::
 LayerGroup::addLayer (Layer* layer)
 {
     ASSERT(layer != NULL, "Add empty layer into group");
-    
+
     /* Dimension check */
     bool check = !layer->getIFMapSize().empty() && !layer->getOFMapSize().empty();
     ASSERT(check, "Add layer with empty I/O feature map");
@@ -117,7 +117,7 @@ LayerGroup::addCaseCode (Layer* layer)
         oFMapSize = layer->getOFMapSize();
 
         int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-        oFMap = new vector<unsigned char>(size);
+        oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
 
     } else {
 
@@ -173,7 +173,7 @@ LayerGroup::memoryAllocate(MMU* mmu)
 
     /* The memory sapce for merge layer */
     if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
-    if(oFMap)  mmu->memoryAllocate(reinterpret_cast<intptr_t>(&oFMap) + oFMap->size() * 30,  oFMap->size()  * sizeof(unsigned char));
+    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(unsigned char));
 }
 
 
@@ -222,9 +222,9 @@ LayerGroup::compileToKernel(int app_id, int model_id, vector<Kernel>& container,
  * ================================================================================================
  */
 void
-LayerGroup::setIFMap(vector<unsigned char>* data)
+LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
 {
-    if (iFMap != nullptr) delete iFMap;
+    if (iFMap.second != nullptr) delete iFMap.second;
     iFMap  = data;
 
     if (groupType == Group_t::CaseCade) 
@@ -249,9 +249,9 @@ LayerGroup::setIFMap(vector<unsigned char>* data)
  * ================================================================================================
  */
 void
-LayerGroup::setFilter(vector<unsigned char>* data)
+LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
 {
-    if (filter != nullptr) delete filter;
+    if (filter.second != nullptr) delete filter.second;
     filter = data;
 
     if (groupType == Group_t::CaseCade) 

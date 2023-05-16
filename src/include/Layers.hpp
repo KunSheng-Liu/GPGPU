@@ -126,12 +126,12 @@ protected:
  * ************************************************************************************************
  */
 public:
-    PageRecord release (MMU* mmu);
     
     /* virtual function */
     virtual void printInfo();
     virtual void changeBatch (int new_batch_size);
     virtual void memoryAllocate (MMU* mmu);
+    PageRecord   memoryRelease  (MMU* mmu);
 
     /* Make the kernel dependency by layer graph */
     virtual vector<Kernel*> compileToKernel (int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency);
@@ -154,16 +154,16 @@ private:
  */
 public:
     /* Layer data I/O */
-    virtual void setIFMap  (vector<unsigned char>* data);
-    virtual void setFilter (vector<unsigned char>* data);
+    virtual void setIFMap  (pair<int, vector<unsigned char>*> data);
+    virtual void setFilter (pair<int, vector<unsigned char>*> data);
 
     int getMemoryUsage();
     vector<int> getIFMapSize  (void) const {return iFMapSize;}
     vector<int> getOFMapSize  (void) const {return oFMapSize;}
     vector<int> getFilterSize (void) const {return filterSize;}
-    vector<unsigned char>* getOFMap  (void) {return oFMap;}
-    vector<unsigned char>* getIFMap  (void) {return iFMap;}
-    vector<unsigned char>* getFilter (void) {return filter;}
+    pair<int, vector<unsigned char>*> getOFMap  (void) {return oFMap;}
+    pair<int, vector<unsigned char>*> getIFMap  (void) {return iFMap;}
+    pair<int, vector<unsigned char>*> getFilter (void) {return filter;}
 
 
 /* ************************************************************************************************
@@ -185,15 +185,17 @@ protected:
     /* Number of layer be created */
     static int layerCount;
 
+    static int vaCount;
+
     /* The dimensions of feature map and filter */
     vector<int> iFMapSize;     // In order "batch", "channel", "height", and "width"
     vector<int> oFMapSize;     // In order "batch", "channel", "height", and "width"
     vector<int> filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
-    vector<unsigned char>* iFMap;       // Reference to input data
-    vector<unsigned char>* oFMap;       // Output data, create by instanced layer
-    vector<unsigned char>* filter;      // Reference to filter data
+    pair<int, vector<unsigned char>*> iFMap;       // Reference to input data
+    pair<int, vector<unsigned char>*> oFMap;       // Output data, create by instanced layer
+    pair<int, vector<unsigned char>*> filter;      // Reference to filter data
 };
 
 

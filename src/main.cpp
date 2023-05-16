@@ -116,6 +116,8 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "ResNet18")  command.TASK_MODE = TASK_SET::ResNet18;
                 else if (option == "VGG16")     command.TASK_MODE = TASK_SET::VGG16;
                 else if (option == "GoogleNet") command.TASK_MODE = TASK_SET::GoogleNet;
+                else if (option == "Test1")      command.TASK_MODE = TASK_SET::TEST1;
+                else if (option == "Test2")      command.TASK_MODE = TASK_SET::TEST2;
                 else ASSERT(false, "Wrong argument, try --help");
             } 
             catch(exception e) ASSERT(false, "Wrong argument, try --help");
@@ -129,7 +131,7 @@ void parser_cmd (int argc, char** argv)
             std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                    << std::endl;
             std::cout << "\t-S, " << std::left << setw(20) << "--sm-dispatch"      << "Baseline | Equal | SMD | R_SMD"   << std::endl;
             std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"   << std::endl;
-            std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "Light | Heavy | Mix | ALL | LeNet | ResNet18 | VGG16 | GoogleNet"  << std::endl;
+            std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "Light | Heavy | Mix | All | LeNet | ResNet18 | VGG16 | GoogleNet | Test1 | Test2"  << std::endl;
 
             std::cout << "Examples:" << std::endl;
             std::cout << "\t./GPGPU" << std::endl;

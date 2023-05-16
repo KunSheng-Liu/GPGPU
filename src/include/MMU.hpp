@@ -44,9 +44,11 @@ public:
  * ************************************************************************************************
  */
 public:
-    void memoryAllocate (intptr_t va, int numOfByte);
-    PageRecord memoryRelease (intptr_t va);
-    vector<unsigned long long> addressTranslate (intptr_t va);
+    void memoryAllocate (int va, int numOfByte);
+    void memoryRelease  (int va);
+    vector<unsigned long long> addressTranslate (int va);
+
+    PageRecord getPageSummary (int va);
 
 /* ************************************************************************************************
  * Parameter
@@ -54,7 +56,7 @@ public:
  */
 private:
     MemoryController* mMC;
-    TLB<intptr_t, pair<Page*, int>> mTLB;
+    TLB<int, pair<Page*, int>> mTLB;
 };
 
 #endif
