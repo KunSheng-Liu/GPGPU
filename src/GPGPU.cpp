@@ -11,10 +11,6 @@
  * Global Variable
  * ************************************************************************************************
  */
-/* Approach */
-SM_Dispatch  SM_MODE  = SM_Dispatch::Greedy;
-MEM_Allocate MEM_MODE = MEM_Allocate::None;
-
 /* Statistic */
 unsigned long long total_gpu_cycle = 0;
 
@@ -29,9 +25,14 @@ pthread_mutex_t* ioMutex = new pthread_mutex_t;
  * \endcond
  * ================================================================================================
  */
-GPGPU::GPGPU() : mMC(MemoryController(DISK_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
+GPGPU::GPGPU() : mMC(MemoryController(DRAM_SPACE + DISK_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
 {
     mGMMU = mGPU.getGMMU();
+
+	std::cout << program_name << std::endl;
+
+	ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ofstream::out | std::ofstream::trunc);
+	file.close();
 }
 
 

@@ -117,7 +117,7 @@ public:
 
     list<int> SM_budget;
     
-    // RuntimeInfo recorder;
+    RuntimeRecord recorder;
 
 protected:
 

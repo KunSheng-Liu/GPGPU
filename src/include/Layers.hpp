@@ -126,7 +126,7 @@ protected:
  * ************************************************************************************************
  */
 public:
-    void release ();
+    PageRecord release (MMU* mmu);
     
     /* virtual function */
     virtual void printInfo();

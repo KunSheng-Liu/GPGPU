@@ -17,7 +17,7 @@
  */
 #include "App_config.h"
 #include "Log.h"
-#include "Math.h"
+#include "Macro.h"
 
 #include "CPU.hpp"
 #include "MemoryController.hpp"

@@ -58,14 +58,20 @@ Layer::~Layer()
  * 
  * \brief   Release no used memory space
  * 
+ * \return  The recorder contains memory access information
+ * 
  * \note    Not release the oFMap because it will become next layer iFMap and release in next layer
  *  
  * \endcond
  * ================================================================================================
  */
-void
-Layer::release()
+PageRecord
+Layer::release(MMU* mmu)
 {
+    PageRecord record;
+    record += mmu->memoryRelease(reinterpret_cast<intptr_t>(&iFMap));
+    record += mmu->memoryRelease(reinterpret_cast<intptr_t>(&filter));
+
     if (iFMap)
     {
         iFMap->clear();
@@ -76,6 +82,8 @@ Layer::release()
         filter->clear();
         filter->shrink_to_fit();  
     }
+    
+    return record;
 }
 
 

@@ -34,10 +34,28 @@ struct PageRecord {
 
     unsigned long access_count = 0;
     unsigned long swap_count = 0;
+
+    /* Operators */
+    PageRecord operator+ (const PageRecord& other) const {
+        return {
+            write_counter + other.write_counter,
+            read_counter  + other.read_counter,
+            access_count  + other.access_count,
+            swap_count    + other.swap_count,
+        };
+    }
+
+	PageRecord& operator+= (const PageRecord& other) {
+		write_counter += other.write_counter;
+		read_counter  += other.read_counter;
+		access_count  += other.access_count;
+		swap_count    += other.swap_count;
+		return *this;
+	}
 };
 
 struct Page {
-    unsigned long long pageIndex;
+    const unsigned long long pageIndex;
     Page_Location location;
     PageRecord record;
     Page* nextPage;
@@ -62,7 +80,7 @@ class MemoryController
  */ 
 public:
     MemoryController(unsigned long long storage_limit, int page_size);
-    ~MemoryController();
+   ~MemoryController();
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
@@ -74,6 +92,8 @@ public:
     Page* refer (unsigned long long page_id) {return &mPages[page_id];}
 
     Page* memoryAllocate (int numByte);
+
+    PageRecord memoryRelease (Page* page);
 
     void printInfo();
 

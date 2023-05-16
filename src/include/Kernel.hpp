@@ -62,7 +62,7 @@ public:
     void addRequest (Request* request);
     Request* accessRequest ();
 
-    void release ();
+    void release (MMU* mmu);
     void printInfo (bool title = false);
 
     bool isReady();
@@ -96,6 +96,8 @@ public:
 
     // RuntimeInfo* recorder;
     list<int>* SM_List;
+
+    RuntimeRecord* recoder;
 
     list<Block::BlockRecord> block_record;
 

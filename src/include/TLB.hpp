@@ -147,6 +147,29 @@ public:
 
         return evict_value;
     }
+
+    /** ==================================================================
+     * \name    erase
+     * 
+     * \brief   erase the VA and PA from the table
+     * 
+     * \param   key     the key of data
+     * 
+     * \return  true if erase successful
+     * 
+     * \endcond
+     * ===================================================================
+     */
+    bool erase(Key key) 
+    {
+        auto it = table.find(key);
+
+        if (it == table.end()) return false;
+
+        history.erase(it->second);
+        table.erase(key);
+        return true;
+    }
     
 /* ************************************************************************************************
  * Parameter

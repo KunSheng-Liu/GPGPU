@@ -16,12 +16,6 @@
 #include "App_config.h"
 
 /* ************************************************************************************************
- * Enumeration
- * ************************************************************************************************
- */
-
-
-/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -73,21 +67,13 @@ inline void log_V (std::string tag, std::string logInfo)
 #endif
 }
 
-/* ************************************************************************************************
- * Marco
- * ************************************************************************************************
- */
-#define GET_FUNCTION( _1, _2, function, ... ) function 
-/* Exit when condition == false */
-#define ASSERT( ... )   GET_FUNCTION( __VA_ARGS__, ASSERT_2, ASSERT_1 ) (__VA_ARGS__)
-// #define DEBUG( ... )    GET_FUNCTION( __VA_ARGS__, DEBUG_2, DEBUG_1 )   (__VA_ARGS__)
-
-/* Assert function with print message */
-#define ASSERT_1( condition ) { if (!(condition)) exit (1); }
-#define ASSERT_2( condition, ... ) {                                           \
-    if (!(condition)) {                                                        \
-        std::cout << __FILE__  << ": " << __LINE__ << ": " <<  __func__        \
-                  << ": " << __VA_ARGS__ << std::endl;                         \
-    exit (1);} }
+/* File */
+inline void log_to_file (std::ofstream file, std::string logInfo){
+    if (file.is_open()) {
+        file << logInfo << std::endl;
+    } else {
+        log_E("log_to_file", "file is not open");
+    }
+}
 
 #endif

@@ -55,6 +55,30 @@ MMU::memoryAllocate (intptr_t va, int numOfByte)
 
 
 /** ===============================================================================================
+ * \name    memoryRelease
+ * 
+ * \brief   Release memory for CPU virtual address to physical address.
+ * 
+ * \param   va          the virtual address going to allcate
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+PageRecord 
+MMU::memoryRelease (intptr_t va)
+{
+    pair<Page*, int> pa_pair;
+    if (!mTLB.lookup(va, pa_pair)) return PageRecord();
+
+    /* Perform release */
+    PageRecord record = mMC->memoryRelease(pa_pair.first);
+    mTLB.erase(va);
+
+    return record;
+}
+
+
+/** ===============================================================================================
  * \name    addressTranslate
  * 
  * \brief   Translate the virtual address to physical address.

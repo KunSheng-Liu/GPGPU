@@ -45,6 +45,7 @@ public:
  */
 public:
     void memoryAllocate (intptr_t va, int numOfByte);
+    PageRecord memoryRelease (intptr_t va);
     vector<unsigned long long> addressTranslate (intptr_t va);
 
 /* ************************************************************************************************

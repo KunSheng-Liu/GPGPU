@@ -106,7 +106,12 @@ GPU::Runtime_Block_Scheduling()
 
         if (success) {
             runningKernels.push_back(kernel);
+#if (PERFECT_ACCESS)
+            mGMMU.setCGroupSize(kernel->modelID, DRAM_SPACE / PAGE_SIZE);
+            // mGMMU.setCGroupSize(kernel->modelID, INT64_MAX);
+#else
             mGMMU.setCGroupSize(kernel->modelID, kernel->requests.size() * kernel->requests.front()->readPages.size());
+#endif
         } else {
             remainingKernels.push(kernel);
         }

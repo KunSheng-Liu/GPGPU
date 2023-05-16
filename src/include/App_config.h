@@ -33,6 +33,7 @@
 #include <sys/time.h>
 
 #include "Global.h"
+#include "Macro.h"
 
 /* ************************************************************************************************
  * Name Space
@@ -79,36 +80,33 @@ class Request;
 #define VERBOSE                             6
 #define LOG_ALL                             7
 
-#define SEQUENTIAL                          0
-#define PARALLEL                            1
-
 /* ************************************************************************************************
  * Print-Out Configuration
  * ************************************************************************************************
  */
 #define LOG_LEVEL                           WARNNING
+#define LOG_OUT_PATH                        "./log/"
 #define PRINT_TIME_STEP                     false
 #define PRINT_SM_ALLCOATION_RESULT          false
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_ACCESS_PATTERN                false
 #define PRINT_BLOCK_RECORD                  true
-#define PRINT_WARP_RECORD                   false
+#define PRINT_WARP_RECORD                   true
 
 
 /* ************************************************************************************************
  * BenchMark
  * ************************************************************************************************
  */
-#define TASK_SET                            TEST
 #define HARDWARE_ARCHITECTURE               AGX_XAVIER
 
 /* ************************************************************************************************
  * Software Configuration
  * ************************************************************************************************
  */
-#define INFERENCE_METHOD                    SEQUENTIAL
-#define BATCH_INFERENCE                     false
+#define PERFECT_ACCESS                      true        // Is VRAM space is always enough ?
+#define COMPULSORY_MISS                     true        // Initial the data in the DRAM ?
 #define THREAD_KERNEL_COMPILE               true
 #define THREAD_NUM                          8
 
@@ -119,8 +117,8 @@ class Request;
 #if (HARDWARE_ARCHITECTURE == AGX_XAVIER)
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
-    #define DRAM_SPACE                      256   * pow(2, 20)      // unit (Byte)  256 MB
-    #define DISK_SPACE                      16    * pow(2, 30)      // unit (Byte)   16 GB
+    #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
+    #define DISK_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
     #define PCIE_CHANNEL                    16
     #define PCIE_Bendwidth                  1     * pow(10, 9)      // unit (s)
     #define PAGE_FAULT_PENALTY              50    * pow(0.1, 6)		// unit (s)

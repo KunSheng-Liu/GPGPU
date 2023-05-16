@@ -78,7 +78,7 @@ MemoryController::createPage()
 {
     ASSERT(pageIndex << pageFrameOffset <= storageLimit, "Cannot create anymore physical page");
 
-    mPages.insert(make_pair(pageIndex, Page(pageIndex, SPACE_DRAM)));
+    mPages.insert(make_pair(pageIndex, Page(pageIndex, COMPULSORY_MISS ? SPACE_DRAM : SPACE_VRAM)));
     availablePageList.push_back(&mPages[pageIndex++]);
 
 }
@@ -137,6 +137,38 @@ MemoryController::memoryAllocate (int numOfByte)
 #endif
 
     return headPage;
+}
+
+
+/** ===============================================================================================
+ * \name    memoryRelease
+ * 
+ * \brief   Release the memory space
+ * 
+ * \param   page     the page going to release
+ * 
+ * \return  the recorded information of this page group
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+PageRecord
+MemoryController::memoryRelease (Page* page)
+{
+    if (page == nullptr) return PageRecord();
+
+    PageRecord record = page->record + memoryRelease(page->nextPage);
+    
+    page->record = PageRecord();
+    page->location = SPACE_DRAM;
+    page->nextPage = nullptr;
+
+    auto it = find(usedPageList.begin(), usedPageList.end(), page);
+    usedPageList.erase(it);
+
+    availablePageList.push_back(page);
+
+    return record;
 }
 
 

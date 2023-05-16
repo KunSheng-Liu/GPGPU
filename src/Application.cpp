@@ -35,7 +35,9 @@ Application::Application(char* model_type, int count)
     {
         tasks.push(Task(total_gpu_cycle, -1, appID, vector<unsigned char> (3*224*224, 1)));      
     }
-    
+
+    string name = model_type;
+    program_name += "_" + to_string(count) + name;
 }
 
 

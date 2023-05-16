@@ -21,27 +21,50 @@
  */
 CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
-
-#if (TASK_SET == TEST)
-    // mAPPs.push_back(new Application ((char*)"Test"));
-    // mAPPs.push_back(new Application ((char*)"LeNet"));
-    // mAPPs.push_back(new Application ((char*)"ResNet18"));
-    // mAPPs.push_back(new Application ((char*)"VGG16"));
-    mAPPs.push_back(new Application ((char*)"GoogleNet"));
-#elif (TASK_SET == LIGHT)
-    // mAPPs.push_back(new Application ((char*)"LeNet"));
-    // mAPPs.push_back(new Application ((char*)"ResNet18"));
-#elif (TASK_SET == HEAVY)
-    // mAPPs.push_back(new Application ((char*)"VGG16"));
-    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
-#elif (TASK_SET == MIX)
-    // mAPPs.push_back(new Application ((char*)"LeNet"));
-    // mAPPs.push_back(new Application ((char*)"ResNet18"));
-    // mAPPs.push_back(new Application ((char*)"VGG16"));
-    // mAPPs.push_back(new Application ((char*)"GoogleNet"));
-#endif
-
-    
+    if (command.TASK_MODE == TASK_SET::LIGHT)
+    {
+        mAPPs.push_back(new Application ((char*)"LeNet"));
+        mAPPs.push_back(new Application ((char*)"ResNet18"));
+    }
+    else if (command.TASK_MODE == TASK_SET::HEAVY)
+    {
+        mAPPs.push_back(new Application ((char*)"VGG16"));
+        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+    }
+    else if (command.TASK_MODE == TASK_SET::MIX)
+    {
+        mAPPs.push_back(new Application ((char*)"LeNet"));
+        mAPPs.push_back(new Application ((char*)"ResNet18"));
+        mAPPs.push_back(new Application ((char*)"VGG16"));
+        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+    }
+    else if (command.TASK_MODE == TASK_SET::ALL)
+    {
+        mAPPs.push_back(new Application ((char*)"Test"  , 1));
+        mAPPs.push_back(new Application ((char*)"LeNet" , 1));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+    }
+    else if (command.TASK_MODE == TASK_SET::LeNet)
+    {
+        mAPPs.push_back(new Application ((char*)"LeNet"));
+    }
+    else if (command.TASK_MODE == TASK_SET::ResNet18)
+    {
+        mAPPs.push_back(new Application ((char*)"ResNet18"));
+    }
+    else if (command.TASK_MODE == TASK_SET::VGG16)
+    {
+        mAPPs.push_back(new Application ((char*)"VGG16"));
+    }
+    else if (command.TASK_MODE == TASK_SET::GoogleNet)
+    {
+        mAPPs.push_back(new Application ((char*)"GoogleNet"));
+    }
+    else {
+        ASSERT(false, "Test set error");
+    }
 }
 
 
@@ -110,80 +133,83 @@ CPU::Dynamic_Batch_Admission()
      * Assign SM to each application according to its model needed pages
      * *******************************************************************
      */
-#if (INFERENCE_METHOD == SEQUENTIAL)
-
-    /* Only one application can get SM resource when the GPU is totally idle */
-    if (SM_MODE == SM_Dispatch::Greedy && available_sm.size() == GPU_SM_NUM)
+    if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL)
     {
-        for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+        /* Only one application can get SM resource when the GPU is totally idle */
+        if (command.SM_MODE == SM_DISPATCH::Baseline && available_sm.size() == GPU_SM_NUM)
+        {
+            for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+        } 
+        /* Baseline allocation... */
+
     } 
-    /* Baseline allocation... */
-    else if (SM_MODE == SM_Dispatch::Baseline) {
-
-    }
-
-#elif (INFERENCE_METHOD == PARALLEL)
-
-    if (SM_MODE == SM_Dispatch::Baseline)
+    else if (command.INFERENCE_MODE == INFERENCE_TYPE::PARALLEL)
     {
-        /* Each application got the same SM resource */
-        for (auto& app : mAPPs)
+        if (command.SM_MODE == SM_DISPATCH::Baseline)
         {
-            app->SM_budget = {};
-
-            if(app->tasks.size() == 0) continue;
-
-            for (int i = 0; i < GPU_SM_NUM; i++)
+            /* Each application got the same SM resource */
+            for (auto& app : mAPPs)
             {
-                app->SM_budget.push_back(i);
+                app->SM_budget = {};
+
+                if(app->tasks.size() == 0) continue;
+
+                for (auto& sm_id : available_sm)
+                {
+                    app->SM_budget.push_back(sm_id);
+                }
             }
-        }
-    } else if (SM_MODE == SM_Dispatch::SMD) 
-    {
-        /* Record the total required memory base on the task number */
-        float total_needed_memory = 0;
-        vector<pair<float, Application*>> APP_list;
-        for (auto& app : mAPPs)
+        } 
+        else if (command.SM_MODE == SM_DISPATCH::SMD) 
         {
-            app->SM_budget = {};
-
-            if(app->tasks.size() == 0) continue;
-
-            auto info = app->modelInfo;
-
-            total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
-            
-            APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
-        }
-
-        /* Sort to non-decreacing order */
-        sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
-            return a.first < b.first;
-        });
-
-        /* Assign SM to each application */
-        int SM_count = 0;
-        for (auto& app_pair : APP_list)
-        {
-            std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
-            /* Avoid starvation, at least assign 1 SM to application */
-            if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
+            /* Record the total required memory base on the task number */
+            float total_needed_memory = 0;
+            vector<pair<float, Application*>> APP_list;
+            for (auto& app : mAPPs)
             {
-                total_needed_memory -= app_pair.first;
-                app_pair.second->SM_budget.push_back(SM_count++);
-                continue;
+                app->SM_budget = {};
+
+                if(app->tasks.size() == 0) continue;
+
+                auto info = app->modelInfo;
+
+                total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
+                
+                APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
             }
 
-            for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
-            {
-                app_pair.second->SM_budget.push_back(SM_count++);
-            }
+            /* Sort to non-decreacing order */
+            sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
+                return a.first < b.first;
+            });
 
-            ASSERT(SM_count == GPU_SM_NUM);
+            /* Assign SM to each application */
+            int SM_count = 0;
+            for (auto& app_pair : APP_list)
+            {
+                std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
+                /* Avoid starvation, at least assign 1 SM to application */
+                if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
+                {
+                    total_needed_memory -= app_pair.first;
+                    app_pair.second->SM_budget.push_back(SM_count++);
+                    continue;
+                }
+
+                for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
+                {
+                    app_pair.second->SM_budget.push_back(SM_count++);
+                }
+
+                ASSERT(SM_count == GPU_SM_NUM);
+            }
+        } else {
+            ASSERT(false, "SM dispatch error");
         }
+
+    } else {
+        ASSERT(false, "Inference method error");
     }
-
-#endif
 
 #if (PRINT_SM_ALLCOATION_RESULT)
     for (auto& app : mAPPs)
@@ -194,9 +220,6 @@ CPU::Dynamic_Batch_Admission()
     }
 #endif
 
-    /* Check allocation correct */
-    // ASSERT(SM_count == GPU_SM_NUM);
-
     /* *******************************************************************
      * Choose the batch size of each model and create the instance
      * *******************************************************************
@@ -205,13 +228,16 @@ CPU::Dynamic_Batch_Admission()
     {
         if (app->runningModels.empty() && !app->SM_budget.empty() && !app->tasks.empty())
         {
-            int batchSize = 0;
-#if (BATCH_INFERENCE)
-            /* Determine the batch inference size */
-            batchSize = app->tasks.size();
-#else
-            batchSize = 1;
-#endif
+            int batchSize;
+            if (command.BATCH_MODE == BATCH_METHOD::DISABLE)
+            {
+                batchSize = 1;
+            }
+            else if (command.BATCH_MODE == BATCH_METHOD::MAX)
+            {
+                batchSize = app->tasks.size();
+            }
+
             app->runningModels.emplace_back(new Model(app->appID, batchSize));
                 
             Model* model = app->runningModels.back();
@@ -304,39 +330,43 @@ void
 CPU::Check_Finish_Kernel()
 {  
     /* check finish kernel */
-    if (!mGPU->finishedKernels.empty())
+    while (!mGPU->finishedKernels.empty())
     {
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
         /* recording... */
 #if (PRINT_BLOCK_RECORD)
-                std::cout << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
+            ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+            file << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
             for (auto& b_record : kernel->block_record)
             {
-                std::cout << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
-                          << b_record.sm_id                 << ", "
-                          << b_record.start_cycle           << ", "
-                          << b_record.end_cycle             << ", "
-                          << b_record.launch_access_counter << ", "
-                          << b_record.return_access_counter << ", "
-                          << b_record.access_page_counter   << "]"
-                          << std::endl;
+                file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
+                     << b_record.sm_id                 << ", "
+                     << b_record.start_cycle           << ", "
+                     << b_record.end_cycle             << ", "
+                     << b_record.launch_access_counter << ", "
+                     << b_record.return_access_counter << ", "
+                     << b_record.access_page_counter   << "]"
+                     << std::endl;
     #if (PRINT_WARP_RECORD)
                 for (auto& w_record : b_record.warp_record)
                 {
-                    std::cout << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
-                              << w_record.start_cycle         << ", "
-                              << w_record.end_cycle           << ", "
-                              << w_record.computing_cycle     << ", "
-                              << w_record.wait_cycle          << "]"
-                              << std::endl;
+                    file << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
+                         << w_record.start_cycle         << ", "
+                         << w_record.end_cycle           << ", "
+                         << w_record.computing_cycle     << ", "
+                         << w_record.wait_cycle          << "]"
+                         << std::endl;
                 }
     #endif
             }
-#endif        
+            file.close();
+#endif
+        
+
         /* release */
-        kernel->release();
+        kernel->release(&mMMU);
 
         kernel->finish = true;
         kernel->running = false;

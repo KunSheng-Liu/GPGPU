@@ -148,15 +148,18 @@ Kernel::isReady()
  * \name    release
  * 
  * \brief   Release no used memory space
+ * 
+ * \param   mmu     the memory management unit
  *  
  * \endcond
  * ================================================================================================
  */
 void
-Kernel::release()
+Kernel::release(MMU* mmu)
 {
-    ASSERT(requests.empty());  
-    srcLayer->release();
+    ASSERT(requests.empty()); 
+
+    srcLayer->release(mmu);
     dependencyKernels.clear(); 
 }
 
