@@ -68,7 +68,12 @@ MemoryController::cycle()
         for (auto& page_id : access->pageIDs)
         {
             Page& page = mPages[page_id];
-            ASSERT(page.location == SPACE_VRAM, "Memory access error: should in VRAM");
+            if (page.location != SPACE_VRAM)
+            {
+                cout << page_id << endl;
+                ASSERT(page.location == SPACE_VRAM, "Memory access error: should in VRAM");
+
+            }
 
             (type == Read) ? page.record.read_counter++ : page.record.write_counter++;
             page.record.access_count++;
@@ -162,9 +167,7 @@ MemoryController::memoryAllocate (int numOfByte)
  * 
  * \brief   Release the memory space
  * 
- * \param   page     the page going to release
- * 
- * \return  the recorded information of this page group
+ * \param   page     the header page of page groups going to release
  * 
  * \endcond
  * ================================================================================================
@@ -173,6 +176,7 @@ void
 MemoryController::memoryRelease (Page* page)
 {
     if (page == nullptr) return;
+    memoryRelease(page->nextPage);
 
     page->location = SPACE_DRAM;
     page->nextPage = nullptr;

@@ -104,22 +104,39 @@ GPU::Runtime_Block_Scheduling()
             success |= mSMs[sm_id].bindKernel(kernel);
         }
 
-        if (success) {
-            runningKernels.push_back(kernel);
-#if (PERFECT_ACCESS)
-            mGMMU.setCGroupSize(kernel->modelID, DRAM_SPACE / PAGE_SIZE);
-            // mGMMU.setCGroupSize(kernel->modelID, INT64_MAX);
-#else
-            mGMMU.setCGroupSize(kernel->modelID, kernel->requests.size() * kernel->requests.front()->readPages.size());
-#endif
-        } else {
-            remainingKernels.push(kernel);
-        }
-
+        success ? runningKernels.push_back(kernel) : remainingKernels.push(kernel);
         commandQueue.pop();
     }
-
     commandQueue = remainingKernels;
+
+    /* Allocate memory to running kernels */
+    Memory_Allocation();
+            
+}
+
+
+/** ===============================================================================================
+ * \name    Memory_Allocation
+ * 
+ * \brief   Allocate memory to the model follow the rule
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+GPU::Memory_Allocation()
+{  
+    if (command.MEM_MODE == MEM_ALLOCATION::None)
+    {
+        mGMMU.setCGroupSize(-1, DRAM_SPACE / PAGE_SIZE);
+    }
+    else if (command.MEM_MODE == MEM_ALLOCATION::Average)
+    {
+        map<int, int> memory_budget;
+        for (auto& kernel : runningKernels) memory_budget[kernel->modelID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
+
+        for (auto& model_pair : memory_budget) mGMMU.setCGroupSize(model_pair.first, model_pair.second);
+    }
 }
 
 

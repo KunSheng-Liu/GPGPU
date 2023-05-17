@@ -23,6 +23,7 @@ typedef enum {
 }BATCH_METHOD;
 
 typedef enum {
+	Greedy,
 	Baseline,
 	Equal,
 	SMD,
@@ -86,7 +87,7 @@ struct Command {
     MEM_ALLOCATION MEM_MODE;
     TASK_SET 	   TASK_MODE;
 
-    Command() : INFERENCE_MODE(SEQUENTIAL), BATCH_MODE(DISABLE), MEM_MODE(None), SM_MODE(Baseline), TASK_MODE(LIGHT) {}
+    Command() : INFERENCE_MODE(SEQUENTIAL), BATCH_MODE(DISABLE), SM_MODE(Greedy), MEM_MODE(None), TASK_MODE(LIGHT) {}
 };
 
 /* ************************************************************************************************

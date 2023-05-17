@@ -94,6 +94,7 @@ public:
 
 private:
     void Runtime_Block_Scheduling();
+    void Memory_Allocation ();
     void Check_Finish_Kernel();
 
 /* ************************************************************************************************

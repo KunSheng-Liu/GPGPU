@@ -117,7 +117,7 @@ GMMU::Access_Processing()
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
-        for (auto page_id : access->pageIDs) hit &= mCGroups[model_id].second.lookup(page_id);
+        for (auto page_id : access->pageIDs) hit &= getCGroup(model_id)->second.lookup(page_id);
 
         /* Classify the access into correspond handling queue */
         hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
@@ -161,7 +161,7 @@ GMMU::Page_Fault_Handler()
             {
                 auto model_id = fault_pair.first;
 
-                ASSERT(fault_pair.second.size() <= mCGroups[model_id].first, "Allocated memory is less than the model needed");
+                ASSERT(fault_pair.second.size() <= getCGroup(model_id)->first, "Allocated memory is less than the model needed");
 
                 for (auto& page_id : fault_pair.second)
                 {
@@ -170,12 +170,11 @@ GMMU::Page_Fault_Handler()
                     ASSERT(page, "page ptr doesn't exist");
                     page->location = SPACE_VRAM;
                     page->record.swap_count++;
-                    page = mCGroups[model_id].second.insert(page_id, page);
+                    page = getCGroup(model_id)->second.insert(page_id, page);
 
                     /* Eviction happen */
-                    if (page)
+                    if (page && page->location == SPACE_VRAM)
                     {
-                        ASSERT(page->location == SPACE_VRAM, "Error eviction");
                         page->location = SPACE_DRAM;
                         page->record.swap_count++;
                     }
@@ -252,4 +251,28 @@ GMMU::freeCGroup (int model_id)
 {
     auto it = mCGroups.find(model_id);
     if (it != mCGroups.end()) mCGroups.erase(it);
+}
+
+
+/** ===============================================================================================
+ * \name    getCGroup
+ * 
+ * \brief   Get the corresponding CGroup pointer
+ * 
+ * \param   model_id    the index of model
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+pair<int, LRU_TLB<unsigned long long, Page*>>*
+GMMU::getCGroup (int model_id)
+{
+    if (command.MEM_MODE == MEM_ALLOCATION::None)
+    {
+        return &mCGroups[-1];
+    }
+    else
+    {
+        return &mCGroups[model_id];
+    }
 }

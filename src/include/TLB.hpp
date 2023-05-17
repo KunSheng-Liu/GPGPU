@@ -129,13 +129,14 @@ public:
         auto it = table.find(key);
         if (it == table.end())
         {
+#if (PERFECT_ACCESS)
             if (table.size() == capacity) {
                 auto evict_key = history.front().first;
                 evict_value = history.front().second;
                 history.pop_front();
                 table.erase(evict_key);
             }
-            
+#endif
             history.emplace_back(key, value);
             auto it = history.end();
             table.emplace(key, --it);

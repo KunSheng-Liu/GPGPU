@@ -147,16 +147,21 @@ CPU::Dynamic_Batch_Admission()
     if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL)
     {
         /* Only one application can get SM resource when the GPU is totally idle */
-        if (command.SM_MODE == SM_DISPATCH::Baseline && available_sm.size() == GPU_SM_NUM)
+        if (available_sm.size() == GPU_SM_NUM)
         {
             for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
-        } 
-        /* Baseline allocation... */
-
+        }
     } 
     else if (command.INFERENCE_MODE == INFERENCE_TYPE::PARALLEL)
     {
-        if (command.SM_MODE == SM_DISPATCH::Baseline)
+        if (command.SM_MODE == SM_DISPATCH::Greedy)
+        {
+            if (available_sm.size() == GPU_SM_NUM) 
+            {
+                for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+            }
+        }
+        else if (command.SM_MODE == SM_DISPATCH::Baseline)
         {
             /* Each application got the same SM resource */
             for (auto& app : mAPPs)
@@ -237,6 +242,7 @@ CPU::Dynamic_Batch_Admission()
      */
     for (auto& app : mAPPs)
     {
+        /* Each application can only run one model in the same time */
         if (app->runningModels.empty() && !app->SM_budget.empty() && !app->tasks.empty())
         {
             int batchSize;
