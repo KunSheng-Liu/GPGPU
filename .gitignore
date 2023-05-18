@@ -1,4 +1,5 @@
 .*
 GPGPU
+RUN
 Docs/*
 !.gitignore
