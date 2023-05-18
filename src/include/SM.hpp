@@ -71,17 +71,20 @@ public:
     void cycle ();
 
     bool bindKernel(Kernel* kernel);
-    void recycleResource(Block* block);
-    void checkFinish();
-    void statistic();
+    void checkBlockFinish();
 
     bool isComputing();
     bool isIdel();
-    bool checkIsComplete(Kernel* kernel);
+    bool checkKernelComplete(Kernel* kernel);
 
     void setGMMU (GMMU* gmmu) {mGMMU = gmmu;}
     
     ComputingResource getResourceInfo() const {return resource;}
+
+private:
+    void recycleResource(Block* block);
+    void statistic();
+
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************

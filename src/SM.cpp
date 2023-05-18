@@ -65,7 +65,7 @@ SM::cycle()
     /* Computing */
     for (auto& block : runningBlocks)
     {
-        log_V("SM", to_string(smID) + " Execute block: " + to_string(block->block_id));
+        log_V("SM", to_string(smID) + " Execute block: " + to_string(block->blockID));
 
         for (auto& warp : block->warps)
         {
@@ -145,7 +145,7 @@ SM::cycle()
                 /* Handle the read addresses */
                 if (thread.readIndex != thread.request->readPages.size()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->block_id, warp->warpID, thread.request->requst_id, AccessType::Read);
+                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread.request->requst_id, AccessType::Read);
                     
                     for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && thread.readIndex != thread.request->readPages.size(); i++)
                     {
@@ -163,7 +163,7 @@ SM::cycle()
                 /* Handle the write addresses */ 
                 else if (!thread.request->writePages.empty()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->block_id, warp->warpID, thread.request->requst_id, AccessType::Write);
+                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread.request->requst_id, AccessType::Write);
                     
                     for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && !thread.request->writePages.empty(); i++)
                     {
@@ -227,7 +227,7 @@ SM::bindKernel(Kernel* kernel)
     {
         Block* b = new Block(kernel);
         b->record.sm_id = smID;
-        b->record.block_id = b->block_id;
+        b->record.block_id = b->blockID;
         b->record.start_cycle = total_gpu_cycle;
 
         /* Greedy bind all available warp to current block */
@@ -259,7 +259,7 @@ SM::bindKernel(Kernel* kernel)
 
 
 /** ===============================================================================================
- * \name    checkFinish
+ * \name    checkBlockFinish
  * 
  * \brief   Check whether a block is finish
  * 
@@ -267,7 +267,7 @@ SM::bindKernel(Kernel* kernel)
  * ================================================================================================
  */
 void
-SM::checkFinish()
+SM::checkBlockFinish()
 {
     for (auto block = runningBlocks.begin(); block != runningBlocks.end(); block++)
     {
@@ -382,7 +382,7 @@ SM::isIdel()
 
 
 /** ===============================================================================================
- * \name    checkIsComplete
+ * \name    checkKernelComplete
  * 
  * \brief   Check whether the kernel is complete.
  * 
@@ -390,7 +390,7 @@ SM::isIdel()
  * ================================================================================================
  */
 bool
-SM::checkIsComplete(Kernel* kernel)
+SM::checkKernelComplete(Kernel* kernel)
 {
     bool complete = true;
     for (auto& block : runningBlocks) complete &= !(block->runningKernel == kernel);

@@ -35,7 +35,7 @@ class Block
  */ 
 public:
 
-    Block(Kernel* kernel) : block_id(blockCount++), runningKernel(kernel) {}
+    Block(Kernel* kernel) : blockID(blockCount++), runningKernel(kernel) {}
 
    ~Block() {}
 
@@ -62,7 +62,7 @@ struct BlockRecord {
  * ************************************************************************************************
  */
 public:
-    int block_id;
+    const int blockID;
 
     BlockRecord record;
 

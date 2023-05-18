@@ -53,7 +53,7 @@ public:
 
 private:
     void Dynamic_Batch_Admission ();
-    void Kernek_Inference_Scheduler ();
+    void Kernel_Inference_Scheduler ();
     void Check_Finish_Kernel();
 
 /* ************************************************************************************************

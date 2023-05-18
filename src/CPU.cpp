@@ -47,11 +47,15 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::LeNet)
     {
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 3));
         mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , 2));
     }
     else if (command.TASK_MODE == TASK_SET::ResNet18)
     {
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 3));
         mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , 2));
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
@@ -59,7 +63,9 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::GoogleNet)
     {
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 3));
         mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", 2));
     }
     else if (command.TASK_MODE == TASK_SET::TEST1)
     {
@@ -112,7 +118,7 @@ CPU::cycle()
     
     Dynamic_Batch_Admission();
 
-    Kernek_Inference_Scheduler();
+    Kernel_Inference_Scheduler();
 
     /* check new task */
     for (auto& app: mAPPs)
@@ -266,7 +272,7 @@ CPU::Dynamic_Batch_Admission()
 
             /* If using real data, here should pass the data into IFMap */
             // auto batchInput = model->getIFMap();
-            for (int i = 0; i < app->tasks.size(); i++)
+            for (int i = 0; i < batchSize; i++)
             {
                 Application::Task task = app->tasks.front();
                 app->tasks.pop();
@@ -280,7 +286,7 @@ CPU::Dynamic_Batch_Admission()
 
 
 /** ===============================================================================================
- * \name    Kernek_Inference_Scheduler
+ * \name    Kernel_Inference_Scheduler
  * 
  * \brief   Second method, launch the model's kernel by the resource constrain.
  * 
@@ -289,7 +295,7 @@ CPU::Dynamic_Batch_Admission()
  */
 
 void
-CPU::Kernek_Inference_Scheduler()
+CPU::Kernel_Inference_Scheduler()
 {
     log_T("CPU", "Kernek_Inference_Scheduler");
 
@@ -399,7 +405,7 @@ CPU::Check_Finish_Kernel()
                 log_W("Model", to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished");
                 
                 ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                    file << "Model " + to_string((*model)->modelID) + ": " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished" << endl;
+                    file << "App " << (*model)->appID << " Model " << (*model)->modelID << ": " << (*model)->getModelName() << " with " << (*model)->getBatchSize() << " batch size is finished" << endl;
                 file.close();
 
                 /* delete the model */

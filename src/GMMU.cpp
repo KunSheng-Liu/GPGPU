@@ -249,8 +249,20 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
 void
 GMMU::freeCGroup (int model_id)
 {
-    auto it = mCGroups.find(model_id);
-    if (it != mCGroups.end()) mCGroups.erase(it);
+    if (command.MEM_MODE == MEM_ALLOCATION::None)
+    {   
+        auto TLB = mCGroups[-1].second;
+        for (auto& page : mMC->availablePageList)
+        {
+            // cout << page->pageIndex << ", ";
+            TLB.erase(page->pageIndex);
+        }
+    }
+    else
+    {
+        auto it = mCGroups.find(model_id);
+        if (it != mCGroups.end()) mCGroups.erase(it);
+    }
 }
 
 

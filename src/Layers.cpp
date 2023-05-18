@@ -963,6 +963,9 @@ ByPass::printInfo()
  * 
  * \param   arg     the void* of threadArg
  * 
+ * \note    After added GoogleNet, ByPass layer also used for the I/O dimension mapping. Therefore,
+ *          cannot use the oFMapSize to compile the requests which intreduces segmentation fault.
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -979,17 +982,17 @@ ByPass::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (iFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (iFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
     /* Use inverse order for let the address be closer */
     for (int w_o = start_index; w_o < end_index; w_o++)
     {
-        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
+        for (int h_o = 0; h_o < iFMapSize[HEIGHT]; h_o++)
         {
-            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
+            for (int c_o = 0; c_o < iFMapSize[CHANNEL]; c_o++)
             {
-                for (int b = 0; b < oFMapSize[BATCH]; b++)
+                for (int b = 0; b < iFMapSize[BATCH]; b++)
                 {                   
                     Request* request = new Request();
                     /* read input pages */

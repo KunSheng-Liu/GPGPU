@@ -68,7 +68,7 @@ GPU::cycle()
 
     /* Check finish() */
 	for (auto& sm : mSMs) {
-		sm.second.checkFinish();
+		sm.second.checkBlockFinish();
 	}
 
     Check_Finish_Kernel();
@@ -160,7 +160,7 @@ GPU::Check_Finish_Kernel()
             kernel->finish = true;
             for (int sm_id : *kernel->SM_List)
             {
-                kernel->finish &= mSMs[sm_id].checkIsComplete(kernel);
+                kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
             }
         }
 
