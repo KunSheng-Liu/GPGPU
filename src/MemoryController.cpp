@@ -184,7 +184,7 @@ MemoryController::memoryRelease (Page* page)
     auto it = find(usedPageList.begin(), usedPageList.end(), page);
     usedPageList.erase(it);
 
-    // availablePageList.push_back(page);
+    availablePageList.push_back(page);
 }
 
 

@@ -59,19 +59,19 @@ GPU::cycle()
 {
     log_I("GPU Cycle", to_string(total_gpu_cycle));
 
-    Runtime_Block_Scheduling();
-
-    /* cycle() */
-	for (auto& sm : mSMs) {
-		sm.second.cycle();
-	}
-
     /* Check finish() */
 	for (auto& sm : mSMs) {
 		sm.second.checkBlockFinish();
 	}
 
     Check_Finish_Kernel();
+
+    Runtime_Block_Scheduling();
+
+    /* cycle() */
+	for (auto& sm : mSMs) {
+		sm.second.cycle();
+	}
 
     /* gpu statistic */
     statistic();

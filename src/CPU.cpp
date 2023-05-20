@@ -59,7 +59,9 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 3));
         mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , 2));
     }
     else if (command.TASK_MODE == TASK_SET::GoogleNet)
     {

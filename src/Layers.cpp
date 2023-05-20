@@ -50,6 +50,10 @@ Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, 
  */
 Layer::~Layer()
 {
+    log_V("~Layer()", layerType);
+    if (strcmp(layerType, "LayerGroup") == 0) return;
+
+    delete oFMap.second;
     delete filter.second;
 }
 

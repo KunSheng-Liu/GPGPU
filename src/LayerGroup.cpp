@@ -18,7 +18,7 @@
  * \endcond
  * ================================================================================================
  */
-LayerGroup::LayerGroup(Group_t group_type): Layer((char*)"LayerGroup"), groupType(group_type)
+LayerGroup::LayerGroup(Group_t group_type, char* layer_type): Layer(layer_type), groupType(group_type)
 {
     /* Group not in count of a layer */
     layerCount--;
@@ -38,8 +38,8 @@ LayerGroup::LayerGroup(Group_t group_type): Layer((char*)"LayerGroup"), groupTyp
  */
 LayerGroup::~LayerGroup()
 {
-    if (groupType == Group_t::CaseCode) delete oFMap.second;
     for (auto layer = layers.begin(); layer != layers.end(); ++layer) delete *layer;
+    if (groupType == Group_t::CaseCode) delete oFMap.second;
 }
 
 
@@ -314,7 +314,7 @@ LayerGroup::printInfo ()
  * \endcond
  * ================================================================================================
  */
-ResNetBlock18::ResNetBlock18(vector<int> input_size, bool down_sample) : LayerGroup(Group_t::CaseCode)
+ResNetBlock18::ResNetBlock18(vector<int> input_size, bool down_sample) : LayerGroup(Group_t::CaseCode, (char*)"ResNetBlock18")
 {
     down_sample ? BottleNeckBlock(input_size) : BasicBlock(input_size);
 }
@@ -423,8 +423,8 @@ ResNetBlock18::BottleNeckBlock(vector<int> input_size)
  * ================================================================================================
  */
 Inception::Inception(vector<int> input_size, int channel_1x1, int channel_reduce_3x3, int channel_3x3, int channel_reduce_5x5, int channel_5x5, int channel_pooling)
-        : LayerGroup(Group_t::CaseCode), channel_1x1(channel_1x1), channel_reduce_3x3(channel_reduce_3x3), channel_3x3(channel_3x3), channel_reduce_5x5(channel_reduce_5x5)
-        , channel_5x5(channel_5x5), channel_pooling(channel_pooling)
+        : LayerGroup(Group_t::CaseCode, (char*)"Inception"), channel_1x1(channel_1x1), channel_reduce_3x3(channel_reduce_3x3), channel_3x3(channel_3x3)
+        , channel_reduce_5x5(channel_reduce_5x5), channel_5x5(channel_5x5), channel_pooling(channel_pooling)
 {
     int height = input_size[HEIGHT];
     int weight = input_size[WIDTH];

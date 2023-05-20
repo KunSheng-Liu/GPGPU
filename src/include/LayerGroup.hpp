@@ -47,7 +47,7 @@ class LayerGroup: public Layer
  */ 
 public:
 
-    LayerGroup(Group_t = Group_t::CaseCade);
+    LayerGroup(Group_t = Group_t::CaseCade, char* = (char*)"LayerGroup");
 
    ~LayerGroup();
 
