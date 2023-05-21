@@ -47,27 +47,19 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::LeNet)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 3));
         mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 2));
     }
     else if (command.TASK_MODE == TASK_SET::ResNet18)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 3));
         mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 2));
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 3));
         mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 2));
     }
     else if (command.TASK_MODE == TASK_SET::GoogleNet)
     {
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 3));
         mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 2));
     }
     else if (command.TASK_MODE == TASK_SET::TEST1)
     {
@@ -123,7 +115,7 @@ CPU::cycle()
     Kernel_Inference_Scheduler();
 
     /* check new task */
-    for (auto& app: mAPPs)
+    for (auto app: mAPPs)
     {
         app->cycle();
     }
@@ -157,7 +149,9 @@ CPU::Dynamic_Batch_Admission()
         /* Only one application can get SM resource when the GPU is totally idle */
         if (available_sm.size() == GPU_SM_NUM)
         {
-            for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+            for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+        } else {
+            return;
         }
     } 
     else if (command.INFERENCE_MODE == INFERENCE_TYPE::PARALLEL)
@@ -166,19 +160,21 @@ CPU::Dynamic_Batch_Admission()
         {
             if (available_sm.size() == GPU_SM_NUM) 
             {
-                for (auto& app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+                for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+            } else {
+                return;
             }
         }
         else if (command.SM_MODE == SM_DISPATCH::Baseline)
         {
             /* Each application got the same SM resource */
-            for (auto& app : mAPPs)
+            for (auto app : mAPPs)
             {
                 app->SM_budget = {};
 
                 if(app->tasks.size() == 0) continue;
 
-                for (auto& sm_id : available_sm)
+                for (auto sm_id : available_sm)
                 {
                     app->SM_budget.push_back(sm_id);
                 }
@@ -189,7 +185,7 @@ CPU::Dynamic_Batch_Admission()
             /* Record the total required memory base on the task number */
             float total_needed_memory = 0;
             vector<pair<float, Application*>> APP_list;
-            for (auto& app : mAPPs)
+            for (auto app : mAPPs)
             {
                 app->SM_budget = {};
 
@@ -209,7 +205,7 @@ CPU::Dynamic_Batch_Admission()
 
             /* Assign SM to each application */
             int SM_count = 0;
-            for (auto& app_pair : APP_list)
+            for (auto app_pair : APP_list)
             {
                 std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
                 /* Avoid starvation, at least assign 1 SM to application */
@@ -236,10 +232,10 @@ CPU::Dynamic_Batch_Admission()
     }
 
 #if (PRINT_SM_ALLCOATION_RESULT)
-    for (auto& app : mAPPs)
+    for (auto app : mAPPs)
     {
         std::cout << "APP: " << app->appID << " get SM: ";
-        for (auto& sm_id : app->SM_budget) std::cout << sm_id << ", ";
+        for (auto sm_id : app->SM_budget) std::cout << sm_id << ", ";
         std::cout << std::endl;
     }
 #endif
@@ -248,7 +244,7 @@ CPU::Dynamic_Batch_Admission()
      * Choose the batch size of each model and create the instance
      * *******************************************************************
      */
-    for (auto& app : mAPPs)
+    for (auto app : mAPPs)
     {
         /* Each application can only run one model in the same time */
         if (app->runningModels.empty() && !app->SM_budget.empty() && !app->tasks.empty())
@@ -304,11 +300,11 @@ CPU::Kernel_Inference_Scheduler()
     // handle the kernel dependency, and launch next kernel
 
     list<Kernel*> readyKernels;
-    for (auto& app : mAPPs)
+    for (auto app : mAPPs)
     {
-        for (auto& model : app->runningModels)
+        for (auto model : app->runningModels)
         {
-            for (auto& kernel : model->findReadyKernels())
+            for (auto kernel : model->findReadyKernels())
             {
                 kernel->SM_List = &model->SM_budget;
                 readyKernels.push_back(kernel);
@@ -320,14 +316,14 @@ CPU::Kernel_Inference_Scheduler()
     /* print ready list */
 #if (LOG_LEVEL >= VERBOSE)
     std::cout << "Ready kernel list: ";
-    for (auto& kernel : readyKernels)
+    for (auto kernel : readyKernels)
     {
         std::cout << kernel->kernelID << ", ";
     }
     std::cout << endl;
 #endif
     /* launch kernel into gpu */
-    for (auto& kernel : readyKernels)
+    for (auto kernel : readyKernels)
     {
         ASSERT(kernel->SM_List->size());
 
@@ -354,6 +350,8 @@ CPU::Kernel_Inference_Scheduler()
 void
 CPU::Check_Finish_Kernel()
 {  
+    bool check_finish = !mGPU->finishedKernels.empty();
+
     /* check finish kernel */
     while (!mGPU->finishedKernels.empty())
     {
@@ -394,28 +392,31 @@ CPU::Check_Finish_Kernel()
         log_W("Kernel", to_string(kernel->kernelID) + " is finished");
     }
 
-    for (auto& app : mAPPs)
+    if (check_finish)
     {
-        for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
-            if ((*model)->checkFinish())
-            {
-                /* release the used resource */
-                (*model)->memoryRelease(&mMMU);
-                mGPU->getGMMU()->freeCGroup((*model)->modelID);
+        for (auto app : mAPPs)
+        {
+            for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
+                if ((*model)->checkFinish())
+                {
+                    /* release the used resource */
+                    (*model)->memoryRelease(&mMMU);
+                    mGPU->getGMMU()->freeCGroup((*model)->modelID);
 
-                /* log out */
-                log_W("Model", to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished");
-                
-                ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                    file << "App " << (*model)->appID << " Model " << (*model)->modelID << ": " << (*model)->getModelName() << " with " << (*model)->getBatchSize() << " batch size is finished" << endl;
-                file.close();
+                    /* log out */
+                    log_W("Model", to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished");
+                    
+                    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                        file << "App " << (*model)->appID << " Model " << (*model)->modelID << ": " << (*model)->getModelName() << " with " << (*model)->getBatchSize() << " batch size is finished" << endl;
+                    file.close();
 
-                /* delete the model */
-                delete *model;
-                model = app->runningModels.erase(model);
+                    /* delete the model */
+                    delete *model;
+                    model = app->runningModels.erase(model);
+                }
             }
         }
-    }
+    }   
 }
 
 
@@ -431,9 +432,7 @@ bool
 CPU::Check_All_Applications_Finish()
 {  
     bool finish = true;
-    for (auto& app : mAPPs)
-    {
-        finish &= app->finish;
-    }
+    for (auto app : mAPPs) finish &= app->finish;
+
     return finish;
 }

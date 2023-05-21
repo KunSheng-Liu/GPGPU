@@ -561,8 +561,8 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
                     
                     // Conv2D perfrom the element multiplication on iFMap to filter at each place
-                    // request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH] / GPU_MAX_THREAD_PER_WARP;
-                    request->numOfInstructions = 1;
+                    request->numOfInstructions = filterSize[HEIGHT] * filterSize[WIDTH];
+                    // request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0)
@@ -706,8 +706,8 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Pooling layer find the maxinum input data in the field masked by filter
-                    // request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH] / GPU_MAX_THREAD_PER_WARP;
-                    request->numOfInstructions = 1;
+                    request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH];
+                    // request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0)
@@ -857,25 +857,6 @@ Flatten::issueLayer(ThreadArg* threadArg)
         }
         
     }
-    // int start_index = (iFMapPages.size() * threadArg->threadID) / threadArg->numThread;
-    // int end_index   = (iFMapPages.size() * (threadArg->threadID + 1)) / threadArg->numThread;
-
-    // /* Use inverse order for let the address be closer */
-    // for (int index = start_index; index < end_index; index++)
-    // { 
-    //     Request* request = new Request();
-
-    //     /* read input pages */
-    //     request->readPages.emplace_back(make_pair(iFMapPages[index], PAGE_SIZE));
-
-    //     /* write result to pages */
-    //     request->writePages.emplace_back(make_pair(iFMapPages[index], PAGE_SIZE));
-
-    //     // Performs data copy
-    //     request->numOfInstructions = 1;
-
-    //     threadArg->requestQueue->push(move(request));
-    // }
     
     delete threadArg;
 }
@@ -1016,25 +997,6 @@ ByPass::issueLayer(ThreadArg* threadArg)
         }
         
     }
-    // int start_index = (iFMapPages.size() * threadArg->threadID) / threadArg->numThread;
-    // int end_index   = (iFMapPages.size() * (threadArg->threadID + 1)) / threadArg->numThread;
-
-    // /* Use inverse order for let the address be closer */
-    // for (int index = start_index; index < end_index; index++)
-    // { 
-    //     Request* request = new Request();
-
-    //     /* read input pages */
-    //     request->readPages.emplace_back(make_pair(iFMapPages[index], PAGE_SIZE));
-
-    //     /* write result to pages */
-    //     request->writePages.emplace_back(make_pair(iFMapPages[index], PAGE_SIZE));
-
-    //     // Performs data copy
-    //     request->numOfInstructions = 1;
-
-    //     threadArg->requestQueue->push(move(request));
-    // }
     
     delete threadArg;
 }
@@ -1176,33 +1138,21 @@ Dense::issueLayer(ThreadArg* threadArg)
         {                   
             Request* request = new Request();
 
-            for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
+            for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I] / PAGE_SIZE;)
             {
+                int count = min(filterSize[FILTER_CHANNEL_I] - c_i * PAGE_SIZE, PAGE_SIZE);
+
                 /* read input pages */
-                request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
+                request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
 
                 /* filter pages */
-                request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], 1));
+                request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
 
                 // Performs dot product
-                // request->numOfInstructions += 1;
-                request->numOfInstructions = 1;
+                request->numOfInstructions = filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I];
+
+                c_i += count;
             }
-            // for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I] / PAGE_SIZE;)
-            // {
-            //     int count = min(filterSize[FILTER_CHANNEL_I] - c_i, PAGE_SIZE);
-
-            //     /* read input pages */
-            //     request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
-
-            //     /* filter pages */
-            //     request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
-
-            //     // Performs dot product
-            //     request->numOfInstructions = filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I];
-
-            //     c_i += count;
-            // }
 
             /* write result to pages */
             request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] + c_o) / PAGE_SIZE)], 1));

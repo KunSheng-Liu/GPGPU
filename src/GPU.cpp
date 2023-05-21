@@ -91,6 +91,9 @@ void
 GPU::Runtime_Block_Scheduling()
 {  
     log_T("GPU", "Runtime_Block_Scheduling");
+
+    bool mem_allocate;
+
     /* Iterate all kernels inside the command Queue */
     queue<Kernel*> remainingKernels;
     while(!commandQueue.empty())
@@ -99,19 +102,21 @@ GPU::Runtime_Block_Scheduling()
         ASSERT(kernel, "Receive null kernel ptr");
 
         bool success = false;
-        for (auto sm_id : *kernel->SM_List)
-        {
-            success |= mSMs[sm_id].bindKernel(kernel);
-        }
+        for (auto sm_id : *kernel->SM_List) success |= mSMs[sm_id].bindKernel(kernel);
 
         success ? runningKernels.push_back(kernel) : remainingKernels.push(kernel);
+        mem_allocate = success;
+
         commandQueue.pop();
     }
     commandQueue = remainingKernels;
 
+#if (LOG_LEVEL >= VERBOSE)
+    for (auto kernel: runningKernels) log_V("running kernel id", to_string(kernel->kernelID));
+#endif
+
     /* Allocate memory to running kernels */
-    Memory_Allocation();
-            
+    if (mem_allocate) Memory_Allocation();
 }
 
 
@@ -133,9 +138,9 @@ GPU::Memory_Allocation()
     else if (command.MEM_MODE == MEM_ALLOCATION::Average)
     {
         map<int, int> memory_budget;
-        for (auto& kernel : runningKernels) memory_budget[kernel->modelID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
+        for (auto kernel : runningKernels) memory_budget[kernel->modelID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
 
-        for (auto& model_pair : memory_budget) mGMMU.setCGroupSize(model_pair.first, model_pair.second);
+        for (auto model_pair : memory_budget) mGMMU.setCGroupSize(model_pair.first, model_pair.second);
     }
 }
 
@@ -158,25 +163,20 @@ GPU::Check_Finish_Kernel()
         if (kernel->requests.empty())
         {
             kernel->finish = true;
-            for (int sm_id : *kernel->SM_List)
+            for (int sm_id : *kernel->SM_List) kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
+            
+            if (kernel->finish) 
             {
-                kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
+                kernel->end_cycle = total_gpu_cycle;
+                finishedKernels.push_back(kernel);
             }
-        }
-
-        if (kernel->isFinish()) 
-        {
-            kernel->end_cycle = total_gpu_cycle;
-            finishedKernels.push_back(kernel);
         }
     }
 
     runningKernels.remove_if([](Kernel* k){return k->isFinish();});
 
-    for (auto& kernel: runningKernels)
-    {
-        log_V("running kernel id", to_string(kernel->kernelID));
-    }
+    /* Allocate memory to running kernels */
+    if (!finishedKernels.empty()) Memory_Allocation();
 }
 
 

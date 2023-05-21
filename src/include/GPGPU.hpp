@@ -79,10 +79,10 @@ private:
  * ************************************************************************************************
  */
 private:
-    float cpu_time  = double(1.0 / CPU_F);
-    float mc_time   = double(1.0 / MC_F);
-    float gpu_time  = double(1.0 / GPU_F);
-    float gmmu_time = double(1.0 / GMMU_F);
+    long double cpu_time  = double(1.0 / CPU_F);
+    long double mc_time   = double(1.0 / MC_F);
+    long double gpu_time  = double(1.0 / GPU_F);
+    long double gmmu_time = double(1.0 / GMMU_F);
 };
 
 #endif

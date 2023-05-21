@@ -63,63 +63,54 @@ SM::cycle()
     log_T("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
 
     /* Computing */
-    for (auto& block : runningBlocks)
+    for (auto block : runningBlocks)
     {
         log_V("SM", to_string(smID) + " Execute block: " + to_string(block->blockID));
 
-        for (auto& warp : block->warps)
+        for (auto warp : block->warps)
         {
-            /* *******************************************************************
-             * Handle gmmu to sm response
-             * *******************************************************************
-             */
-            for (auto it = warp->gmmu_to_sm_queue.begin(); it != warp->gmmu_to_sm_queue.end();)
-            {
-                auto access = *it;
-                for (auto& thread : warp->mthreads)
-                {
-                    if (thread.state == Waiting && thread.access == access)
-                    {
-                        warp->record.return_access_counter++;
-                        delete thread.access;
-
-                        /* Is the last access ? */
-                        if (!thread.request->writePages.empty()) 
-                            thread.state = Busy;
-                        else 
-                        {
-                            delete thread.request;
-                            thread.state = Idle;
-                        }
-
-                        it = warp->gmmu_to_sm_queue.erase(it)++;
-                        break;
-                    }
-                }
-                ++it;
-            }
-            
-
             /* *******************************************************************
              * Handle the warp status
              * *******************************************************************
              */
-            warp->isBusy = !block->runningKernel->requests.empty();
-            for (auto& thread : warp->mthreads)
-            {
-                warp->isBusy |= !(thread.state == Idle);
-            }
+            bool sync = true;
+            for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
+            
+            warp->isBusy = (block->runningKernel->requests.empty() && sync) ? false : true;
             if (!warp->isBusy) continue;
+
+            /* *******************************************************************
+             * Handle gmmu to sm response
+             * *******************************************************************
+             */
+            for (auto access : warp->gmmu_to_sm_queue)
+            {
+                ASSERT(warp->mthreads.at(access->thread_id).state == Waiting, "Error thread id");
+                warp->record.return_access_counter++;
+                
+                auto& thread = warp->mthreads.at(access->thread_id);
+
+                /* Is the last access ? */
+                if (!thread.request->writePages.empty()) 
+                    thread.state = Busy;
+                else 
+                {
+                    thread.state = Idle;
+                    delete thread.request;
+                }
+
+                delete thread.access;
+            }
+            warp->gmmu_to_sm_queue.clear();
+
 
 
             /* *******************************************************************
              * Bind request to idel threads by following the SIMT policy
              * *******************************************************************
              */
-            bool sync = true;
-            for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
-
-            if (sync) {
+            if (sync) 
+            {
                 for (auto& thread : warp->mthreads)
                 {
                     if (!block->runningKernel->requests.empty())
@@ -128,6 +119,8 @@ SM::cycle()
                         log_V("Executing request", to_string(thread.request->requst_id));
                         thread.readIndex = 0;
                         thread.state = Busy;
+                    } else {
+                        break;
                     }
                 }
             }
@@ -138,14 +131,16 @@ SM::cycle()
              * Launch the access
              * *******************************************************************
              */
-            for (auto& thread : warp->mthreads)
+            for (int i = 0; i < GPU_MAX_THREAD_PER_WARP; i++)
             {
-                if (thread.state != Busy) continue;
+                if (warp->mthreads.at(i).state != Busy) continue;
+
+                auto& thread = warp->mthreads.at(i);
                 
                 /* Handle the read addresses */
                 if (thread.readIndex != thread.request->readPages.size()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread.request->requst_id, AccessType::Read);
+                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
                     
                     for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && thread.readIndex != thread.request->readPages.size(); i++)
                     {
@@ -163,7 +158,7 @@ SM::cycle()
                 /* Handle the write addresses */ 
                 else if (!thread.request->writePages.empty()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread.request->requst_id, AccessType::Write);
+                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
                     
                     for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && !thread.request->writePages.empty(); i++)
                     {
@@ -183,7 +178,7 @@ SM::cycle()
                 warp->record.launch_access_counter++;
                 warp->record.access_page_counter += thread.access->pageIDs.size();
 
-                warp->sm_to_gmmu_queue.push_back(thread.access);
+                mGMMU->sm_to_gmmu_queue.push_back(thread.access);
                 thread.state = Waiting;
                 
 #if (PRINT_ACCESS_PATTERN)

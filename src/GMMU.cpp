@@ -72,9 +72,9 @@ GMMU::Access_Processing()
      * Receive the responce of Memory Controllor
      * *******************************************************************
      */
+    log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
     if(!mMC->mc_to_gmmu_queue.empty()) 
     {
-        log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
         gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
     }
     
@@ -83,41 +83,27 @@ GMMU::Access_Processing()
      * Return finished access to SM
      * *******************************************************************
      */
-    if(!gmmu_to_sm_queue.empty()) log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
+    log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
     while(!gmmu_to_sm_queue.empty())
     {
-        MemoryAccess* access = gmmu_to_sm_queue.front();
+        auto access = gmmu_to_sm_queue.front();
         mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_sm_queue.push_back(access);
         gmmu_to_sm_queue.pop_front();
     }
 
 
     /* *******************************************************************
-     * Collect the accesses from each SM
-     * *******************************************************************
-     */
-    for (auto& sm : mGPU->mSMs) { 
-        for (auto& warp : sm.second.mWarps)
-        {
-            if (!warp.second.sm_to_gmmu_queue.empty()) sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), warp.second.sm_to_gmmu_queue);
-        }
-	}
-    if(!sm_to_gmmu_queue.empty()) log_T("GMMU", "Receive " + to_string(sm_to_gmmu_queue.size()) + " access");
-
-
-    /* *******************************************************************
      * Handling the accesses
      * *******************************************************************
      */
-    if(!sm_to_gmmu_queue.empty()) log_T("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
+    log_T("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
     while(!sm_to_gmmu_queue.empty())
     {
-        MemoryAccess* access = sm_to_gmmu_queue.front();
-        auto model_id = access->model_id;
+        auto access = sm_to_gmmu_queue.front();
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
-        for (auto page_id : access->pageIDs) hit &= getCGroup(model_id)->second.lookup(page_id);
+        for (auto page_id : access->pageIDs) hit &= getCGroup(access->model_id)->second.lookup(page_id);
 
         /* Classify the access into correspond handling queue */
         hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
@@ -147,7 +133,6 @@ GMMU::Page_Fault_Handler()
     if (wait_cycle > 0)
     {
         log_V("Page_Fault_Handler cycle", to_string(wait_cycle--));
-        return;
     } 
     else {
         /* *******************************************************************
@@ -157,23 +142,21 @@ GMMU::Page_Fault_Handler()
          */
         if (!page_fault_process_queue.empty())
         {
-            for (auto& fault_pair : page_fault_process_queue)
+            for (auto fault_pair : page_fault_process_queue)
             {
-                auto model_id = fault_pair.first;
+                ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->first, "Allocated memory is less than the model needed");
 
-                ASSERT(fault_pair.second.size() <= getCGroup(model_id)->first, "Allocated memory is less than the model needed");
-
-                for (auto& page_id : fault_pair.second)
+                for (auto page_id : fault_pair.second)
                 {
                     /* Migration from DRAM to VRAM */
                     Page* page = mMC->refer(page_id);
                     ASSERT(page, "page ptr doesn't exist");
                     page->location = SPACE_VRAM;
                     page->record.swap_count++;
-                    page = getCGroup(model_id)->second.insert(page_id, page);
+                    page = getCGroup(fault_pair.first)->second.insert(page_id, page);
 
                     /* Eviction happen */
-                    if (page && page->location == SPACE_VRAM)
+                    if (page)
                     {
                         page->location = SPACE_DRAM;
                         page->record.swap_count++;
@@ -204,8 +187,8 @@ GMMU::Page_Fault_Handler()
                 
             }
             page_fault_finish_queue.splice(page_fault_finish_queue.end(), MSHRs);
-            // wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
-            wait_cycle = 1;
+            wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+            // wait_cycle = 1;
         }
     }
     
@@ -252,7 +235,7 @@ GMMU::freeCGroup (int model_id)
     if (command.MEM_MODE == MEM_ALLOCATION::None)
     {   
         auto TLB = mCGroups[-1].second;
-        for (auto& page : mMC->availablePageList)
+        for (auto page : mMC->availablePageList)
         {
             // cout << page->pageIndex << ", ";
             TLB.erase(page->pageIndex);

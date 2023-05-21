@@ -148,7 +148,7 @@ LayerGroup::addCaseCode (Layer* layer)
 void
 LayerGroup::changeBatch(int new_batch_size)
 {
-    for (auto& layer: layers){
+    for (auto layer: layers){
         layer->changeBatch(new_batch_size);
     }
 }
@@ -167,7 +167,7 @@ LayerGroup::changeBatch(int new_batch_size)
 void
 LayerGroup::memoryAllocate(MMU* mmu)
 {
-    for (auto& layer: layers){
+    for (auto layer: layers){
         layer->memoryAllocate(mmu);
     }
 
@@ -195,13 +195,13 @@ LayerGroup::compileToKernel(int app_id, int model_id, vector<Kernel>& container,
 {
     log_V("LayerGroup", "compileToKernel");
     if (groupType == Group_t::CaseCade) {
-        for (auto& layer: layers)
+        for (auto layer: layers)
         {
             dependency = layer->compileToKernel(app_id, model_id, container, dependency);
         }
     } else {  // groupType == Group_t::CaseCode
         vector<Kernel*> new_dependency;
-        for (auto& layer: layers)
+        for (auto layer: layers)
         {
             vector<Kernel*> temp = layer->compileToKernel(app_id, model_id, container, dependency);
             new_dependency.insert(new_dependency.end(), temp.begin(), temp.end());
@@ -233,9 +233,7 @@ LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
         layer->setIFMap(data);
 
     } else {
-        for (auto& layer: layers) {
-            layer->setIFMap(data);
-        }
+        for (auto layer: layers) layer->setIFMap(data);
     }
 }
 
@@ -260,9 +258,7 @@ LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
         layer->setFilter(data);
 
     } else {
-        for (auto& layer: layers) {
-            layer->setFilter(data);
-        }
+        for (auto layer: layers) layer->setFilter(data);
     }
 }
 
@@ -280,7 +276,7 @@ LayerGroup::printInfo ()
 {
 #if PRINT_MODEL_DETIAL
     std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " start -------------" << std::endl;
-    for (auto& layer: layers){
+    for (auto layer: layers){
         layer->printInfo();
     }
     std::cout << ((groupType == Group_t::CaseCade) ? "sequential" : "branch") << " end -------------" << std::endl;

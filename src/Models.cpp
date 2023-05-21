@@ -140,7 +140,7 @@ Model::compileToKernel()
 
 #if (LOG_LEVEL >= VERBOSE)
     bool title = true;
-    for (auto& kernel : kernelContainer)
+    for (auto kernel : kernelContainer)
     {
         kernel.printInfo(title);
         title = false;
@@ -188,12 +188,7 @@ Model::findReadyKernels()
 bool
 Model::checkFinish()
 {
-    bool finish = true;
-    for (auto& kernel : kernelContainer)
-    {
-        finish &= kernel.isFinish();
-    }
-    return finish;
+    return kernelContainer.back().isFinish();
 }
 
 

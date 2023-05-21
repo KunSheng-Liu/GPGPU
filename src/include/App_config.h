@@ -105,8 +105,8 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */
-#define PERFECT_ACCESS                      true        // Is VRAM space is always enough ?
-#define COMPULSORY_MISS                     true        // Initial the data in the DRAM ?
+#define PERFECT_ACCESS                      false                   // Is VRAM space is always enough ?
+#define COMPULSORY_MISS                     true                    // Initial the data in the DRAM ?
 #define THREAD_KERNEL_COMPILE               true
 #define THREAD_NUM                          8
 
@@ -120,10 +120,10 @@ class Request;
     #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
     #define DISK_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
     #define PCIE_CHANNEL                    16
-    #define PCIE_Bendwidth                  1     * pow(10, 9)      // unit (s)
-    #define PAGE_FAULT_PENALTY              50    * pow(0.1, 6)		// unit (s)
+    #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
+    #define PAGE_FAULT_PENALTY              20    * pow(0.1, 6)     // unit (s)
 
-    #define GPU_PREFETCH_SIZE               80
+    #define PCIE_ACCESS_BOUND               80
 
     /* Frequency */ 
     #define CPU_F                           1200000000.0            // unit (Hz)    1200 MHz
@@ -173,8 +173,6 @@ class Request;
  * Global Configuration
  * ************************************************************************************************
  */
-#define PCIE_BANDWIDTH                      16    * pow(10, 9)              // unit (B/s)  16 GB/s
-#define PAGE_FAULT_PENALTY                  50    * pow(0.1, 6)             // unit (s)
 #define PAGE_FAULT_COMMUNICATION_CYCLE      PAGE_FAULT_PENALTY * GMMU_F     // unit (cycle)
 #define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))  // unit (cycle)
 #define TRANSFER_SET_SIZE                   80 

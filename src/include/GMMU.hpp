@@ -81,6 +81,8 @@ private:
      * *******************************************************************
      */
 	map<int, pair<int, LRU_TLB<unsigned long long, Page*>>> mCGroups;
+
+friend SM;
 };
 
 #endif

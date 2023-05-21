@@ -65,7 +65,7 @@ MemoryController::cycle()
         auto access = gmmu_to_mc_queue.front();
         auto type = access->type;
 
-        for (auto& page_id : access->pageIDs)
+        for (auto page_id : access->pageIDs)
         {
             Page& page = mPages[page_id];
             if (page.location != SPACE_VRAM)
