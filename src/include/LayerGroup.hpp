@@ -101,15 +101,15 @@ class ResNetBlock18: public LayerGroup
  * ************************************************************************************************
  */ 
 public:
-    ResNetBlock18(vector<int>, bool = false);
+    ResNetBlock18(int layer_id, vector<int>, bool = false);
 
 private:
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
-    void BasicBlock(vector<int>);
-    void BottleNeckBlock(vector<int>);
+    void BasicBlock(int layer_id, vector<int>);
+    void BottleNeckBlock(int layer_id, vector<int>);
 };
 
 
@@ -130,7 +130,7 @@ class Inception: public LayerGroup
  */ 
 public:
 
-    Inception(vector<int>, int, int, int, int, int, int);
+    Inception(int layer_id, vector<int>, int, int, int, int, int, int);
     
 /* ************************************************************************************************
  * Parameter

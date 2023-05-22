@@ -56,6 +56,10 @@ private:
     void Kernel_Inference_Scheduler ();
     void Check_Finish_Kernel();
 
+    bool SM_Greedy_Scheduler();
+    bool SM_Baseline_Scheduler();
+    bool SM_SMD_Scheduler();
+
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************

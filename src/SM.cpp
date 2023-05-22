@@ -142,12 +142,16 @@ SM::cycle()
                 {
                     thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
                     
-                    for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && thread.readIndex != thread.request->readPages.size(); i++)
+                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.readIndex != thread.request->readPages.size();)
                     {
                         auto& page_pair = thread.request->readPages.at(thread.readIndex);
-                        thread.access->pageIDs.push_back(page_pair.first);
 
-                        ((--page_pair.second) == 0) && (++thread.readIndex);
+                        int count = min(page_pair.second, i);
+                        thread.access->pageIDs.push_back(page_pair.first);
+                        page_pair.second -= count;
+
+                        (page_pair.second == 0) && (++thread.readIndex);
+                        i -= count;
                     }
                     ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
                 } 

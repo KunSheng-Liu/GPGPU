@@ -36,7 +36,7 @@ class Application
  */ 
 public:
 
-    Application(char* model_type, int count = 1);
+    Application(char* model_type, vector<int> input_size, int batch_size = 1, unsigned long long arrival_time = 0, unsigned long long  period = -1);
 
    ~Application();
 
@@ -69,6 +69,12 @@ public:
     const int appID;
 
     const char* modelType;
+    
+    int batchSize;
+
+    vector<int> inputSize;
+
+    unsigned long long arrivalTime, period;
 
     bool finish;
 

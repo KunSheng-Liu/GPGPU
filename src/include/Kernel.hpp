@@ -38,7 +38,7 @@ class Kernel
 public:
 
     // Kernel();
-    Kernel(int app_id, int model_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies);
+    Kernel(int app_id, int model_id, Layer* src_layer, vector<Kernel*> dependencies);
     ~Kernel();
 
 /* ************************************************************************************************
@@ -105,6 +105,11 @@ public:
     queue<Request*> requests;
 
     vector<Kernel*> dependencyKernels; 
+
+private:
+
+    /* Number of kernel be created */
+    static int kernelCount;
 };
 
 #endif

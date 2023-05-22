@@ -84,7 +84,7 @@ class Layer
  */ 
 public:
 
-    Layer(char* = (char*)"None", vector<int> = {}, vector<int> = {}, char* = (char*)"None");
+    Layer(int layer_id, char* = (char*)"None", vector<int> = {}, vector<int> = {}, char* = (char*)"None");
 
    ~Layer();
 
@@ -182,9 +182,6 @@ public:
 
 protected:
 
-    /* Number of layer be created */
-    static int layerCount;
-
     static int vaCount;
 
     /* The dimensions of feature map and filter */
@@ -216,11 +213,11 @@ class Conv2D: public Layer
  */ 
 public:
 
-    Conv2D(char*, vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
+    Conv2D(int layer_id, char*, vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Conv2D(vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
+    Conv2D(int layer_id, vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Conv2D(vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 1, int = 0);
+    Conv2D(int layer_id, vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 1, int = 0);
 
     ~Conv2D();
 
@@ -263,9 +260,9 @@ class Pooling: public Conv2D
  */ 
 public:
 
-    Pooling(vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
+    Pooling(int layer_id, vector<int> = {}, vector<int> = {}, char* = (char*)"None", vector<int> = {}, vector<int> = {});
 
-    Pooling(vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 0, int = 0);
+    Pooling(int layer_id, vector<int> = {}, vector<int> = {}, char* = (char*)"None", int = 0, int = 0);
 
 /* ************************************************************************************************
  * Functions
@@ -294,7 +291,7 @@ class Flatten: public Layer
  */ 
 public:
 
-    Flatten(vector<int> = {});
+    Flatten(int layer_id, vector<int> = {});
 
 /* ************************************************************************************************
  * Functions
@@ -327,8 +324,8 @@ class ByPass: public Layer
  */ 
 public:
 
-    ByPass(vector<int>);
-    ByPass(vector<int>, vector<int>);
+    ByPass(int layer_id, vector<int>);
+    ByPass(int layer_id, vector<int>, vector<int>);
 
 /* ************************************************************************************************
  * Functions
@@ -361,9 +358,9 @@ class Dense: public Layer
  */ 
 public:
 
-    Dense(vector<int> = {}, vector<int> = {}, char* = (char*)"None");
+    Dense(int layer_id, vector<int> = {}, vector<int> = {}, char* = (char*)"None");
 
-    Dense(vector<int>, int);
+    Dense(int layer_id, vector<int>, int);
 
     // Dense(int, int, char* = (char*)"None");
 

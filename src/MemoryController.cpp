@@ -21,7 +21,7 @@
  */
 MemoryController::MemoryController(unsigned long long storage_limit, int page_size) : storageLimit(storage_limit), pageFrameOffset(log2(page_size))
 {
-    for (int i = 0; i < DRAM_SPACE / PAGE_SIZE; i++)
+    for (int i = 0; i < PRE_ALLOCATE_SIZE / PAGE_SIZE; i++)
     {
         createPage();
     }
@@ -133,7 +133,7 @@ MemoryController::memoryAllocate (int numOfByte)
         // ASSERT(!availablePageList.empty(), "Out of DRAM Space");
         if (availablePageList.empty()) 
         {
-            log_W("memoryAllocate", "Out of DRAM Space");
+            if (pageIndex << pageFrameOffset >= SPACE_DRAM) log_W("memoryAllocate", "Out of DRAM Space");
             createPage();
         }
         usedPageList.push_back(availablePageList.front());

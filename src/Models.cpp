@@ -20,27 +20,18 @@ int Model::modelCount = 0;
  * 
  * \brief   Construct a model
  * 
- * \endcond
- * ================================================================================================
- */
-Model::Model(int app_id): appID(app_id), modelID(modelCount++)
-{
-    modelGraph = new LayerGroup();
-}
-
-
-/** ===============================================================================================
- * \name    Model
- * 
- * \brief   Construct a model
- * 
- * \param   name    the model name
+ * \param   app_id          the application index
+ * \param   model_type      the model type
+ * \param   input_size      [batch = 1, channel, height, width]
+ * \param   batch_size      the number of launched tasks when arrival
  * 
  * \endcond
  * ================================================================================================
  */
-Model::Model(int app_id, int batch_size): appID(app_id), modelID(modelCount++), batchSize(batch_size)
+Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size)
+    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size)
 {
+    ASSERT(input_size[BATCH] == 1);
     modelGraph = new LayerGroup();
 }
 
@@ -91,8 +82,6 @@ void
 Model::memoryAllocate(MMU* mmu)
 {
     modelGraph->memoryAllocate(mmu);
-
-
 }
 
 
@@ -207,18 +196,18 @@ Model::getModelInfo(const char* model_type)
 {
     ModelInfo Info (model_type);
 
-    if (strcmp(model_type, "Test") == 0) {
-        Info.numOfLayers    = 4;
-        Info.ioMemCount     = -1;
-        Info.filterMemCount = -1;
-        Info.inputSize      = { 3, 224, 224};
-        Info.outputSize     = {1000};
-
-    } else if (strcmp(model_type, "LeNet") == 0) {
+    if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
         Info.ioMemCount     = 9518;
         Info.filterMemCount = 62638;
-        Info.inputSize      = {3, 224, 224};
+        Info.inputSize      = {1, 32, 32};
+        Info.outputSize     = {1000};
+
+    } else if (strcmp(model_type, "CaffeNet") == 0) {
+        Info.numOfLayers    = 12;
+        Info.ioMemCount     = -1;
+        Info.filterMemCount = -1;
+        Info.inputSize      = {3, 227, 227};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
@@ -259,65 +248,28 @@ Model::getModelInfo(const char* model_type)
  * ================================================================================================
  */
 void
-Model::buildLayerGraph(const char* model_type)
+Model::buildLayerGraph()
 {
     log_T("Model", "buildLayerGraph");
 
-    if (strcmp(model_type, "Test") == 0) {
-        Test();
+    vector<int> size = {batchSize, inputSize[CHANNEL], inputSize[HEIGHT], inputSize[WIDTH]};
 
-    } else if (strcmp(model_type, "LeNet") == 0) {
-        LeNet();
+    if (strcmp(modelType, "LeNet") == 0) {
+        LeNet(size);
 
-    } else if (strcmp(model_type, "ResNet18") == 0) {
-        ResNet18();
+    } else if (strcmp(modelType, "CaffeNet") == 0) {
+        CaffeNet(size);
 
-    } else if (strcmp(model_type, "VGG16") == 0) {
-        VGG16();
+    } else if (strcmp(modelType, "ResNet18") == 0) {
+        ResNet18(size);
 
-    } else if (strcmp(model_type, "GoogleNet") == 0) {
-        GoogleNet();
+    } else if (strcmp(modelType, "VGG16") == 0) {
+        VGG16(size);
+
+    } else if (strcmp(modelType, "GoogleNet") == 0) {
+        GoogleNet(size);
 
     }
-}
-
-
-/** ===============================================================================================
- * \name    Test
- * 
- * \brief   Build the test graph
- * 
- * \endcond
- * 
- * #Index    Type    Kernel    Feature     Output    Stride    Padding    Activation
- *                    Size       Map        Size
- *            Data               512      224 x 224 
- *    1     Conv2D    3 x 3      512       14 x 14     1          1          ReLU
- *    2       Pool    2 x 2      512        7 x 7      2          0
- *    3    Flatten             25088        1 x 1
- *    4      Dense    1 x 1     1000        1 x 1                            ReLU
- * ================================================================================================
- */
-void 
-Model::Test()
-{
-    modelName = (char*)"Test";
-    
-    modelGraph->addLayer(new Conv2D ({batchSize,   3, 14, 14}, {512,   3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
-                                                      
-    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
-                                                        
-    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 1000));
-
-    numOfLayer = 4;
-    
-#if (PRINT_MODEL_DETIAL)
-    printSummary();
-#endif
-
-    compileToKernel();
-
 }
 
 
@@ -325,6 +277,8 @@ Model::Test()
  * \name    LeNet
  * 
  * \brief   Build the test graph
+ * 
+ * \param   imput_size  [batch, channel, height, width]
  * 
  * \endcond
  * 
@@ -342,22 +296,79 @@ Model::Test()
  * ================================================================================================
  */
 void 
-Model::LeNet()
+Model::LeNet(vector<int> input_size)
 {
-    modelName = (char*)"LeNet";
-    
-    modelGraph->addLayer(new Conv2D ({batchSize,  1, 32, 32}, { 6,  1, 5, 5}, (char*)"Tanh", 1, 0));
-    modelGraph->addLayer(new Pooling({batchSize,  6, 28, 28}, { 6,  6, 2, 2}, (char*)"None", 2, 0));
-    modelGraph->addLayer(new Conv2D ({batchSize,  6, 14, 14}, {16,  6, 5, 5}, (char*)"Tanh", 1, 0));
-    modelGraph->addLayer(new Pooling({batchSize, 16, 10, 10}, {16, 16, 2, 2}, (char*)"None", 2, 0));
+    int layer_id = 0;
+
+    modelGraph->addLayer(new Conv2D (layer_id++, input_size, {6, 1, 5, 5}, (char*)"Tanh", 1, 0));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), { 6,  6, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {16,  6, 5, 5}, (char*)"Tanh", 1, 0));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {16, 16, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Flatten({batchSize, 16, 5, 5}));
+    modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    modelGraph->addLayer(new Dense({batchSize, 400, 1, 1}, 120));
-    modelGraph->addLayer(new Dense({batchSize, 120, 1, 1},  84));
-    modelGraph->addLayer(new Dense({batchSize,  84, 1, 1},  10));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 120));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  84));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  10));
 
     numOfLayer = 8;
+    
+#if (PRINT_MODEL_DETIAL)
+    printSummary();
+#endif
+
+    compileToKernel();
+
+}
+
+
+/** ===============================================================================================
+ * \name    CaffeNet
+ * 
+ * \brief   Build the CaffeNet graph
+ * 
+ * \param   imput_size  [batch, channel, height, width]
+ * 
+ * \endcond
+ * 
+ * #Index    Type    Kernel    Feature      Output   Stride    Padding    Activation
+ *                    Size       Map         Size
+ *                                3       227 x 227
+ *    1     Conv2D   11 x 11     96        55 x 55     4          0          ReLU
+ *    2       Pool    3 x 3      96        27 x 27     2          0
+ *    3     Conv2D    5 x 5     256        27 x 27     1          2          ReLU
+ *    4       Pool    3 x 3     256        13 x 13     2          0
+ *    5     Conv2D    3 x 3     384        13 x 13     1          1          ReLU
+ *    6     Conv2D    3 x 3     384        13 x 13     1          1          ReLU
+ *    7     Conv2D    3 x 3     256        13 x 13     1          1          ReLU
+ *    8       Pool    3 x 3     256         6 x 6      2          0
+ *    9    Flatten             9216         1 x 1
+ *   10      Dense    1 x 1    4096         1 x 1                            ReLU
+ *   11      Dense    1 x 1    4096         1 x 1                            ReLU 
+ *   12      Dense    1 x 1    1000         1 x 1                         softmax
+ * ================================================================================================
+ */
+void 
+Model::CaffeNet(vector<int> input_size)
+{
+    int layer_id = 0;
+    
+    modelGraph->addLayer(new Conv2D (layer_id++, input_size, {96, 3, 11, 11}, (char*)"ReLU", 4, 0));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), { 96,  96,  3,  3}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {256,  96,  5,  5}, (char*)"ReLU", 1, 2));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {256, 256,  3,  3}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {384, 256,  3,  3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {384, 384,  3,  3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {256, 384,  3,  3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {256, 256,  3,  3}, (char*)"None", 2, 0));
+                                                      
+    modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
+                                                        
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+
+    numOfLayer = 12;
     
 #if (PRINT_MODEL_DETIAL)
     printSummary();
@@ -372,6 +383,8 @@ Model::LeNet()
  * \name    ResNet18
  * 
  * \brief   Build the ResNet18 layer graph
+ * 
+ * \param   imput_size  [batch, channel, height, width]
  * 
  * \endcond
  * 
@@ -393,27 +406,28 @@ Model::LeNet()
  * ================================================================================================
  */
 void
-Model::ResNet18()
+Model::ResNet18(vector<int> input_size)
 {
-    modelName = (char*)"ResNet18";
+    int layer_id = 0;
 
-    modelGraph->addLayer(new Conv2D ({batchSize, 3, 224, 224} , {64,  3, 7, 7}, (char*)"ReLU", 2, 3));
-    modelGraph->addLayer(new Pooling({batchSize, 64, 112, 112}, {64, 64, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, input_size, {64, 3, 7, 7}, (char*)"ReLU", 2, 3));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {64, 64, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 64, 56, 56}, false));
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 64, 56, 56}, false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18({batchSize,  64, 56, 56}, true));
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 128, 28, 28}, false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 128, 28, 28}, true));
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 256, 14, 14}, false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 256, 14, 14}, true));
-    modelGraph->addLayer(new ResNetBlock18({batchSize, 512,  7,  7}, false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new Pooling({batchSize, 512, 7, 7}, {1024, 512, 7, 7}, (char*)"Avg_Pool", 2, 0));
-    modelGraph->addLayer(new Dense({batchSize, 1024, 1, 1}, 1000));
+    int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 28;
 
@@ -429,6 +443,8 @@ Model::ResNet18()
  * \name    VGG16
  * 
  * \brief   Build the VGG16 layer graph
+ * 
+ * \param   imput_size  [batch, channel, height, width]
  * 
  * \endcond
  * 
@@ -461,38 +477,38 @@ Model::ResNet18()
  * ================================================================================================
  */
 void
-Model::VGG16()
+Model::VGG16(vector<int> input_size)
 {
-    modelName = (char*)"VGG16";
+    int layer_id = 0;
     
-    modelGraph->addLayer(new Conv2D ({batchSize,  3, 224, 224}, {64,  3, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 64, 224, 224}, {64, 64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 64, 224, 224}, {64, 64, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, input_size, {64, 3, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {64, 64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {64, 64, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D ({batchSize,  64, 112, 112}, {128,  64, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 128, 112, 112}, {128, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 128, 112, 112}, {128, 128, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {128,  64, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {128, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {128, 128, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D ({batchSize, 128, 56, 56}, {256, 128, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 56, 56}, {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 256, 56, 56}, {256, 256, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {256, 128, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {256, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {256, 256, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D ({batchSize, 256, 28, 28}, {512, 256, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 28, 28}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 512, 28, 28}, {512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 256, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize, 512, 14, 14}, {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 512, 14, 14}, {512, 512, 2, 2}, (char*)"None", 2, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {512, 512, 3, 3}, (char*)"ReLU", 1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {512, 512, 2, 2}, (char*)"None", 2, 0));
                                                       
-    modelGraph->addLayer(new Flatten({batchSize, 512, 7, 7}));
+    modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    modelGraph->addLayer(new Dense({batchSize, 25088, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 4096));
-    modelGraph->addLayer(new Dense({batchSize,  4096, 1, 1}, 1000));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 22;
     
@@ -509,6 +525,8 @@ Model::VGG16()
  * \name    GoogleNet
  * 
  * \brief   Build the GoogleNet layer graph
+ * 
+ * \param   imput_size  [batch, channel, height, width]
  * 
  * \endcond
  * 
@@ -552,32 +570,34 @@ Model::VGG16()
  * ================================================================================================
  */
 void 
-Model::GoogleNet()
+Model::GoogleNet(vector<int> input_size)
 {
-    modelName = (char*)"GoogleNet";
+    int layer_id = 0;
     
-    modelGraph->addLayer(new Conv2D ({batchSize,   3, 224, 224}, { 64,   3, 7, 7}, (char*)"ReLU",     2, 3));
-    modelGraph->addLayer(new Pooling({batchSize,  64, 112, 112}, { 64,  64, 3, 3}, (char*)"Max_Pool", 2, 1));
-    modelGraph->addLayer(new Conv2D ({batchSize,  64,  56,  56}, { 64,  64, 1, 1}, (char*)"ReLU",     1, 0));
-    modelGraph->addLayer(new Conv2D ({batchSize,  64,  56,  56}, {192,  64, 3, 3}, (char*)"ReLU",     1, 1));
-    modelGraph->addLayer(new Pooling({batchSize, 192,  56,  56}, {192, 192, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++,input_size, {64, 3, 7, 7}, (char*)"ReLU",     2, 3));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), { 64,  64, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), { 64,  64, 1, 1}, (char*)"ReLU",     1, 0));
+    modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {192,  64, 3, 3}, (char*)"ReLU",     1, 1));
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {192, 192, 3, 3}, (char*)"Max_Pool", 2, 1));
     
-    modelGraph->addLayer(new Inception({batchSize, 192, 28, 28}, 64, 96, 128, 16, 32, 32));
-    modelGraph->addLayer(new Inception({batchSize, 256, 28, 28}, 128, 128, 192, 32, 96, 64));
-    modelGraph->addLayer(new Pooling  ({batchSize, 480, 28, 28}, {480, 480, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 64, 96, 128, 16, 32, 32));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 128, 128, 192, 32, 96, 64));
+    modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {480, 480, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new Inception({batchSize, 480, 14, 14}, 192, 96, 208, 16, 48, 64));
-    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 160, 112, 224, 24, 64, 64));
-    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 128, 128, 256, 24, 64, 64));
-    modelGraph->addLayer(new Inception({batchSize, 512, 14, 14}, 112, 114, 288, 32, 64, 64));
-    modelGraph->addLayer(new Inception({batchSize, 528, 14, 14}, 256, 160, 320, 32, 128, 128));
-    modelGraph->addLayer(new Pooling  ({batchSize, 832, 14, 14}, {832, 832, 3, 3}, (char*)"Max_Pool", 2, 1));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 192, 96, 208, 16, 48, 64));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 160, 112, 224, 24, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 128, 128, 256, 24, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 112, 114, 288, 32, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {832, 832, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new Inception({batchSize,  832, 7, 7}, 256, 160, 320, 32, 128, 128));
-    modelGraph->addLayer(new Inception({batchSize,  832, 7, 7}, 384, 192, 384, 48, 128, 128));
-    modelGraph->addLayer(new Pooling  ({batchSize, 1024, 7, 7}, {1024, 1024, 7, 7}, (char*)"Avg_Pool", 2, 0));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 384, 192, 384, 48, 128, 128));
+
+    int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
    
-    modelGraph->addLayer(new Dense({batchSize, 1024, 1, 1}, 1000));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 108;
     
@@ -602,9 +622,9 @@ Model::GoogleNet()
 void
 Model::printSummary()
 {
-    std::cout << "Model " << modelID << ", " << modelName << " summary:" << std::endl;
-    std::cout << std::left << std::setw(10) << "Layer_ID"    \
-              << std::left << std::setw(12) << "Layer_Type"  \
+    std::cout << "Model " << modelID << ", " << modelType << " summary:" << std::endl;
+    std::cout << std::left << std::setw(10)  << "Layer_ID"    \
+              << std::left << std::setw(12)  << "Layer_Type"  \
               << std::left << std::setw(25)  << "Activation_Type" \
               << std::left << std::setw(30)  << "Input_Size" \
               << std::left << std::setw(30)  << "Filter_Size" \

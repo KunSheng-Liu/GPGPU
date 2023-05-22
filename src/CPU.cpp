@@ -23,55 +23,60 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
     if (command.TASK_MODE == TASK_SET::LIGHT)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::HEAVY)
     {
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::MIX)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::ALL)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::LeNet)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , 1));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 3, 112, 112}));
+    }
+    else if (command.TASK_MODE == TASK_SET::CaffeNet)
+    {
+        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::ResNet18)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
+        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::GoogleNet)
     {
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::TEST1)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 1));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 1));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::TEST2)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , 3));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", 2));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 3));
+        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}, 1));
+        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}, 2));
     }
     else {
         ASSERT(false, "Test set error");
@@ -146,83 +151,23 @@ CPU::Dynamic_Batch_Admission()
      */
     if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL)
     {
-        /* Only one application can get SM resource when the GPU is totally idle */
-        if (available_sm.size() == GPU_SM_NUM)
-        {
-            for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
-        } else {
-            return;
-        }
+        if (!SM_Greedy_Scheduler()) return;
+
     } 
     else if (command.INFERENCE_MODE == INFERENCE_TYPE::PARALLEL)
     {
         if (command.SM_MODE == SM_DISPATCH::Greedy)
         {
-            if (available_sm.size() == GPU_SM_NUM) 
-            {
-                for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
-            } else {
-                return;
-            }
+            if (!SM_Greedy_Scheduler()) return;
         }
         else if (command.SM_MODE == SM_DISPATCH::Baseline)
         {
             /* Each application got the same SM resource */
-            for (auto app : mAPPs)
-            {
-                app->SM_budget = {};
-
-                if(app->tasks.size() == 0) continue;
-
-                for (auto sm_id : available_sm)
-                {
-                    app->SM_budget.push_back(sm_id);
-                }
-            }
+            if (!SM_Baseline_Scheduler()) return;
         } 
         else if (command.SM_MODE == SM_DISPATCH::SMD) 
         {
-            /* Record the total required memory base on the task number */
-            float total_needed_memory = 0;
-            vector<pair<float, Application*>> APP_list;
-            for (auto app : mAPPs)
-            {
-                app->SM_budget = {};
-
-                if(app->tasks.size() == 0) continue;
-
-                auto info = app->modelInfo;
-
-                total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
-                
-                APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
-            }
-
-            /* Sort to non-decreacing order */
-            sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
-                return a.first < b.first;
-            });
-
-            /* Assign SM to each application */
-            int SM_count = 0;
-            for (auto app_pair : APP_list)
-            {
-                std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
-                /* Avoid starvation, at least assign 1 SM to application */
-                if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
-                {
-                    total_needed_memory -= app_pair.first;
-                    app_pair.second->SM_budget.push_back(SM_count++);
-                    continue;
-                }
-
-                for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
-                {
-                    app_pair.second->SM_budget.push_back(SM_count++);
-                }
-
-                ASSERT(SM_count == GPU_SM_NUM);
-            }
+            SM_SMD_Scheduler();
         } else {
             ASSERT(false, "SM dispatch error");
         }
@@ -259,14 +204,13 @@ CPU::Dynamic_Batch_Admission()
                 batchSize = app->tasks.size();
             }
 
-            app->runningModels.emplace_back(new Model(app->appID, batchSize));
+            app->runningModels.emplace_back(new Model(app->appID, app->modelType, app->inputSize, batchSize));
                 
             Model* model = app->runningModels.back();
 
             model->SM_budget = move(app->SM_budget);
 
-            model->buildLayerGraph(app->modelType);
-            model->memoryAllocate(&mMMU);
+            model->buildLayerGraph();
 
             /* If using real data, here should pass the data into IFMap */
             // auto batchInput = model->getIFMap();
@@ -389,7 +333,7 @@ CPU::Check_Finish_Kernel()
 
         kernel->finish = true;
         kernel->running = false;
-        log_W("Kernel", to_string(kernel->kernelID) + " is finished");
+        log_W("Kernel", to_string(kernel->kernelID) + " (" + kernel->srcLayer->layerType + ") is finished");
     }
 
     if (check_finish)
@@ -436,3 +380,110 @@ CPU::Check_All_Applications_Finish()
 
     return finish;
 }
+
+
+/** ===============================================================================================
+ * \name    SM_Greedy_Scheduler
+ * 
+ * \brief   Only one application can get SM resource when the GPU is totally idle
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+CPU::SM_Greedy_Scheduler()
+{  
+    list<int> available_sm = mGPU->getIdleSMs();
+    if (available_sm.size() == GPU_SM_NUM)
+    {
+        for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
+        return true;
+    }
+    return false;
+}
+
+
+/** ===============================================================================================
+ * \name    SM_Baseline_Scheduler
+ * 
+ * \brief   Let the application run-time contend the SM resource
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+CPU::SM_Baseline_Scheduler()
+{  
+    bool new_task = false;
+    list<int> available_sm = mGPU->getIdleSMs();
+    for (auto app : mAPPs)
+    {
+        if(app->tasks.size() == 0) continue;
+
+        app->SM_budget = available_sm;
+        new_task = true;
+    }
+
+    return new_task;
+}
+
+
+/** ===============================================================================================
+ * \name    SM_SMD_Scheduler
+ * 
+ * \brief   Allocate SM to each application according to the memory usage
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+CPU::SM_SMD_Scheduler()
+{  
+    list<int> available_sm = mGPU->getIdleSMs();
+
+    ASSERT(false, "haven't implement SMD");
+
+    // /* Record the total required memory base on the task number */
+    // float total_needed_memory = 0;
+    // vector<pair<float, Application*>> APP_list;
+    // for (auto app : mAPPs)
+    // {
+    //     app->SM_budget = {};
+
+    //     if(app->tasks.size() == 0) continue;
+
+    //     auto info = app->modelInfo;
+
+    //     total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
+        
+    //     APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
+    // }
+
+    // /* Sort to non-decreacing order */
+    // sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
+    //     return a.first < b.first;
+    // });
+
+    // /* Assign SM to each application */
+    // int SM_count = 0;
+    // for (auto app_pair : APP_list)
+    // {
+    //     std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
+    //     /* Avoid starvation, at least assign 1 SM to application */
+    //     if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
+    //     {
+    //         total_needed_memory -= app_pair.first;
+    //         app_pair.second->SM_budget.push_back(SM_count++);
+    //         continue;
+    //     }
+
+    //     for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
+    //     {
+    //         app_pair.second->SM_budget.push_back(SM_count++);
+    //     }
+
+    //     ASSERT(SM_count == GPU_SM_NUM);
+    // }
+
+}
+

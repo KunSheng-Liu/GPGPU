@@ -8,6 +8,12 @@
 
 #include "include/Kernel.hpp"
 
+/* ************************************************************************************************
+ * Global Variable
+ * ************************************************************************************************
+ */
+int Kernel::kernelCount = 0;
+
 /** ===============================================================================================
  * \name    Kernel
  * 
@@ -31,8 +37,8 @@
  * \endcond
  * ================================================================================================
  */
-Kernel::Kernel(int app_id, int model_id, int kernel_id, Layer* src_layer, vector<Kernel*> dependencies) 
-        : appID(app_id), modelID(model_id), kernelID(kernel_id), srcLayer(src_layer), dependencyKernels(dependencies)
+Kernel::Kernel(int app_id, int model_id, Layer* src_layer, vector<Kernel*> dependencies) 
+        : appID(app_id), modelID(model_id), kernelID(kernelCount++), srcLayer(src_layer), dependencyKernels(dependencies)
         , running(false), finish(false)
 {
     requests = {};
@@ -68,6 +74,8 @@ Kernel::~Kernel()
 bool
 Kernel::compileRequest (MMU* mmu)
 {
+    srcLayer->memoryAllocate(mmu);
+
     srcLayer->Compile(mmu, this);
 
     kernelInfo.numOfMemory = srcLayer->getMemoryUsage();

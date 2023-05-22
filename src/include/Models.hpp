@@ -44,8 +44,7 @@ class Model
  */ 
 public:
 
-    Model(int app_id);
-    Model(int app_id, int batch_size);
+    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0);
 
     ~Model();
 
@@ -80,7 +79,7 @@ public:
 
     int   getNumOfLayer (void) {return numOfLayer;}
     int   getBatchSize  (void) {return batchSize;}
-    char* getModelName  (void) {return modelName;}
+    const char* getModelName  (void) {return modelType;}
 
     list<Kernel*> findReadyKernels ();
     vector<Kernel>& compileToKernel ();
@@ -97,14 +96,14 @@ public:
  * ************************************************************************************************
  */
 public:
-    void buildLayerGraph (const char* model_type);
+    void buildLayerGraph ();
 
-    void Test();
-    void LeNet();
-    void ResNet18();
-    void VGG16();
-    // void VGG19();
-    void GoogleNet();
+    void LeNet     (vector<int> = {1, 1,  32,  32});
+    void CaffeNet  (vector<int> = {1, 3, 227, 227});
+    void ResNet18  (vector<int> = {1, 3, 224, 224});
+    void VGG16     (vector<int> = {1, 3, 224, 224});
+    // void VGG19  ();
+    void GoogleNet (vector<int> = {1, 3, 224, 224});
 
 /* ************************************************************************************************
  * Parameter
@@ -117,6 +116,9 @@ public:
     /* The index of model. Each model have a unique index */
     const int modelID;
 
+    /* Name of model */
+    const char* modelType;
+
     list<int> SM_budget;
     
     RuntimeRecord recorder;
@@ -125,15 +127,13 @@ protected:
 
     /* Number of layer be created */
     static int modelCount;
-
-    /* Name of model */
-    char* modelName;
-
     /* Number of layer */
     int numOfLayer;
 
     /* Batch size of model */
-    int batchSize = 0;
+    int batchSize;
+    vector<int> inputSize;
+    vector<unsigned char> inputData;
 
     LayerGroup* modelGraph;
     

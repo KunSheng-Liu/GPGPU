@@ -12,7 +12,6 @@
  * Global Variable
  * ************************************************************************************************
  */
-int Layer::layerCount = 0;
 int Layer::vaCount = 0;
 
 /** ===============================================================================================
@@ -28,9 +27,9 @@ int Layer::vaCount = 0;
  * \endcond
  * ================================================================================================
  */
-Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type)
+Layer::Layer(int layer_id, char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type)
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
-        , iFMap({}), filter({}), oFMapSize({}), oFMap({}), layerID(layerCount++)
+        , iFMap({}), filter({}), oFMapSize({}), oFMap({}), layerID(layer_id)
 {
     if (!iFMapSize.empty())  iFMap  = make_pair(vaCount++, new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
     if (!filterSize.empty()) filter = make_pair(vaCount++, new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
@@ -51,7 +50,7 @@ Layer::Layer(char* layer_type, vector<int> input_size, vector<int> filter_size, 
 Layer::~Layer()
 {
     log_V("~Layer()", layerType);
-    if (strcmp(layerType, "LayerGroup") == 0) return;
+    if (layerID == -1) return;
 
     delete oFMap.second;
     delete filter.second;
@@ -196,7 +195,7 @@ Layer::memoryAllocate(MMU* mmu)
 vector<Kernel*>
 Layer::compileToKernel(int app_id, int model_id, vector<Kernel>& container, vector<Kernel*> dependency)
 {
-    container.emplace_back(Kernel(app_id, model_id, layerID, this, move(dependency)));
+    container.emplace_back(Kernel(app_id, model_id, this, move(dependency)));
 
     dependency.emplace_back(&container.back());
     return move(dependency);
@@ -343,8 +342,8 @@ Layer::threadCompile(void* arg)
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
-        : Layer(layer_type, input_size, filter_size, activation_type)
+Conv2D::Conv2D(int layer_id, char* layer_type, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
+        : Layer(layer_id, layer_type, input_size, filter_size, activation_type)
         , stride(_stride), padding(_padding)
 {
     calculateOFMapSize();
@@ -367,8 +366,8 @@ Conv2D::Conv2D(char* layer_type, vector<int> input_size, vector<int> filter_size
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
-        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, _stride, _padding)
+Conv2D::Conv2D(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
+        : Conv2D(layer_id, (char*)"Conv2D", input_size, filter_size, activation_type, _stride, _padding)
 {
 
 }
@@ -388,8 +387,8 @@ Conv2D::Conv2D(vector<int> input_size, vector<int> filter_size, char* activation
  * \endcond
  * ================================================================================================
  */
-Conv2D::Conv2D(vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Conv2D", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
+Conv2D::Conv2D(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D(layer_id, (char*)"Conv2D", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
 {
     
 }
@@ -561,12 +560,11 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
                     
                     // Conv2D perfrom the element multiplication on iFMap to filter at each place
-                    request->numOfInstructions = filterSize[HEIGHT] * filterSize[WIDTH];
+                    request->numOfInstructions = (filterSize[HEIGHT] * filterSize[WIDTH]) % GPU_MAX_ACCESS_NUMBER;
                     // request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
-                    if (strcmp(activationType, "None") != 0)
-                        request->numOfInstructions++;  // for the activation exectuion
+                    if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
                     threadArg->requestQueue->push(move(request));
                 }
@@ -596,8 +594,8 @@ Conv2D::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
-        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, _stride, _padding)
+Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
+        : Conv2D(layer_id, (char*)"Pooling", input_size, filter_size, activation_type, _stride, _padding)
 {
     
 }
@@ -617,8 +615,8 @@ Pooling::Pooling(vector<int> input_size, vector<int> filter_size, char* activati
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D((char*)"Pooling", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
+Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
+        : Conv2D(layer_id, (char*)"Pooling", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
 {
     
 }
@@ -706,12 +704,11 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
 
                     // Pooling layer find the maxinum input data in the field masked by filter
-                    request->numOfInstructions += filterSize[HEIGHT] * filterSize[WIDTH];
+                    request->numOfInstructions = (filterSize[HEIGHT] * filterSize[WIDTH]) % GPU_MAX_ACCESS_NUMBER;
                     // request->numOfInstructions = 1;
 
                     /* for the activation exectuion */
-                    if (strcmp(activationType, "None") != 0)
-                        request->numOfInstructions++;  // for the activation exectuion
+                    if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
                     threadArg->requestQueue->push(move(request));
                 }
@@ -737,8 +734,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Flatten::Flatten(vector<int> input_size)
-        : Layer((char*)"Flatten", input_size)
+Flatten::Flatten(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)"Flatten", input_size)
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
@@ -857,7 +853,7 @@ Flatten::issueLayer(ThreadArg* threadArg)
         }
         
     }
-    
+
     delete threadArg;
 }
 
@@ -873,8 +869,7 @@ Flatten::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-ByPass::ByPass(vector<int> input_size)
-        : Layer((char*)"ByPass", input_size)
+ByPass::ByPass(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)"ByPass", input_size)
 {
     
     ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
@@ -894,8 +889,8 @@ ByPass::ByPass(vector<int> input_size)
  * \endcond
  * ================================================================================================
  */
-ByPass::ByPass(vector<int> input_size, vector<int> output_size)
-        : Layer((char*)"ByPass", input_size)
+ByPass::ByPass(int layer_id, vector<int> input_size, vector<int> output_size)
+        : Layer(layer_id, (char*)"ByPass", input_size)
 {
     ASSERT(!output_size.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = output_size;
@@ -1015,8 +1010,8 @@ ByPass::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(vector<int> input_size, vector<int> filter_size, char* activation_type)
-        : Layer((char*)"Dense", input_size, filter_size, activation_type)
+Dense::Dense(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type)
+        : Layer(layer_id, (char*)"Dense", input_size, filter_size, activation_type)
 {
     calculateOFMapSize();
 }
@@ -1033,8 +1028,8 @@ Dense::Dense(vector<int> input_size, vector<int> filter_size, char* activation_t
  * \endcond
  * ================================================================================================
  */
-Dense::Dense(vector<int> input_size, int output_width)
-        : Dense(input_size, {output_width, input_size[CHANNEL], 1, 1}, (char*)"Relu")
+Dense::Dense(int layer_id, vector<int> input_size, int output_width)
+        : Dense(layer_id, input_size, {output_width, input_size[CHANNEL], 1, 1}, (char*)"Relu")
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
@@ -1148,11 +1143,10 @@ Dense::issueLayer(ThreadArg* threadArg)
                 /* filter pages */
                 request->readPages.emplace_back(make_pair(filterPages[floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));
 
-                // Performs dot product
-                request->numOfInstructions = filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I];
-
                 c_i += count;
             }
+            // Performs dot product
+            request->numOfInstructions = (filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I]) % GPU_MAX_ACCESS_NUMBER;
 
             /* write result to pages */
             request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] + c_o) / PAGE_SIZE)], 1));

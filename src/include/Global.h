@@ -46,6 +46,7 @@ typedef enum {
     HEAVY,
     MIX,
     LeNet,
+	CaffeNet,
     ResNet18,
     VGG16,
     GoogleNet,

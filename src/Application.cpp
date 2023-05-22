@@ -20,24 +20,22 @@ int Application::appCount = 0;
  * 
  * \brief   Construct a model
  * 
- * \param   model_type    the model type
- * \param   count         the task number
+ * \param   model_type      the model type
+ * \param   input_size      [batch = 1, channel, height, width]
+ * \param   batch_size      the number of launched tasks when arrival
+ * \param   arrival_time    the arrival time: unit (cycle)
+ * \param   period          the period : unit (cycle)
  * 
  * \endcond
  * ================================================================================================
  */
-Application::Application(char* model_type, int count)
-    : appID(appCount++), modelType(model_type), modelInfo(Model::getModelInfo(model_type))
-    , SM_budget(0), finish(false)
+Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time, unsigned long long  period)
+    : appID(appCount++), modelType(model_type), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), period(period)
+    , modelInfo(Model::getModelInfo(model_type)), SM_budget({}), finish(false)
 {
-    /* Baseline, all application needs to execute once */
-    for (int  i = 0; i < count; i++)
-    {
-        tasks.push(Task(total_gpu_cycle, -1, appID, vector<unsigned char> (3*224*224, 1)));      
-    }
-
+    ASSERT(input_size[BATCH] == 1);
     string name = model_type;
-    program_name += "_" + to_string(count) + name;
+    program_name += "_" + to_string(batchSize) + name;
 }
 
 
@@ -68,6 +66,13 @@ Application::cycle()
 {
     /* Launch task into queue */
     log_T("Application Cycle", modelInfo.modelName);
+
+    if (total_gpu_cycle >= arrivalTime)
+    {
+        int size = inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH];
+        arrivalTime += period;
+        for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime, appID, vector<unsigned char>(size, 1)));
+    }
 
     /* check application finish */
     if(tasks.empty() && runningModels.empty()) finish = true;
