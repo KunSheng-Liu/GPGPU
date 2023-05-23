@@ -72,7 +72,8 @@ public:
 
     void setBatchSize (int batch_size);
     void memoryAllocate (MMU* mmu);
-    void memoryRelease  (MMU* mmu);
+    PageRecord memoryRelease  (MMU* mmu);
+    
     void printSummary ();
 
     bool checkFinish ();

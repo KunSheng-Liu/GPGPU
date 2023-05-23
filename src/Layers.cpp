@@ -31,8 +31,8 @@ Layer::Layer(int layer_id, char* layer_type, vector<int> input_size, vector<int>
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
         , iFMap({}), filter({}), oFMapSize({}), oFMap({}), layerID(layer_id)
 {
-    if (!iFMapSize.empty())  iFMap  = make_pair(vaCount++, new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
-    if (!filterSize.empty()) filter = make_pair(vaCount++, new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
+    if (!iFMapSize.empty())  iFMap  = make_pair(++vaCount, new vector<unsigned char> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
+    if (!filterSize.empty()) filter = make_pair(++vaCount, new vector<unsigned char> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
 }
 
 
@@ -111,6 +111,23 @@ Layer::setIFMap(pair<int, vector<unsigned char>*> data)
 {
     if (iFMap.second) delete iFMap.second;
     iFMap = data;
+}
+
+
+/** ===============================================================================================
+ * \name    setOFMap
+ *
+ * \brief   Set the output feature map
+ * 
+ * \param   data        the pointer of vector
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Layer::setOFMap(pair<int, vector<unsigned char>*> data)
+{
+    oFMap = data;
 }
 
 
@@ -348,7 +365,7 @@ Conv2D::Conv2D(int layer_id, char* layer_type, vector<int> input_size, vector<in
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
+    oFMap = make_pair(++vaCount, new vector<unsigned char>(size));
 }
 
 
@@ -738,7 +755,7 @@ Flatten::Flatten(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
+    oFMap = make_pair(++vaCount, new vector<unsigned char>(size));
 }
 
 /** ===============================================================================================
@@ -874,7 +891,7 @@ ByPass::ByPass(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)"B
     
     ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = iFMapSize;
-    oFMap = make_pair(vaCount++, new vector<unsigned char>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
+    oFMap = make_pair(++vaCount, new vector<unsigned char>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
 }
 
 
@@ -894,7 +911,7 @@ ByPass::ByPass(int layer_id, vector<int> input_size, vector<int> output_size)
 {
     ASSERT(!output_size.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = output_size;
-    oFMap = make_pair(vaCount++, new vector<unsigned char>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]));
+    oFMap = make_pair(++vaCount, new vector<unsigned char>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]));
 }
 
 
@@ -1033,7 +1050,7 @@ Dense::Dense(int layer_id, vector<int> input_size, int output_width)
 {
     calculateOFMapSize();
     int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
+    oFMap = make_pair(++vaCount, new vector<unsigned char>(size));
 }
 
 

@@ -70,15 +70,6 @@ class Request;
  * Enumeration
  * ************************************************************************************************
  */
-/* Logger level */
-#define LOG_OFF                             0
-#define ERROR                               1
-#define WARNNING                            2
-#define INFO                                3
-#define DEBUG                               4
-#define TRACE                               5
-#define VERBOSE                             6
-#define LOG_ALL                             7
 
 /* ************************************************************************************************
  * Print-Out Configuration

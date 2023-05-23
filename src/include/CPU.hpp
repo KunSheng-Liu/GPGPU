@@ -18,6 +18,7 @@
 #include "App_config.h"
 #include "Log.h"
 
+#include "Approach.hpp"
 #include "Application.hpp"
 #include "MemoryController.hpp"
 #include "MMU.hpp"
@@ -52,19 +53,16 @@ public:
     bool Check_All_Applications_Finish();
 
 private:
-    void Dynamic_Batch_Admission ();
-    void Kernel_Inference_Scheduler ();
-    void Check_Finish_Kernel();
+    bool (*Inference_Admission) ( CPU* cpu );
+    bool (*Kernel_Scheduler)    ( CPU* cpu );
 
-    bool SM_Greedy_Scheduler();
-    bool SM_Baseline_Scheduler();
-    bool SM_SMD_Scheduler();
+    void Check_Finish_Kernel ();
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
-private:
+public:
     GPU* mGPU;
     MemoryController* mMC;
 

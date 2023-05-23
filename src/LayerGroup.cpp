@@ -114,9 +114,7 @@ LayerGroup::addCaseCode (Layer* layer)
     {
         iFMapSize = layer->getIFMapSize();
         oFMapSize = layer->getOFMapSize();
-
-        int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-        oFMap = make_pair(vaCount++, new vector<unsigned char>(size));
+        oFMap     = layer->getOFMap();
 
     } else {
 
@@ -128,6 +126,7 @@ LayerGroup::addCaseCode (Layer* layer)
         ASSERT(check, "Casecoded layer has error iFMapSize or oFMapSize to the existing layer");
 
         layer->setIFMap(iFMap);
+        layer->setOFMap(oFMap);
     }
     
     layers.emplace_back(layer);
@@ -223,13 +222,12 @@ LayerGroup::compileToKernel(int app_id, int model_id, vector<Kernel>& container,
 void
 LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
 {
-    if (iFMap.second != nullptr) delete iFMap.second;
+    if (iFMap.second) delete iFMap.second;
     iFMap  = data;
 
     if (groupType == Group_t::CaseCade) 
     {
-        auto layer = layers.front();
-        layer->setIFMap(data);
+        layers.front()->setIFMap(data);
 
     } else {
         for (auto layer: layers) layer->setIFMap(data);
@@ -238,7 +236,7 @@ LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
 
 
 /** ===============================================================================================
- * \name    setFilter
+ * \name    setOFMap
  *
  * \brief   Set the output feature map
  * 
@@ -246,19 +244,33 @@ LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
  * ================================================================================================
  */
 void
-LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
+LayerGroup::setOFMap(pair<int, vector<unsigned char>*> data)
 {
-    if (filter.second != nullptr) delete filter.second;
-    filter = data;
+    if (oFMap.second) delete oFMap.second;
+    oFMap  = data;
 
     if (groupType == Group_t::CaseCade) 
     {
-        auto layer = layers.front();
-        layer->setFilter(data);
+        layers.back()->setOFMap(data);
 
     } else {
-        for (auto layer: layers) layer->setFilter(data);
+        for (auto layer: layers) layer->setOFMap(data);
     }
+}
+
+
+/** ===============================================================================================
+ * \name    setFilter
+ *
+ * \brief   Set the filter
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
+{
+
 }
 
 
@@ -342,7 +354,7 @@ ResNetBlock18::BasicBlock(int layer_id, vector<int> input_size)
     LayerGroup* sequential = new LayerGroup();
     sequential->addLayer(new Conv2D(layer_id++, input_size, {channel, channel, 3, 3},  (char*)"ReLU", 1, 1));
     sequential->addLayer(new Conv2D(layer_id++, input_size, {channel, channel, 3, 3},  (char*)"None", 1, 1));
-
+    
     addLayer(sequential);
     addLayer(new ByPass(layer_id++, input_size));
 }
@@ -361,9 +373,9 @@ ResNetBlock18::BasicBlock(int layer_id, vector<int> input_size)
  *                     Size       Map        Size
  *    |       Data                 c        n x n 
  *   / \                                    
- *  |   1   Conv2D    3 x 3        c        n x n      2          1          ReLU
- *  |   2   Conv2D    3 x 3        c        n x n      1          1        
- *  3   |   Conv2D    3 x 3        c        n x n      2          1          ReLU
+ *  |   1   Conv2D    3 x 3        c      n/2 x n/2     2          1          ReLU
+ *  |   2   Conv2D    3 x 3        c      n/2 x n/2     1          1        
+ *  3   |   Conv2D    3 x 3        c      n/2 x n/2     2          1          ReLU
  *   \ /
  *    |
  * ================================================================================================
@@ -444,6 +456,7 @@ Inception::Inception(int layer_id, vector<int> input_size, int channel_1x1, int 
     sequential_pooling->addLayer(new Conv2D(layer_id++, sequential_pooling->getOFMapSize(), {channel_pooling, channel_pooling, 1, 1},  (char*)"ReLU", 1, 0));
     sequential_pooling->addLayer(new ByPass(layer_id++, sequential_pooling->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
 
+    addLayer(sequential_1x1);
     addLayer(sequential_3x3);
     addLayer(sequential_5x5);
     addLayer(sequential_pooling);

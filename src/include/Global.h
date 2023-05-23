@@ -8,6 +8,17 @@
  * Enumeration
  * ************************************************************************************************
  */
+/* Logger level */
+#define LOG_OFF                             0
+#define ERROR                               1
+#define WARNNING                            2
+#define INFO                                3
+#define DEBUG                               4
+#define TRACE                               5
+#define VERBOSE                             6
+#define LOG_ALL                             7
+
+/* Policy*/
 typedef enum {
     SEQUENTIAL,
 	PARALLEL,
@@ -63,6 +74,8 @@ typedef enum {
  */
 struct RuntimeRecord
 {
+	unsigned long long start_time, end_time;
+
     /* Size of GPU batch processing */
 	float batch_process_size = 0;
 	unsigned PF_times = 0;

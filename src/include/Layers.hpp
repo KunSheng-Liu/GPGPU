@@ -155,14 +155,15 @@ private:
 public:
     /* Layer data I/O */
     virtual void setIFMap  (pair<int, vector<unsigned char>*> data);
+    virtual void setOFMap  (pair<int, vector<unsigned char>*> data);
     virtual void setFilter (pair<int, vector<unsigned char>*> data);
 
     int getMemoryUsage();
     vector<int> getIFMapSize  (void) const {return iFMapSize;}
     vector<int> getOFMapSize  (void) const {return oFMapSize;}
     vector<int> getFilterSize (void) const {return filterSize;}
-    pair<int, vector<unsigned char>*> getOFMap  (void) {return oFMap;}
     pair<int, vector<unsigned char>*> getIFMap  (void) {return iFMap;}
+    pair<int, vector<unsigned char>*> getOFMap  (void) {return oFMap;}
     pair<int, vector<unsigned char>*> getFilter (void) {return filter;}
 
 

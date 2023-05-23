@@ -100,10 +100,11 @@ GMMU::Access_Processing()
     while(!sm_to_gmmu_queue.empty())
     {
         auto access = sm_to_gmmu_queue.front();
+        auto TLB = getCGroup(access->model_id);
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
-        for (auto page_id : access->pageIDs) hit &= getCGroup(access->model_id)->second.lookup(page_id);
+        for (auto page_id : access->pageIDs) hit &= TLB->second.lookup(page_id);
 
         /* Classify the access into correspond handling queue */
         hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
@@ -229,17 +230,17 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
  * \endcond
  * ================================================================================================
  */
+inline bool check (Page* const& page) { return page->location == SPACE_DRAM; }
+/*
+ * ================================================================================================
+ */
 void
 GMMU::freeCGroup (int model_id)
 {
     if (command.MEM_MODE == MEM_ALLOCATION::None)
     {   
-        auto TLB = mCGroups[-1].second;
-        for (auto page : mMC->availablePageList)
-        {
-            // cout << page->pageIndex << ", ";
-            TLB.erase(page->pageIndex);
-        }
+        int release_count = mCGroups[-1].second.release( check );
+        log_V("freeCGroup", "release " + to_string(release_count) + " pages from the global CGroup");
     }
     else
     {

@@ -58,6 +58,7 @@ public:
 public:
     void addLayer (Layer*);
     void setIFMap  (pair<int, vector<unsigned char>*> data) override;
+    void setOFMap  (pair<int, vector<unsigned char>*> data) override;
     void setFilter (pair<int, vector<unsigned char>*> data) override;
 
     void printInfo() override;

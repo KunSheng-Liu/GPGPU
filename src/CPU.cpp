@@ -21,6 +21,29 @@
  */
 CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
+    /* *******************************************************************
+     * Register the callback functions
+     * *******************************************************************
+     */
+    if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SM_MODE == SM_DISPATCH::Greedy)
+    {
+        Inference_Admission = &Greedy_Inference_Admission;
+    } 
+
+    else if (command.SM_MODE == SM_DISPATCH::Baseline) {
+        Inference_Admission = &Baseline_Inference_Admission;
+    }
+
+    else if (command.SM_MODE == SM_DISPATCH::SMD) {
+        Inference_Admission = &BARM_Inference_Admission;
+    }
+
+    Kernel_Scheduler = &Baseline_Kernel_Scheduler;
+
+    /* *******************************************************************
+     * Create applications
+     * *******************************************************************
+     */
     if (command.TASK_MODE == TASK_SET::LIGHT)
     {
         mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
@@ -48,7 +71,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::LeNet)
     {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
     }
     else if (command.TASK_MODE == TASK_SET::CaffeNet)
     {
@@ -56,7 +79,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     }
     else if (command.TASK_MODE == TASK_SET::ResNet18)
     {
-        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
     }
     else if (command.TASK_MODE == TASK_SET::VGG16)
     {
@@ -115,9 +138,9 @@ CPU::cycle()
 
     Check_Finish_Kernel();
     
-    Dynamic_Batch_Admission();
+    Inference_Admission (this);
 
-    Kernel_Inference_Scheduler();
+    Kernel_Scheduler (this);
 
     /* check new task */
     for (auto app: mAPPs)
@@ -126,161 +149,6 @@ CPU::cycle()
     }
 }
 
-
-/** ===============================================================================================
- * \name    Dynamic_Batching_Admission
- * 
- * \brief   First method, to determine the batch size of each model by the given information.
- * 
- * \endcond
- * ================================================================================================
- */
-
-void
-CPU::Dynamic_Batch_Admission()
-{
-    log_T("CPU", "Dynamic_Batching_Algorithm");
-
-    /*  Get avaiable SM list */
-    list<int> available_sm = mGPU->getIdleSMs();
-    if (available_sm.empty()) return;
-
-    /* *******************************************************************
-     * Assign SM to each application according to its model needed pages
-     * *******************************************************************
-     */
-    if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL)
-    {
-        if (!SM_Greedy_Scheduler()) return;
-
-    } 
-    else if (command.INFERENCE_MODE == INFERENCE_TYPE::PARALLEL)
-    {
-        if (command.SM_MODE == SM_DISPATCH::Greedy)
-        {
-            if (!SM_Greedy_Scheduler()) return;
-        }
-        else if (command.SM_MODE == SM_DISPATCH::Baseline)
-        {
-            /* Each application got the same SM resource */
-            if (!SM_Baseline_Scheduler()) return;
-        } 
-        else if (command.SM_MODE == SM_DISPATCH::SMD) 
-        {
-            SM_SMD_Scheduler();
-        } else {
-            ASSERT(false, "SM dispatch error");
-        }
-
-    } else {
-        ASSERT(false, "Inference method error");
-    }
-
-#if (PRINT_SM_ALLCOATION_RESULT)
-    for (auto app : mAPPs)
-    {
-        std::cout << "APP: " << app->appID << " get SM: ";
-        for (auto sm_id : app->SM_budget) std::cout << sm_id << ", ";
-        std::cout << std::endl;
-    }
-#endif
-
-    /* *******************************************************************
-     * Choose the batch size of each model and create the instance
-     * *******************************************************************
-     */
-    for (auto app : mAPPs)
-    {
-        /* Each application can only run one model in the same time */
-        if (app->runningModels.empty() && !app->SM_budget.empty() && !app->tasks.empty())
-        {
-            int batchSize;
-            if (command.BATCH_MODE == BATCH_METHOD::DISABLE)
-            {
-                batchSize = 1;
-            }
-            else if (command.BATCH_MODE == BATCH_METHOD::MAX)
-            {
-                batchSize = app->tasks.size();
-            }
-
-            app->runningModels.emplace_back(new Model(app->appID, app->modelType, app->inputSize, batchSize));
-                
-            Model* model = app->runningModels.back();
-
-            model->SM_budget = move(app->SM_budget);
-
-            model->buildLayerGraph();
-
-            /* If using real data, here should pass the data into IFMap */
-            // auto batchInput = model->getIFMap();
-            for (int i = 0; i < batchSize; i++)
-            {
-                Application::Task task = app->tasks.front();
-                app->tasks.pop();
-
-                // copy(task.data.begin(), task.data.end(), batchInput->begin() + i * task.data.size());
-            }
-
-        }
-    }
-}
-
-
-/** ===============================================================================================
- * \name    Kernel_Inference_Scheduler
- * 
- * \brief   Second method, launch the model's kernel by the resource constrain.
- * 
- * \endcond
- * ================================================================================================
- */
-
-void
-CPU::Kernel_Inference_Scheduler()
-{
-    log_T("CPU", "Kernek_Inference_Scheduler");
-
-    // handle the kernel dependency, and launch next kernel
-
-    list<Kernel*> readyKernels;
-    for (auto app : mAPPs)
-    {
-        for (auto model : app->runningModels)
-        {
-            for (auto kernel : model->findReadyKernels())
-            {
-                kernel->SM_List = &model->SM_budget;
-                readyKernels.push_back(kernel);
-            }
-            
-        }
-    }
-
-    /* print ready list */
-#if (LOG_LEVEL >= VERBOSE)
-    std::cout << "Ready kernel list: ";
-    for (auto kernel : readyKernels)
-    {
-        std::cout << kernel->kernelID << ", ";
-    }
-    std::cout << endl;
-#endif
-    /* launch kernel into gpu */
-    for (auto kernel : readyKernels)
-    {
-        ASSERT(kernel->SM_List->size());
-
-        if (kernel->compileRequest(&mMMU))
-        {
-            kernel->running = mGPU->launchKernel(kernel);
-            
-        } else {
-            
-            log_I("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
-        }
-    }    
-}
 
 
 /** ===============================================================================================
@@ -294,7 +162,7 @@ CPU::Kernel_Inference_Scheduler()
 void
 CPU::Check_Finish_Kernel()
 {  
-    bool check_finish = !mGPU->finishedKernels.empty();
+    if (mGPU->finishedKernels.empty()) return;
 
     /* check finish kernel */
     while (!mGPU->finishedKernels.empty())
@@ -302,7 +170,14 @@ CPU::Check_Finish_Kernel()
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
-        /* recording... */
+        kernel->finish = true;
+        kernel->running = false;
+        log_W("Kernel", to_string(kernel->kernelID) + " (" + kernel->srcLayer->layerType + ") is finished");
+
+        /* *******************************************************************
+         * Record the kernel information into file
+         * *******************************************************************
+         */
 #if (PRINT_BLOCK_RECORD)
             ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
             file << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
@@ -330,37 +205,36 @@ CPU::Check_Finish_Kernel()
             }
             file.close();
 #endif
-
-        kernel->finish = true;
-        kernel->running = false;
-        log_W("Kernel", to_string(kernel->kernelID) + " (" + kernel->srcLayer->layerType + ") is finished");
     }
 
-    if (check_finish)
+    /* *******************************************************************
+     * Check whether the model is finished
+     * *******************************************************************
+     */
+    for (auto app : mAPPs)
     {
-        for (auto app : mAPPs)
-        {
-            for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
-                if ((*model)->checkFinish())
-                {
-                    /* release the used resource */
-                    (*model)->memoryRelease(&mMMU);
-                    mGPU->getGMMU()->freeCGroup((*model)->modelID);
+        for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
+            if ((*model)->checkFinish())
+            {
+                string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
+                log_W("Model", buff);
+                
+                /* Release the used memory */
+                PageRecord page_record = (*model)->memoryRelease(&mMMU);
+                mGPU->getGMMU()->freeCGroup((*model)->modelID);
 
-                    /* log out */
-                    log_W("Model", to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished");
-                    
-                    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                        file << "App " << (*model)->appID << " Model " << (*model)->modelID << ": " << (*model)->getModelName() << " with " << (*model)->getBatchSize() << " batch size is finished" << endl;
-                    file.close();
+                /* Record the kernel information into file */
+                ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                    file << "PageRecord: [" << page_record.read_counter << ", " << page_record.write_counter << ", " << page_record.access_count << ", " << page_record.swap_count << "]" << endl;
+                    file << "App " << (*model)->appID << " Model " << buff << endl;
+                file.close();
 
-                    /* delete the model */
-                    delete *model;
-                    model = app->runningModels.erase(model);
-                }
+                /* Delete the model */
+                delete *model;
+                model = app->runningModels.erase(model);
             }
         }
-    }   
+    }
 }
 
 
@@ -379,111 +253,5 @@ CPU::Check_All_Applications_Finish()
     for (auto app : mAPPs) finish &= app->finish;
 
     return finish;
-}
-
-
-/** ===============================================================================================
- * \name    SM_Greedy_Scheduler
- * 
- * \brief   Only one application can get SM resource when the GPU is totally idle
- * 
- * \endcond
- * ================================================================================================
- */
-bool
-CPU::SM_Greedy_Scheduler()
-{  
-    list<int> available_sm = mGPU->getIdleSMs();
-    if (available_sm.size() == GPU_SM_NUM)
-    {
-        for (auto app : mAPPs) if (!available_sm.empty() && !app->finish) app->SM_budget = move(available_sm);
-        return true;
-    }
-    return false;
-}
-
-
-/** ===============================================================================================
- * \name    SM_Baseline_Scheduler
- * 
- * \brief   Let the application run-time contend the SM resource
- * 
- * \endcond
- * ================================================================================================
- */
-bool
-CPU::SM_Baseline_Scheduler()
-{  
-    bool new_task = false;
-    list<int> available_sm = mGPU->getIdleSMs();
-    for (auto app : mAPPs)
-    {
-        if(app->tasks.size() == 0) continue;
-
-        app->SM_budget = available_sm;
-        new_task = true;
-    }
-
-    return new_task;
-}
-
-
-/** ===============================================================================================
- * \name    SM_SMD_Scheduler
- * 
- * \brief   Allocate SM to each application according to the memory usage
- * 
- * \endcond
- * ================================================================================================
- */
-bool
-CPU::SM_SMD_Scheduler()
-{  
-    list<int> available_sm = mGPU->getIdleSMs();
-
-    ASSERT(false, "haven't implement SMD");
-
-    // /* Record the total required memory base on the task number */
-    // float total_needed_memory = 0;
-    // vector<pair<float, Application*>> APP_list;
-    // for (auto app : mAPPs)
-    // {
-    //     app->SM_budget = {};
-
-    //     if(app->tasks.size() == 0) continue;
-
-    //     auto info = app->modelInfo;
-
-    //     total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
-        
-    //     APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
-    // }
-
-    // /* Sort to non-decreacing order */
-    // sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
-    //     return a.first < b.first;
-    // });
-
-    // /* Assign SM to each application */
-    // int SM_count = 0;
-    // for (auto app_pair : APP_list)
-    // {
-    //     std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
-    //     /* Avoid starvation, at least assign 1 SM to application */
-    //     if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
-    //     {
-    //         total_needed_memory -= app_pair.first;
-    //         app_pair.second->SM_budget.push_back(SM_count++);
-    //         continue;
-    //     }
-
-    //     for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
-    //     {
-    //         app_pair.second->SM_budget.push_back(SM_count++);
-    //     }
-
-    //     ASSERT(SM_count == GPU_SM_NUM);
-    // }
-
 }
 

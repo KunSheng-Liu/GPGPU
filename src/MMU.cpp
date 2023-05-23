@@ -72,7 +72,7 @@ MMU::memoryRelease (int va)
     pair<Page*, int> pa_pair;
     if (!mTLB.lookup(va, pa_pair)) return;
 
-    // mMC->memoryRelease(pa_pair.first);
+    mMC->memoryRelease(pa_pair.first);
     mTLB.erase(va);
 }
 
@@ -129,7 +129,7 @@ PageRecord
 MMU::getPageSummary (int va)
 {
     pair<Page*, int> pa_pair;
-    if (!mTLB.lookup(va, pa_pair)) return PageRecord();
+    if (!mTLB.lookup(va, pa_pair)) return {};
 
     /* Perform release */
     PageRecord record;

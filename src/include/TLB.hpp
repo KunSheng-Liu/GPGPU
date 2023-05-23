@@ -85,7 +85,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    virtual bool lookup(Key key, Value& value) 
+    virtual bool lookup (Key key, Value& value) 
     {
         auto it = table.find(key);
 
@@ -117,7 +117,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    virtual Value insert(Key key, Value value) 
+    virtual Value insert (Key key, Value value) 
     {
         Value evict_value;
         if constexpr (std::is_pointer_v<Value>) {
@@ -161,7 +161,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    bool erase(Key key) 
+    bool erase (Key key) 
     {
         auto it = table.find(key);
 
@@ -170,6 +170,38 @@ public:
         history.erase(it->second);
         table.erase(key);
         return true;
+    }
+
+    /** ==================================================================
+     * \name    release
+     * 
+     * \brief   release the elements from the TLB according to check 
+     *          function
+     * 
+     * \param   check_function     the function to determine the element 
+     *                             to release
+     * 
+     * \endcond
+     * ===================================================================
+     */
+    int release (bool (*check_function) (const Value&)) 
+    {
+        int release_count = 0;
+        for (auto it = history.begin(); it != history.end();)
+        {
+            if (check_function ((*it).second))
+            {
+                // cout << "erase value: " << (*it).first << endl;
+                release_count++;
+                table.erase((*it).first);
+                history.erase(it++);
+            } else {
+                // cout << "not erase value: " << (*it).first << endl;
+                it++;
+            }
+        }
+        
+        return release_count;
     }
     
 /* ************************************************************************************************

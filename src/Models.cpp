@@ -33,6 +33,7 @@ Model::Model(int app_id, const char* model_type, vector<int> input_size, int bat
 {
     ASSERT(input_size[BATCH] == 1);
     modelGraph = new LayerGroup();
+    recorder.start_time = total_gpu_cycle;
 }
 
 
@@ -92,20 +93,18 @@ Model::memoryAllocate(MMU* mmu)
  * 
  * \param   mmu     the pointer of memory manager unit from CPU
  * 
+ * \return  total page record of this model
+ * 
  * \endcond
  * ================================================================================================
  */
-void
+PageRecord
 Model::memoryRelease(MMU* mmu)
 {
     PageRecord record;
-    for(auto& kernel : kernelContainer)
-    {
-        record += kernel.memoryRelease(mmu);
-    }
-    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-        file << "PageRecord: [" << record.read_counter << ", " << record.write_counter << ", " << record.access_count << ", " << record.swap_count << "]" << endl;
-    file.close();
+    for(auto& kernel : kernelContainer) record += kernel.memoryRelease(mmu);
+    
+    return record;
 }
 
 

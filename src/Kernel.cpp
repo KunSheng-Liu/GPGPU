@@ -157,6 +157,8 @@ Kernel::isReady()
  * 
  * \param   mmu     the memory management unit
  *  
+ * \return  total page record of this kernel
+ * 
  * \endcond
  * ================================================================================================
  */

@@ -235,7 +235,7 @@ SM::bindKernel(Kernel* kernel)
             if(warp.second.isIdle)
             {
                 warp.second.isIdle = false;
-                warp.second.record = Warp::WarpRecord();
+                warp.second.record = {};
                 warp.second.record.warp_id = warp.second.warpID;
                 warp.second.record.start_cycle = total_gpu_cycle;
 

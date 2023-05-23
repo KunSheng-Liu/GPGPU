@@ -178,13 +178,14 @@ MemoryController::memoryRelease (Page* page)
     if (page == nullptr) return;
     memoryRelease(page->nextPage);
 
-    page->location = SPACE_DRAM;
+    page->record   = {};
     page->nextPage = nullptr;
+    page->location = SPACE_DRAM;
 
     auto it = find(usedPageList.begin(), usedPageList.end(), page);
     usedPageList.erase(it);
 
-    availablePageList.push_back(page);
+    availablePageList.push_front(page);
 }
 
 
