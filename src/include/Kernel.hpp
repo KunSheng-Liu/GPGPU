@@ -24,7 +24,7 @@
 /** ===============================================================================================
  * \name    Kernel
  * 
- * \brief   The container of requests for communicate between CPU to GPU.
+ * \brief   The requests container for communicate between CPU to GPU.
  * 
  * \endcond
  * ================================================================================================
@@ -39,7 +39,7 @@ public:
 
     // Kernel();
     Kernel(int app_id, int model_id, Layer* src_layer, vector<Kernel*> dependencies);
-    ~Kernel();
+   ~Kernel();
 
 /* ************************************************************************************************
  * Type Define
@@ -51,6 +51,15 @@ struct KernelInfo {
     int numOfCycle   = 0;
     int numOfMemory  = 0;
     int numOfRequest = 0;
+
+    KernelInfo& operator+= (const KernelInfo& other) {
+        numOfRead    += other.numOfRead;
+        numOfWrite   += other.numOfWrite;
+        numOfCycle   += other.numOfCycle;
+        numOfMemory  += other.numOfMemory;
+        numOfRequest += other.numOfRequest;
+        return *this;
+    }
 };
 
 /* ************************************************************************************************
@@ -58,18 +67,20 @@ struct KernelInfo {
  * ************************************************************************************************
  */
 public:
-    Request* accessRequest ();
+    virtual bool compileRequest (MMU* mmu);
+    virtual void handleKernelCompletion ();
 
     void addRequest (Request* request);
-    bool compileRequest (MMU* mmu);
-    PageRecord memoryRelease  (MMU* mmu);
+    Request* accessRequest ();
 
-    void printInfo (bool title = false);
+    PageRecord memoryRelease  (MMU* mmu);
 
     bool isReady();
     bool isFinish()  {return finish;}
     bool isRunning() {return running;}
     KernelInfo getKernelInfo() const {return kernelInfo;}
+
+    void printInfo (bool title = false);
 
 /* ************************************************************************************************
  * Parameter
@@ -98,7 +109,7 @@ public:
     // RuntimeInfo* recorder;
     list<int>* SM_List;
 
-    RuntimeRecord* recoder;
+    RuntimeRecord* recorder;
 
     list<Block::BlockRecord> block_record;
 
@@ -110,6 +121,45 @@ private:
 
     /* Number of kernel be created */
     static int kernelCount;
+};
+
+
+
+
+/** ===============================================================================================
+ * \name    KernelGroup
+ * 
+ * \brief   The container for merge multiple kernels
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+class KernelGroup : public Kernel
+{
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+
+    KernelGroup(vector<pair<Kernel*, int>> kernels);
+   ~KernelGroup();
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+public:
+    bool compileRequest (MMU* mmu) override;
+    void handleKernelCompletion () override;
+
+/* ************************************************************************************************
+ * Parameter
+ * ************************************************************************************************
+ */
+private:
+    vector<pair<Kernel*, int>> kernel_list;
+
 };
 
 #endif

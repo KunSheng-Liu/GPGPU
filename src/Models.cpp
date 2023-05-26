@@ -28,8 +28,8 @@ int Model::modelCount = 0;
  * \endcond
  * ================================================================================================
  */
-Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size)
-    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size)
+Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size, unsigned long long deadline)
+    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size), deadline(deadline)
 {
     ASSERT(input_size[BATCH] == 1);
     modelGraph = new LayerGroup();
@@ -101,10 +101,9 @@ Model::memoryAllocate(MMU* mmu)
 PageRecord
 Model::memoryRelease(MMU* mmu)
 {
-    PageRecord record;
-    for(auto& kernel : kernelContainer) record += kernel.memoryRelease(mmu);
-    
-    return record;
+    for(auto& kernel : kernelContainer) page_record += kernel.memoryRelease(mmu);
+
+    return page_record;
 }
 
 
@@ -162,6 +161,26 @@ Model::findReadyKernels()
         
     }
     return readyList;
+}
+
+
+/** ===============================================================================================
+ * \name    getKernelStatus
+ * 
+ * \brief   Get the finish flag of the kernel
+ * 
+ * \return  the list of finish flag
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+vector<bool>
+Model::getKernelStatus()
+{
+    vector<bool> finishFlags;
+    for (auto& kernel : kernelContainer) finishFlags.emplace_back(kernel.isFinish());
+
+    return finishFlags;
 }
 
 

@@ -38,7 +38,6 @@ LayerGroup::LayerGroup(Group_t group_type, char* layer_type): Layer(-1), groupTy
 LayerGroup::~LayerGroup()
 {
     for (auto layer = layers.begin(); layer != layers.end(); ++layer) delete *layer;
-    if (groupType == Group_t::CaseCode) delete oFMap.second;
 }
 
 
@@ -270,7 +269,7 @@ LayerGroup::setOFMap(pair<int, vector<unsigned char>*> data)
 void
 LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
 {
-
+    ASSERT(false, "Cannot set filter to a layerGroup");
 }
 
 

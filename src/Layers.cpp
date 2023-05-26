@@ -52,8 +52,8 @@ Layer::~Layer()
     log_V("~Layer()", layerType);
     if (layerID == -1) return;
 
-    delete oFMap.second;
-    delete filter.second;
+    if (oFMap.second)  delete oFMap.second;
+    // if (filter.second) delete filter.second;
 }
 
 

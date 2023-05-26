@@ -268,7 +268,7 @@ SM::bindKernel(Kernel* kernel)
 void
 SM::checkBlockFinish()
 {
-    for (auto block = runningBlocks.begin(); block != runningBlocks.end(); block++)
+    for (auto block = runningBlocks.begin(); block != runningBlocks.end();)
     {
         bool finish = true;
         for (auto& warp : (*block)->warps) finish &= !warp->isBusy;
@@ -291,7 +291,9 @@ SM::checkBlockFinish()
             recycleResource(*block);
 
             delete *block;
-            block = runningBlocks.erase(block);
+            runningBlocks.erase(block++);
+        } else {
+            block++;
         }
     }
 }

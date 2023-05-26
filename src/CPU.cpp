@@ -25,26 +25,32 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
      * Register the callback functions
      * *******************************************************************
      */
-    if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SM_MODE == SM_DISPATCH::Greedy)
+    if (command.SM_MODE == SCHEDULER::LazyB)
     {
-        Inference_Admission = &Greedy_Inference_Admission;
+        mScheduler = new Scheduler_LazyB ( this );
     } 
 
-    else if (command.SM_MODE == SM_DISPATCH::Baseline) {
-        Inference_Admission = &Baseline_Inference_Admission;
+    else if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SM_MODE == SCHEDULER::Greedy) {
+        mScheduler = new Scheduler_Greedy ( this );
     }
 
-    else if (command.SM_MODE == SM_DISPATCH::SMD) {
-        Inference_Admission = &BARM_Inference_Admission;
+    else if (command.SM_MODE == SCHEDULER::Baseline) {
+        mScheduler = new Scheduler_Baseline ( this );
     }
 
-    Kernel_Scheduler = &Baseline_Kernel_Scheduler;
+    else if (command.SM_MODE == SCHEDULER::BARM) {
+        mScheduler = new Scheduler_BARM ( this );
+    }
 
     /* *******************************************************************
      * Create applications
      * *******************************************************************
      */
-    if (command.TASK_MODE == TASK_SET::LIGHT)
+    if (command.SM_MODE == SCHEDULER::LazyB)
+    {
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 3, 0, 200000, GPU_F, 0.001 * GPU_F));
+    }
+    else if(command.TASK_MODE == TASK_SET::LIGHT)
     {
         mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
         mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
@@ -137,10 +143,10 @@ CPU::cycle()
     log_I("CPU Cycle", to_string(total_gpu_cycle));
 
     Check_Finish_Kernel();
-    
-    Inference_Admission (this);
 
-    Kernel_Scheduler (this);
+    mScheduler->Inference_Admission();
+
+    mScheduler->Kernel_Scheduler();
 
     /* check new task */
     for (auto app: mAPPs)
@@ -159,10 +165,10 @@ CPU::cycle()
  * \endcond
  * ================================================================================================
  */
-void
+bool
 CPU::Check_Finish_Kernel()
 {  
-    if (mGPU->finishedKernels.empty()) return;
+    if (mGPU->finishedKernels.empty()) return false;
 
     /* check finish kernel */
     while (!mGPU->finishedKernels.empty())
@@ -170,41 +176,7 @@ CPU::Check_Finish_Kernel()
         auto kernel = mGPU->finishedKernels.front();
         mGPU->finishedKernels.pop_front();
 
-        kernel->finish = true;
-        kernel->running = false;
-        log_W("Kernel", to_string(kernel->kernelID) + " (" + kernel->srcLayer->layerType + ") is finished");
-
-        /* *******************************************************************
-         * Record the kernel information into file
-         * *******************************************************************
-         */
-#if (PRINT_BLOCK_RECORD)
-            ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-            file << "Finish kernel" << std::right << setw(4) << kernel->kernelID << ":" << std::endl;
-            for (auto& b_record : kernel->block_record)
-            {
-                file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
-                     << b_record.sm_id                 << ", "
-                     << b_record.start_cycle           << ", "
-                     << b_record.end_cycle             << ", "
-                     << b_record.launch_access_counter << ", "
-                     << b_record.return_access_counter << ", "
-                     << b_record.access_page_counter   << "]"
-                     << std::endl;
-    #if (PRINT_WARP_RECORD)
-                for (auto& w_record : b_record.warp_record)
-                {
-                    file << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
-                         << w_record.start_cycle         << ", "
-                         << w_record.end_cycle           << ", "
-                         << w_record.computing_cycle     << ", "
-                         << w_record.wait_cycle          << "]"
-                         << std::endl;
-                }
-    #endif
-            }
-            file.close();
-#endif
+        kernel->handleKernelCompletion ();
     }
 
     /* *******************************************************************
@@ -213,7 +185,7 @@ CPU::Check_Finish_Kernel()
      */
     for (auto app : mAPPs)
     {
-        for (auto model = app->runningModels.begin(); model != app->runningModels.end(); ++model) {
+        for (auto model = app->runningModels.begin(); model != app->runningModels.end();) {
             if ((*model)->checkFinish())
             {
                 string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
@@ -231,10 +203,14 @@ CPU::Check_Finish_Kernel()
 
                 /* Delete the model */
                 delete *model;
-                model = app->runningModels.erase(model);
+                app->runningModels.erase(model++);
+            } else {
+                model++;
             }
         }
     }
+
+    return true;
 }
 
 

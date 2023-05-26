@@ -44,9 +44,9 @@ class Model
  */ 
 public:
 
-    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0);
+    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0, unsigned long long deadline = -1);
 
-    ~Model();
+   ~Model();
 
 /* ************************************************************************************************
  * Type Define
@@ -73,7 +73,7 @@ public:
     void setBatchSize (int batch_size);
     void memoryAllocate (MMU* mmu);
     PageRecord memoryRelease  (MMU* mmu);
-    
+
     void printSummary ();
 
     bool checkFinish ();
@@ -84,6 +84,7 @@ public:
 
     list<Kernel*> findReadyKernels ();
     vector<Kernel>& compileToKernel ();
+    vector<bool> getKernelStatus ();
 
     pair<int, vector<unsigned char>*> getIFMap  (void) {return modelGraph->getIFMap();}
     pair<int, vector<unsigned char>*> getOFMap  (void) {return modelGraph->getOFMap();}
@@ -120,14 +121,19 @@ public:
     /* Name of model */
     const char* modelType;
 
+    unsigned long long deadline;
+
     list<int> SM_budget;
     
     RuntimeRecord recorder;
+
+    PageRecord page_record;
 
 protected:
 
     /* Number of layer be created */
     static int modelCount;
+
     /* Number of layer */
     int numOfLayer;
 

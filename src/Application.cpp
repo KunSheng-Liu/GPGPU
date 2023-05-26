@@ -29,9 +29,10 @@ int Application::appCount = 0;
  * \endcond
  * ================================================================================================
  */
-Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time, unsigned long long  period)
+Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time
+                                    , unsigned long long  period, unsigned long long deadline, unsigned long long end_time)
     : appID(appCount++), modelType(model_type), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), period(period)
-    , modelInfo(Model::getModelInfo(model_type)), SM_budget({}), finish(false)
+    , deadline(deadline), endTime(end_time), modelInfo(Model::getModelInfo(model_type)), SM_budget({}), finish(false)
 {
     ASSERT(input_size[BATCH] == 1);
     string name = model_type;
@@ -67,11 +68,11 @@ Application::cycle()
     /* Launch task into queue */
     log_T("Application Cycle", modelInfo.modelName);
 
-    if (total_gpu_cycle >= arrivalTime)
+    if (total_gpu_cycle >= arrivalTime && total_gpu_cycle < endTime)
     {
         int size = inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH];
+        for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime + deadline, appID, vector<unsigned char>(size, 1)));
         arrivalTime += period;
-        for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime, appID, vector<unsigned char>(size, 1)));
     }
 
     /* check application finish */

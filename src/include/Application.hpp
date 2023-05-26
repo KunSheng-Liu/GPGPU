@@ -36,7 +36,8 @@ class Application
  */ 
 public:
 
-    Application(char* model_type, vector<int> input_size, int batch_size = 1, unsigned long long arrival_time = 0, unsigned long long  period = -1);
+    Application(char* model_type, vector<int> input_size, int batch_size = 1, unsigned long long arrival_time = 0, unsigned long long  period = -1
+        , unsigned long long deadline = -1, unsigned long long end_time = GPU_F);
 
    ~Application();
 
@@ -74,7 +75,9 @@ public:
 
     vector<int> inputSize;
 
-    unsigned long long arrivalTime, period;
+    unsigned long long arrivalTime, period, deadline;
+
+    unsigned long long endTime;
 
     bool finish;
 

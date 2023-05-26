@@ -49,6 +49,7 @@ class GPGPU;
 
 class CPU;
 class MMU;
+class Scheduler;
 
 class Application;
 class Model;

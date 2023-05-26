@@ -18,11 +18,11 @@
 #include "App_config.h"
 #include "Log.h"
 
-#include "Approach.hpp"
 #include "Application.hpp"
 #include "MemoryController.hpp"
 #include "MMU.hpp"
 #include "Models.hpp"
+#include "Scheduler.hpp"
 
 /** ===============================================================================================
  * \name    CPU
@@ -53,10 +53,7 @@ public:
     bool Check_All_Applications_Finish();
 
 private:
-    bool (*Inference_Admission) ( CPU* cpu );
-    bool (*Kernel_Scheduler)    ( CPU* cpu );
-
-    void Check_Finish_Kernel ();
+    bool Check_Finish_Kernel ();
 
 /* ************************************************************************************************
  * Parameter
@@ -67,6 +64,7 @@ public:
     MemoryController* mMC;
 
     MMU mMMU;
+    Scheduler* mScheduler;
 
     vector<Application*> mAPPs;
 };

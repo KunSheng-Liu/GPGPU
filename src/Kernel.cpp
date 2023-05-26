@@ -17,7 +17,7 @@ int Kernel::kernelCount = 0;
 /** ===============================================================================================
  * \name    Kernel
  * 
- * \brief   The engine contain the inference scheduler and the gpu driver.
+ * \brief   The requests container for communicate between CPU to GPU.
  * 
  * \endcond
  * ================================================================================================
@@ -32,7 +32,7 @@ int Kernel::kernelCount = 0;
 /** ===============================================================================================
  * \name    Kernel
  * 
- * \brief   The engine contain the inference scheduler and the gpu driver.
+ * \brief   The requests container for communicate between CPU to GPU.
  * 
  * \endcond
  * ================================================================================================
@@ -48,7 +48,7 @@ Kernel::Kernel(int app_id, int model_id, Layer* src_layer, vector<Kernel*> depen
 /** ===============================================================================================
  * \name    ~Kernel
  * 
- * \brief   Destruct InferenceEngine
+ * \brief   Destruct Kernel
  * 
  * \endcond
  * ================================================================================================
@@ -151,6 +151,55 @@ Kernel::isReady()
 
 
 /** ===============================================================================================
+ * \name    handleKernelCompletion
+ * 
+ * \brief   process and record the kernel status
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Kernel::handleKernelCompletion()
+{
+    finish = true;
+    running = false;
+    log_W("Kernel", to_string(kernelID) + " (" + srcLayer->layerType + ") is finished [" + to_string(start_cycle) + ", " + to_string(end_cycle) + "]");
+
+    /* *******************************************************************
+     * Record the kernel information into file
+     * *******************************************************************
+     */
+#if (PRINT_BLOCK_RECORD)
+    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+    file << "Finish kernel" << std::right << setw(4) << kernelID << ": [" << start_cycle << ", " << end_cycle << "]" << std::endl;
+    for (auto& b_record : block_record)
+    {
+        file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
+                << b_record.sm_id                 << ", "
+                << b_record.start_cycle           << ", "
+                << b_record.end_cycle             << ", "
+                << b_record.launch_access_counter << ", "
+                << b_record.return_access_counter << ", "
+                << b_record.access_page_counter   << "]"
+                << std::endl;
+    #if (PRINT_WARP_RECORD)
+        for (auto& w_record : b_record.warp_record)
+        {
+            file << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
+                    << w_record.start_cycle         << ", "
+                    << w_record.end_cycle           << ", "
+                    << w_record.computing_cycle     << ", "
+                    << w_record.wait_cycle          << "]"
+                    << std::endl;
+        }
+    #endif
+    }
+    file.close();
+#endif
+}
+
+
+/** ===============================================================================================
  * \name    memoryRelease
  * 
  * \brief   Release no used memory space
@@ -210,10 +259,156 @@ Kernel::printInfo(bool title)
 
     for (auto kernel : dependencyKernels)
     {
-        std::cout << kernel->kernelID << ", "; 
+        std::cout << kernelID << ", "; 
     }
 
     std::cout << std::right << std::setw(15) << finish; 
 
     std::cout << std::endl;
+}
+
+
+
+/** ===============================================================================================
+ * \name    KernelGroup
+ * 
+ * \brief   The container for merge multiple kernels
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+KernelGroup::KernelGroup(vector<pair<Kernel*, int>> kernels) : Kernel(kernels.front().first->appID, -1, nullptr, {}),  kernel_list(kernels)
+{
+    
+}
+
+
+/** ===============================================================================================
+ * \name   ~KernelGroup
+ * 
+ * \brief   Destruct KernelGroup
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+KernelGroup::~KernelGroup()
+{
+    ASSERT(requests.empty(), "Error Destruct");
+}
+
+
+/** ===============================================================================================
+ * \name    compileRequest
+ * 
+ * \brief   Compile the request by the source layer
+ * 
+ * \param   mmu     the memory management unit
+ * 
+ * \return  return True if the request not empty
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+KernelGroup::compileRequest (MMU* mmu)
+{
+    /* *******************************************************************
+     * Compile each kernel with same filter
+     * *******************************************************************
+     */
+    auto filter = kernel_list.front().first->srcLayer->getFilter();
+    for (int i = 1; i < kernel_list.size(); i++) kernel_list[i].first->srcLayer->setFilter(filter);
+    
+    for (auto kernel : kernel_list)
+    {
+        kernel.first->compileRequest(mmu);
+        kernelInfo += kernel.first->kernelInfo;
+        kernel.first->start_cycle = total_gpu_cycle;
+    }
+
+    /* *******************************************************************
+     * Concat the requests of each kernel
+     * *******************************************************************
+     */
+    while (!kernel_list.back().first->requests.empty())
+    {
+        for (auto kernel : kernel_list)
+        {
+            for (int i = 0; i < kernel.second; i++)
+            {
+                kernel.first->requests.front()->requst_id = requests.size();
+                requests.push(move(kernel.first->requests.front()));
+                kernel.first->requests.pop();
+            }
+        }
+    }
+
+    for (auto kernel : kernel_list) ASSERT(kernel.first->requests.empty(), "Fail to concat request");
+
+    recorder = new RuntimeRecord;
+
+    return !requests.empty();
+}
+
+
+/** ===============================================================================================
+ * \name    handleKernelCompletion
+ * 
+ * \brief   process and record the kernel status for all kernels
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+KernelGroup::handleKernelCompletion()
+{
+    finish = true;
+    running = false;
+
+    string buff = "Finish kernelGroup [";
+    for (auto kernel : kernel_list) 
+    {
+        buff += to_string(kernel.first->kernelID) + ", ";
+        kernel.first->finish  = true;
+        kernel.first->running = false;
+    //    *kernel.first->recorder += *recorder;
+    }
+    buff += "]";
+
+    log_W(buff, "[" + to_string(start_cycle) + ", " + to_string(end_cycle) + "]");
+
+    /* *******************************************************************
+     * Record the kernel information into file
+     * *******************************************************************
+     */
+#if (PRINT_BLOCK_RECORD)
+    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+    file << buff << ": [" << start_cycle << ", " << end_cycle << "]" << std::endl;
+    for (auto& b_record : block_record)
+    {
+        file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
+                << b_record.sm_id                 << ", "
+                << b_record.start_cycle           << ", "
+                << b_record.end_cycle             << ", "
+                << b_record.launch_access_counter << ", "
+                << b_record.return_access_counter << ", "
+                << b_record.access_page_counter   << "]"
+                << std::endl;
+    #if (PRINT_WARP_RECORD)
+        for (auto& w_record : b_record.warp_record)
+        {
+            file << std::right << setw(14) << "warp" << std::right << setw(3) << w_record.warp_id << ": ["
+                    << w_record.start_cycle         << ", "
+                    << w_record.end_cycle           << ", "
+                    << w_record.computing_cycle     << ", "
+                    << w_record.wait_cycle          << "]"
+                    << std::endl;
+        }
+    #endif
+    }
+    file.close();
+#endif
+
+    delete recorder;
+    delete this;
 }
