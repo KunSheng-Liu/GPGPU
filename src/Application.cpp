@@ -23,8 +23,10 @@ int Application::appCount = 0;
  * \param   model_type      the model type
  * \param   input_size      [batch = 1, channel, height, width]
  * \param   batch_size      the number of launched tasks when arrival
- * \param   arrival_time    the arrival time: unit (cycle)
- * \param   period          the period : unit (cycle)
+ * \param   arrival_time    the arrival time                               | unit (cycle)
+ * \param   period          the period of tasks                            | unit (cycle)
+ * \param   deadline        the deadline of each task from it arrival time | unit (cycle)
+ * \param   end_time        the end_time of the application                | unit (cycle)
  * 
  * \endcond
  * ================================================================================================
@@ -68,13 +70,15 @@ Application::cycle()
     /* Launch task into queue */
     log_T("Application Cycle", modelInfo.modelName);
 
-    if (total_gpu_cycle >= arrivalTime && total_gpu_cycle < endTime)
+    if (total_gpu_cycle < endTime)
     {
-        int size = inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH];
-        for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime + deadline, appID, vector<unsigned char>(size, 1)));
-        arrivalTime += period;
+        if (total_gpu_cycle >= arrivalTime)
+        {
+            for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime + deadline, appID, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1)));
+            arrivalTime += period;
+        }
     }
-
+    
     /* check application finish */
-    if(tasks.empty() && runningModels.empty()) finish = true;
+    else if(runningModels.empty() && tasks.empty()) finish = true;
 }

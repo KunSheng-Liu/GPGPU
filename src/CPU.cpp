@@ -48,7 +48,9 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
      */
     if (command.SM_MODE == SCHEDULER::LazyB)
     {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 3, 0, 200000, GPU_F, 0.001 * GPU_F));
+        int task_num = 16;
+        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 1, 0, GPU_F / task_num, 0.1 * GPU_F, GPU_F));
+        program_name = "LazyB_" + to_string(task_num) +"_ResNet18";
     }
     else if(command.TASK_MODE == TASK_SET::LIGHT)
     {
@@ -186,27 +188,33 @@ CPU::Check_Finish_Kernel()
     for (auto app : mAPPs)
     {
         for (auto model = app->runningModels.begin(); model != app->runningModels.end();) {
+            string buff;
+
             if ((*model)->checkFinish())
             {
-                string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
-                log_W("Model", buff);
-                
-                /* Release the used memory */
-                PageRecord page_record = (*model)->memoryRelease(&mMMU);
-                mGPU->getGMMU()->freeCGroup((*model)->modelID);
-
-                /* Record the kernel information into file */
-                ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                    file << "PageRecord: [" << page_record.read_counter << ", " << page_record.write_counter << ", " << page_record.access_count << ", " << page_record.swap_count << "]" << endl;
-                    file << "App " << (*model)->appID << " Model " << buff << endl;
-                file.close();
-
-                /* Delete the model */
-                delete *model;
-                app->runningModels.erase(model++);
+                buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
+            } else if ((*model)->deadline < total_gpu_cycle) {
+                buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is miss deadline [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
             } else {
                 model++;
+                continue;
             }
+             
+            log_W("Model", buff);
+            
+            /* Release the used memory */
+            PageRecord page_record = (*model)->memoryRelease(&mMMU);
+            mGPU->getGMMU()->freeCGroup((*model)->modelID);
+
+            /* Record the kernel information into file */
+            ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                file << "PageRecord: [" << page_record.read_counter << ", " << page_record.write_counter << ", " << page_record.access_count << ", " << page_record.swap_count << "]" << endl;
+                file << "App " << (*model)->appID << " Model " << buff << endl;
+            file.close();
+
+            /* Delete the model */
+            delete *model;
+            app->runningModels.erase(model++);
         }
     }
 

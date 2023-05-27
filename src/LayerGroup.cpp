@@ -320,7 +320,7 @@ LayerGroup::printInfo ()
  * \endcond
  * ================================================================================================
  */
-ResNetBlock18::ResNetBlock18(int layer_id, vector<int> input_size, bool down_sample) : LayerGroup(Group_t::CaseCode, (char*)"ResNetBlock18")
+ResNetBlock18::ResNetBlock18(int& layer_id, vector<int> input_size, bool down_sample) : LayerGroup(Group_t::CaseCode, (char*)"ResNetBlock18")
 {
     down_sample ? BottleNeckBlock(layer_id, input_size) : BasicBlock(layer_id, input_size);
 }
@@ -347,7 +347,7 @@ ResNetBlock18::ResNetBlock18(int layer_id, vector<int> input_size, bool down_sam
  * ================================================================================================
  */
 void
-ResNetBlock18::BasicBlock(int layer_id, vector<int> input_size)
+ResNetBlock18::BasicBlock(int& layer_id, vector<int> input_size)
 {
     int channel = input_size[CHANNEL];
     LayerGroup* sequential = new LayerGroup();
@@ -380,7 +380,7 @@ ResNetBlock18::BasicBlock(int layer_id, vector<int> input_size)
  * ================================================================================================
  */
 void
-ResNetBlock18::BottleNeckBlock(int layer_id, vector<int> input_size)
+ResNetBlock18::BottleNeckBlock(int& layer_id, vector<int> input_size)
 {
     int channel = input_size[CHANNEL];
     LayerGroup* sequential = new LayerGroup();
@@ -428,7 +428,7 @@ ResNetBlock18::BottleNeckBlock(int layer_id, vector<int> input_size)
  *     |    
  * ================================================================================================
  */
-Inception::Inception(int layer_id, vector<int> input_size, int channel_1x1, int channel_reduce_3x3, int channel_3x3, int channel_reduce_5x5, int channel_5x5, int channel_pooling)
+Inception::Inception(int& layer_id, vector<int> input_size, int channel_1x1, int channel_reduce_3x3, int channel_3x3, int channel_reduce_5x5, int channel_5x5, int channel_pooling)
         : LayerGroup(Group_t::CaseCode, (char*)"Inception"), channel_1x1(channel_1x1), channel_reduce_3x3(channel_reduce_3x3), channel_3x3(channel_3x3)
         , channel_reduce_5x5(channel_reduce_5x5), channel_5x5(channel_5x5), channel_pooling(channel_pooling)
 {

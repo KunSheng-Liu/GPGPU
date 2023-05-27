@@ -35,7 +35,7 @@ Scheduler_LazyB::Inference_Admission ()
      * *******************************************************************
      */
     list<int> available_sm = mCPU->mGPU->getIdleSMs();
-    if (available_sm.size() < GPU_SM_NUM) return false;
+    if (mCPU->mAPPs.front()->tasks.empty() || available_sm.size() < GPU_SM_NUM) return false;
 
     ASSERT(mCPU->mAPPs.size() == 1, "LazyB can only run one application");
     auto app = mCPU->mAPPs.front();
@@ -45,11 +45,16 @@ Scheduler_LazyB::Inference_Admission ()
      * *******************************************************************
      */
     int batch_budget = LAZYB_MAX_BATCH_SIZE;
-    unsigned long long slack_time = LAZYB_CYCLE_DEADLINE;
+    unsigned long long slack_time = (app->runningModels.empty()) ? LAZYB_CYCLE_DEADLINE : app->runningModels.back()->deadline - total_gpu_cycle;
 
     for (auto model : app->runningModels) 
     {
-        slack_time   -= modelCycle * model->getBatchSize();
+        auto kernel_stat = model->getKernelStatus();
+        for (int i = 0; i < model->getNumOfLayer(); i++)
+        {
+            if (!kernel_stat[i]) slack_time -= model->getBatchSize() * layerCycles[i];
+        }
+        
         batch_budget -= model->getBatchSize();
     }
 
@@ -58,10 +63,14 @@ Scheduler_LazyB::Inference_Admission ()
      * *******************************************************************
      */
     list<Application::Task> tasks;
+
     int task_size = min3(app->tasks.size() ,batch_budget, (int) floor(slack_time / modelCycle));
-    for (int i = 0; i < task_size; i++)
+    for (int i = 0; i < task_size && !app->tasks.empty(); i++)
     {
-        tasks.push_back(app->tasks.front());
+        if (app->tasks.front().deadLine > total_gpu_cycle)
+        {
+            tasks.push_back(app->tasks.front());
+        }
         app->tasks.pop();
     }
 

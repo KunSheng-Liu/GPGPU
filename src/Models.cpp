@@ -431,17 +431,17 @@ Model::ResNet18(vector<int> input_size)
     modelGraph->addLayer(new Conv2D (layer_id++, input_size, {64, 3, 7, 7}, (char*)"ReLU", 2, 3));
     modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {64, 64, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), true));
-    modelGraph->addLayer(new ResNetBlock18(layer_id++, modelGraph->getOFMapSize(), false));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), true));
+    modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
     int filter_size = modelGraph->getOFMapSize()[WIDTH];
     modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
@@ -598,19 +598,19 @@ Model::GoogleNet(vector<int> input_size)
     modelGraph->addLayer(new Conv2D (layer_id++, modelGraph->getOFMapSize(), {192,  64, 3, 3}, (char*)"ReLU",     1, 1));
     modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {192, 192, 3, 3}, (char*)"Max_Pool", 2, 1));
     
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 64, 96, 128, 16, 32, 32));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 128, 128, 192, 32, 96, 64));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 64, 96, 128, 16, 32, 32));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 128, 128, 192, 32, 96, 64));
     modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {480, 480, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 192, 96, 208, 16, 48, 64));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 160, 112, 224, 24, 64, 64));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 128, 128, 256, 24, 64, 64));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 112, 114, 288, 32, 64, 64));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 192, 96, 208, 16, 48, 64));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 160, 112, 224, 24, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 128, 128, 256, 24, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 112, 114, 288, 32, 64, 64));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
     modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {832, 832, 3, 3}, (char*)"Max_Pool", 2, 1));
 
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
-    modelGraph->addLayer(new Inception(layer_id++, modelGraph->getOFMapSize(), 384, 192, 384, 48, 128, 128));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
+    modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 384, 192, 384, 48, 128, 128));
 
     int filter_size = modelGraph->getOFMapSize()[WIDTH];
     modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
