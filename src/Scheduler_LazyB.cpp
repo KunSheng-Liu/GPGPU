@@ -30,6 +30,22 @@ Scheduler_LazyB::Inference_Admission ()
 {  
     log_T("CPU", "Inference_Admission: LazyB");
 
+    ASSERT(mCPU->mAPPs.size() == 1, "LazyB can only run one application");
+    if (mCPU->mAPPs.front()->tasks.empty()) return false;
+    
+    auto app = mCPU->mAPPs.front();
+    /* *******************************************************************
+     * Check the tasks and models haven't miss deadline ()
+     * *******************************************************************
+     */
+    while (app->tasks.front().deadLine < total_gpu_cycle)
+    {
+        app->dropOut_tasks.push(app->tasks.front());
+        app->tasks.pop();
+    }
+
+    for (auto model : app->runningModels) ASSERT(model->deadLine < total_gpu_cycle, "Error LazyB Scheduler");
+
     /* *******************************************************************
      * Check the GPU is idle (kernel is finished)
      * *******************************************************************
@@ -37,15 +53,12 @@ Scheduler_LazyB::Inference_Admission ()
     list<int> available_sm = mCPU->mGPU->getIdleSMs();
     if (mCPU->mAPPs.front()->tasks.empty() || available_sm.size() < GPU_SM_NUM) return false;
 
-    ASSERT(mCPU->mAPPs.size() == 1, "LazyB can only run one application");
-    auto app = mCPU->mAPPs.front();
-
     /* *******************************************************************
      * Get the remaining slack time
      * *******************************************************************
      */
     int batch_budget = LAZYB_MAX_BATCH_SIZE;
-    unsigned long long slack_time = (app->runningModels.empty()) ? LAZYB_CYCLE_DEADLINE : app->runningModels.back()->deadline - total_gpu_cycle;
+    unsigned long long slack_time = (app->runningModels.empty()) ? LAZYB_CYCLE_DEADLINE : app->runningModels.back()->deadLine - total_gpu_cycle;
 
     for (auto model : app->runningModels) 
     {
@@ -80,7 +93,7 @@ Scheduler_LazyB::Inference_Admission ()
      */
     if (!tasks.empty())
     {
-        app->runningModels.emplace_front(new Model(app->appID, app->modelType, app->inputSize, tasks.size()));
+        app->runningModels.emplace_front(new Model(app->appID, app->modelType, app->inputSize, tasks.size(), tasks.back().arrivalTime, tasks.back().deadLine));
                     
         Model* model = app->runningModels.front();
 
@@ -124,16 +137,14 @@ Scheduler_LazyB::Kernel_Scheduler ()
         return a->findReadyKernels().front()->kernelID > b->findReadyKernels().front()->kernelID;
     });
 
+#if (PRINT_LAZY_BATCHING)
     for (auto model : app->runningModels)
     {
         cout << "Model " << model->modelID << " with " << model->getBatchSize() << " batch size: Ready kernel list: ";
-        for (auto kernel : model->findReadyKernels()) 
-        {
-            cout << kernel->srcLayer->layerID << ", ";
-        }
+        for (auto kernel : model->findReadyKernels()) cout << kernel->srcLayer->layerID << ", ";
         cout << endl;
     }
-
+#endif
     /* *******************************************************************
      * Perform merge
      * *******************************************************************
@@ -161,7 +172,7 @@ Scheduler_LazyB::Kernel_Scheduler ()
     if (kernel->compileRequest(&mCPU->mMMU))
     {
         kernel->running = mCPU->mGPU->launchKernel(kernel);
-        if (kernel->running) kernel->start_cycle = total_gpu_cycle;
+        if (kernel->running) kernel->startCycle = total_gpu_cycle;
         
     } else {
         

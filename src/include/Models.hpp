@@ -44,7 +44,7 @@ class Model
  */ 
 public:
 
-    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0, unsigned long long deadline = -1);
+    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0, unsigned long long arrival_time = 0, unsigned long long deadline = -1);
 
    ~Model();
 
@@ -121,7 +121,8 @@ public:
     /* Name of model */
     const char* modelType;
 
-    unsigned long long deadline;
+	unsigned long long startTime, endTime;
+    unsigned long long arrivalTime, deadLine;
 
     list<int> SM_budget;
     
@@ -139,8 +140,8 @@ protected:
 
     /* Batch size of model */
     int batchSize;
+
     vector<int> inputSize;
-    vector<unsigned char> inputData;
 
     LayerGroup* modelGraph;
     

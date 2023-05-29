@@ -56,7 +56,20 @@ void parser_cmd (int argc, char** argv)
     for (int i = 1; i < argc;)
     {
         string flag = argv[i++];
-        if (flag == "-I" || flag == "--inference-method")
+        if (flag == "-S" || flag == "--scheduler") 
+        {
+            try{
+                string option = argv[i++];
+                if (option == "Greedy")        command.SCHEDULER_MODE = SCHEDULER::Greedy;
+                else if (option == "Baseline") command.SCHEDULER_MODE = SCHEDULER::Baseline;
+                else if (option == "BARM")     command.SCHEDULER_MODE = SCHEDULER::BARM;
+                else if (option == "LazyB")    command.SCHEDULER_MODE = SCHEDULER::LazyB;
+                else ASSERT(false, "Wrong argument, try --help");
+                scheduler_name = option;
+            } 
+            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+        }
+        else if (flag == "-I" || flag == "--inference-method")
         {
             try{
                 string option = argv[i++];
@@ -79,19 +92,6 @@ void parser_cmd (int argc, char** argv)
             } 
             catch(exception e) ASSERT(false, "Wrong argument, try --help");
         }
-        else if (flag == "-S" || flag == "--scheduler") 
-        {
-            try{
-                string option = argv[i++];
-                if (option == "Greedy")        command.SM_MODE = SCHEDULER::Greedy;
-                else if (option == "Baseline") command.SM_MODE = SCHEDULER::Baseline;
-                else if (option == "BARM")     command.SM_MODE = SCHEDULER::BARM;
-                else if (option == "LazyB")    command.SM_MODE = SCHEDULER::LazyB;
-                else ASSERT(false, "Wrong argument, try --help");
-                scheduler_name = option;
-            } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
-        }
         else if (flag == "-M" || flag == "--mem-allocate") 
         {
             try{
@@ -109,38 +109,38 @@ void parser_cmd (int argc, char** argv)
         {
             try{
                 string option = argv[i++];
-                if (option == "LeNet")          command.TASK_MODE = TASK_SET::LeNet;
-                else if (option == "CaffeNet")  command.TASK_MODE = TASK_SET::CaffeNet;
-                else if (option == "ResNet18")  command.TASK_MODE = TASK_SET::ResNet18;
-                else if (option == "GoogleNet") command.TASK_MODE = TASK_SET::GoogleNet;
-                else if (option == "VGG16")     command.TASK_MODE = TASK_SET::VGG16;
-                else if (option == "All")       command.TASK_MODE = TASK_SET::ALL;
-                else if (option == "Light")     command.TASK_MODE = TASK_SET::LIGHT;
-                else if (option == "Heavy")     command.TASK_MODE = TASK_SET::HEAVY;
-                else if (option == "Test1")     command.TASK_MODE = TASK_SET::TEST1;
-                else if (option == "Test2")     command.TASK_MODE = TASK_SET::TEST2;
+                if (option == "LeNet")          command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     atoi(argv[i++])));
+                else if (option == "CaffeNet")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::CaffeNet,  atoi(argv[i++])));
+                else if (option == "ResNet18")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  atoi(argv[i++])));
+                else if (option == "GoogleNet") command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, atoi(argv[i++])));
+                else if (option == "VGG16")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     atoi(argv[i++])));
+                else if (option == "All")       command.TASK_LIST.emplace_back(make_pair(APPLICATION::ALL,       1));
+                else if (option == "Light")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::LIGHT,     1));
+                else if (option == "Heavy")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::HEAVY,     1));
+                else if (option == "Test1")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST1,     1));
+                else if (option == "Test2")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST2,     1));
                 else ASSERT(false, "Wrong argument, try --help");
             } 
             catch(exception e) ASSERT(false, "Wrong argument, try --help");
             
         }
         else if (flag == "-h" || flag == "--help") {
-            std::cout << "GPGPU: GPGPU [[-I | -S | -M | -T] [OPTION]]" << std::endl;
+            std::cout << "GPGPU: GPGPU [[-S | -I | -M | -T] [OPTION]]" << std::endl;
 
             std::cout << "Detial:" << std::endl;
             std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB" << std::endl;
             std::cout << "\t-I, " << std::left << setw(20) << "--inference-method" << "Sequential | Parallel"            << std::endl;
             std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                    << std::endl;
             std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"   << std::endl;
-            std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "Light | Heavy | Mix | All | LeNet | CaffeNet | ResNet18 | VGG16 | GoogleNet | Test1 | Test2"  << std::endl;
+            std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "LeNet | CaffeNet | ResNet18 | GoogleNet | VGG16 | Light | Heavy | Mix | All | Test1 | Test2"  << std::endl;
 
             std::cout << "Examples:" << std::endl;
             std::cout << "\t./GPGPU" << std::endl;
-            std::cout << "\t./GPGPU -I Sequential -T Heavy" << std::endl;
-            std::cout << "\t./GPGPU -sm-dispatch Average -M Average" << std::endl;
+            std::cout << "\t./GPGPU -I Sequential -T ResNet18 3 -T VGG16 1 -T GoogleNet 2" << std::endl;
+            std::cout << "\t./GPGPU -sm-dispatch Baseline -M Average" << std::endl;
 
             std::cout << "Default:" << std::endl;
-            std::cout << "./GPGPU -I Sequential -B Disable -S Baseline -M None -T Light" << endl;
+            std::cout << "./GPGPU -S Greedy -I Sequential -B Disable -M None -T NULL" << endl;
 
             exit(1);
         } else ASSERT(false, "Wrong argument, try --help");

@@ -84,6 +84,7 @@ public:
     list<int> SM_budget;
 
     queue<Task> tasks;
+    queue<Task> dropOut_tasks;
 
     /* Model information */
     Model::ModelInfo modelInfo;

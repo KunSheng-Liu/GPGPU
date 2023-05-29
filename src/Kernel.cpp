@@ -163,7 +163,7 @@ Kernel::handleKernelCompletion()
 {
     finish = true;
     running = false;
-    log_W("Kernel", to_string(kernelID) + " (" + srcLayer->layerType + ") is finished [" + to_string(start_cycle) + ", " + to_string(end_cycle) + "]");
+    log_W("Kernel", to_string(kernelID) + " (" + srcLayer->layerType + ") is finished [" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
 
     /* *******************************************************************
      * Record the kernel information into file
@@ -171,7 +171,7 @@ Kernel::handleKernelCompletion()
      */
 #if (PRINT_BLOCK_RECORD)
     ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-    file << "Finish kernel" << std::right << setw(4) << kernelID << ": [" << start_cycle << ", " << end_cycle << "]" << std::endl;
+    file << "Finish kernel" << std::right << setw(4) << kernelID << ": [" << startCycle << ", " << endCycle << "]" << std::endl;
     for (auto& b_record : block_record)
     {
         file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
@@ -323,7 +323,7 @@ KernelGroup::compileRequest (MMU* mmu)
     {
         kernel.first->compileRequest(mmu);
         kernelInfo += kernel.first->kernelInfo;
-        kernel.first->start_cycle = total_gpu_cycle;
+        kernel.first->startCycle = total_gpu_cycle;
     }
 
     /* *******************************************************************
@@ -375,7 +375,7 @@ KernelGroup::handleKernelCompletion()
     }
     buff += "]";
 
-    log_W(buff, "[" + to_string(start_cycle) + ", " + to_string(end_cycle) + "]");
+    log_W(buff, "[" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
 
     /* *******************************************************************
      * Record the kernel information into file
@@ -383,7 +383,7 @@ KernelGroup::handleKernelCompletion()
      */
 #if (PRINT_BLOCK_RECORD)
     ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-    file << buff << ": [" << start_cycle << ", " << end_cycle << "]" << std::endl;
+    file << buff << ": [" << startCycle << ", " << endCycle << "]" << std::endl;
     for (auto& b_record : block_record)
     {
         file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 

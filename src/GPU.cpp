@@ -167,7 +167,7 @@ GPU::Check_Finish_Kernel()
             
             if (kernel->finish) 
             {
-                kernel->end_cycle = total_gpu_cycle;
+                kernel->endCycle = total_gpu_cycle;
                 finishedKernels.push_back(kernel);
             }
         }

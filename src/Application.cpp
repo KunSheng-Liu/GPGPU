@@ -70,7 +70,7 @@ Application::cycle()
     /* Launch task into queue */
     log_T("Application Cycle", modelInfo.modelName);
 
-    if (total_gpu_cycle < endTime)
+    if (arrivalTime < endTime)
     {
         if (total_gpu_cycle >= arrivalTime)
         {

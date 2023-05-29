@@ -169,7 +169,7 @@ Scheduler::Kernel_Scheduler ()
         if (kernel->compileRequest(&mCPU->mMMU))
         {
             kernel->running = mCPU->mGPU->launchKernel(kernel);
-            if (kernel->running) kernel->start_cycle = total_gpu_cycle;
+            if (kernel->running) kernel->startCycle = total_gpu_cycle;
             
         } else {
             

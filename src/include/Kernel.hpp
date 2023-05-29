@@ -99,8 +99,7 @@ public:
     bool finish;
     bool running;
 
-    unsigned long long start_cycle = 0;
-    unsigned long long end_cycle = 0;
+    unsigned long long startCycle, endCycle;
 
     Layer* srcLayer;
 

@@ -2,7 +2,8 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
-#include "fstream"
+#include <fstream>
+#include <list>
 
 /* ************************************************************************************************
  * Enumeration
@@ -20,26 +21,21 @@
 
 /* Policy*/
 typedef enum {
-	Greedy,
-	Baseline,
+	Greedy, Baseline,
 	BARM,
 	LazyB,
 }SCHEDULER;
 typedef enum {
-    SEQUENTIAL,
-	PARALLEL,
+    SEQUENTIAL, PARALLEL,
 }INFERENCE_TYPE;
 
 typedef enum {
-    DISABLE,
-	MAX,
+    DISABLE, MAX,
 }BATCH_METHOD;
 
 typedef enum {
-    None,
-	Average,
-	MEMA,
-	R_MEMA,
+    None, Average,
+	MEMA, R_MEMA,
 }MEM_ALLOCATION;
 
 typedef enum {
@@ -47,7 +43,7 @@ typedef enum {
     ALL,
     LIGHT, HEAVY, MIX,
     TEST1, TEST2,
-}TASK_SET;
+}APPLICATION;
 
 /* ************************************************************************************************
  * Type Define
@@ -55,8 +51,6 @@ typedef enum {
  */
 struct RuntimeRecord
 {
-	unsigned long long start_time, end_time;
-
     /* Size of GPU batch processing */
 	float batch_process_size = 0;
 	unsigned PF_times = 0;
@@ -76,13 +70,13 @@ struct RuntimeRecord
 };
 
 struct Command {
+    SCHEDULER    	SCHEDULER_MODE;
     INFERENCE_TYPE 	INFERENCE_MODE;
     BATCH_METHOD   	BATCH_MODE;
-    SCHEDULER    	SM_MODE;
     MEM_ALLOCATION 	MEM_MODE;
-    TASK_SET 	   	TASK_MODE;
+    std::list<std::pair<APPLICATION, int>> TASK_LIST;
 
-    Command() : INFERENCE_MODE(SEQUENTIAL), BATCH_MODE(DISABLE), SM_MODE(Greedy), MEM_MODE(None), TASK_MODE(LIGHT) {}
+    Command() : SCHEDULER_MODE(Greedy), INFERENCE_MODE(SEQUENTIAL), BATCH_MODE(DISABLE), MEM_MODE(None) {}
 };
 
 /* ************************************************************************************************

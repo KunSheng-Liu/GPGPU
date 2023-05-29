@@ -25,20 +25,20 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
      * Register the callback functions
      * *******************************************************************
      */
-    if (command.SM_MODE == SCHEDULER::LazyB)
+    if (command.SCHEDULER_MODE == SCHEDULER::LazyB)
     {
         mScheduler = new Scheduler_LazyB ( this );
     } 
 
-    else if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SM_MODE == SCHEDULER::Greedy) {
+    else if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SCHEDULER_MODE == SCHEDULER::Greedy) {
         mScheduler = new Scheduler_Greedy ( this );
     }
 
-    else if (command.SM_MODE == SCHEDULER::Baseline) {
+    else if (command.SCHEDULER_MODE == SCHEDULER::Baseline) {
         mScheduler = new Scheduler_Baseline ( this );
     }
 
-    else if (command.SM_MODE == SCHEDULER::BARM) {
+    else if (command.SCHEDULER_MODE == SCHEDULER::BARM) {
         mScheduler = new Scheduler_BARM ( this );
     }
 
@@ -46,72 +46,88 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
      * Create applications
      * *******************************************************************
      */
-    if (command.SM_MODE == SCHEDULER::LazyB)
+    for (auto& task : command.TASK_LIST)
     {
-        int task_num = 16;
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 1, 0, GPU_F / task_num, 0.1 * GPU_F, GPU_F));
-        program_name = "LazyB_" + to_string(task_num) +"_ResNet18";
+        if (task.first == APPLICATION::LeNet)
+        {
+            mAPPs.push_back(new Application ((char*)"LeNet"
+                , {1, 1, 32, 32}
+                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
+                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
+                , GPU_F * TASK_DEADLINE / 1000
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
+        else if (task.first == APPLICATION::CaffeNet)
+        {
+            mAPPs.push_back(new Application ((char*)"CaffeNet"
+                , {1, 1, 32, 32}
+                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
+                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
+                , GPU_F * TASK_DEADLINE / 1000
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
+        else if (task.first == APPLICATION::ResNet18)
+        {
+            mAPPs.push_back(new Application ((char*)"ResNet18"
+                , {1, 1, 32, 32}
+                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
+                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
+                , GPU_F * TASK_DEADLINE / 1000
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
+        else if (task.first == APPLICATION::GoogleNet)
+        {
+            mAPPs.push_back(new Application ((char*)"GoogleNet"
+                , {1, 1, 32, 32}
+                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
+                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
+                , GPU_F * TASK_DEADLINE / 1000
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
+        else if (task.first == APPLICATION::VGG16)
+        {
+            mAPPs.push_back(new Application ((char*)"VGG16"
+                , {1, 1, 32, 32}
+                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
+                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
+                , GPU_F * TASK_DEADLINE / 1000
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
+        else if(task.first == APPLICATION::LIGHT)
+        {
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
+        }
+        else if (task.first == APPLICATION::HEAVY)
+        {
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+        }
+        else if (task.first == APPLICATION::MIX)
+        {
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+        }
+        else if (task.first == APPLICATION::ALL)
+        {
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+        }
+        else {
+            ASSERT(false, "Test set error");
+        }
     }
-    else if(command.TASK_MODE == TASK_SET::LIGHT)
-    {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::HEAVY)
-    {
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::MIX)
-    {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::ALL)
-    {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::LeNet)
-    {
-        mAPPs.push_back(new Application ((char*)"LeNet"    , {1, 1, 32, 32}));
-    }
-    else if (command.TASK_MODE == TASK_SET::CaffeNet)
-    {
-        mAPPs.push_back(new Application ((char*)"CaffeNet" , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::ResNet18)
-    {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::VGG16)
-    {
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::GoogleNet)
-    {
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::TEST1)
-    {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}));
-    }
-    else if (command.TASK_MODE == TASK_SET::TEST2)
-    {
-        mAPPs.push_back(new Application ((char*)"ResNet18" , {1, 3, 112, 112}, 3));
-        mAPPs.push_back(new Application ((char*)"VGG16"    , {1, 3, 112, 112}, 1));
-        mAPPs.push_back(new Application ((char*)"GoogleNet", {1, 3, 112, 112}, 2));
-    }
-    else {
-        ASSERT(false, "Test set error");
-    }
+
+    
 }
 
 
@@ -188,18 +204,14 @@ CPU::Check_Finish_Kernel()
     for (auto app : mAPPs)
     {
         for (auto model = app->runningModels.begin(); model != app->runningModels.end();) {
-            string buff;
 
-            if ((*model)->checkFinish())
+            if (!(*model)->checkFinish())
             {
-                buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
-            } else if ((*model)->deadline < total_gpu_cycle) {
-                buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is miss deadline [" + to_string((*model)->recorder.start_time) + ", " + to_string(total_gpu_cycle) + "]";
-            } else {
                 model++;
                 continue;
             }
              
+            string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->arrivalTime) + ", " + to_string((*model)->deadLine) + ", " + to_string((*model)->startTime) + ", " + to_string(total_gpu_cycle) + "]";
             log_W("Model", buff);
             
             /* Release the used memory */

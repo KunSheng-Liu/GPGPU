@@ -24,16 +24,18 @@ int Model::modelCount = 0;
  * \param   model_type      the model type
  * \param   input_size      [batch = 1, channel, height, width]
  * \param   batch_size      the number of launched tasks when arrival
+ * \param   arrival_time    the model arrival time
+ * \param   deadline        the model deadline
  * 
  * \endcond
  * ================================================================================================
  */
-Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size, unsigned long long deadline)
-    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size), deadline(deadline)
+Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time, unsigned long long deadline)
+    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), deadLine(deadline)
 {
     ASSERT(input_size[BATCH] == 1);
     modelGraph = new LayerGroup();
-    recorder.start_time = total_gpu_cycle;
+    startTime = total_gpu_cycle;
 }
 
 
