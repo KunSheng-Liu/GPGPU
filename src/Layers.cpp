@@ -164,8 +164,8 @@ Layer::changeBatch(int new_batch_size)
 {
     iFMapSize[BATCH] = new_batch_size;
     oFMapSize[BATCH] = new_batch_size;
-    if (iFMap.second != nullptr)  iFMap.second->resize(iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]);
-    if (oFMap.second != nullptr)  oFMap.second->resize(oFMapSize[BATCH]  * oFMapSize[CHANNEL]  * oFMapSize[HEIGHT]  * oFMapSize[WIDTH]);
+    if (iFMap.second != nullptr)  iFMap.second->resize(iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]);
+    if (oFMap.second != nullptr)  oFMap.second->resize(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]);
 }
 
 
@@ -176,8 +176,6 @@ Layer::changeBatch(int new_batch_size)
  * 
  * \param   mmu     the memory management unit
  * 
- * \note    can open the log to get the memory usage of the model
- * 
  * \endcond
  * ================================================================================================
  */
@@ -185,11 +183,11 @@ void
 Layer::memoryAllocate(MMU* mmu)
 {
     log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
-    if (LOG_LEVEL >= VERBOSE) std::cout << "iFMap ";
+    if (PRINT_MEMORY_ALLOCATION) log("iFMap",  "", Color::Cyan);
     if(iFMap.second)  mmu->memoryAllocate(iFMap.first,  iFMap.second->size()  * sizeof(unsigned char));
-    if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
+    if (PRINT_MEMORY_ALLOCATION) log("oFMap",  "", Color::Cyan);
     if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(unsigned char));
-    if (LOG_LEVEL >= VERBOSE) std::cout << "filter ";
+    if (PRINT_MEMORY_ALLOCATION) log("filter", "", Color::Cyan);
     if(filter.second) mmu->memoryAllocate(filter.first, filter.second->size() * sizeof(unsigned char));
 
 }
@@ -233,9 +231,9 @@ int
 Layer::getMemoryUsage()
 {
     int usage = 0;
-    if(iFMap.second)  usage += ceil(iFMap.second->size()  * sizeof(unsigned char) / PAGE_SIZE);
-    if(oFMap.second)  usage += ceil(oFMap.second->size()  * sizeof(unsigned char) / PAGE_SIZE);
-    if(filter.second) usage += ceil(filter.second->size() * sizeof(unsigned char) / PAGE_SIZE);
+    if(iFMap.second)  usage += ceil(iFMap.second->size()  * sizeof(unsigned char));
+    if(oFMap.second)  usage += ceil(oFMap.second->size()  * sizeof(unsigned char));
+    if(filter.second) usage += ceil(filter.second->size() * sizeof(unsigned char));
 
     return usage;
 }
@@ -1150,7 +1148,7 @@ Dense::issueLayer(ThreadArg* threadArg)
         {                   
             Request* request = new Request();
 
-            for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I] / PAGE_SIZE;)
+            for (int c_i = 0; c_i < ceil((float)filterSize[FILTER_CHANNEL_I] / PAGE_SIZE);)
             {
                 int count = min(filterSize[FILTER_CHANNEL_I] - c_i * PAGE_SIZE, PAGE_SIZE);
 

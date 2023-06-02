@@ -64,6 +64,7 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "Baseline") command.SCHEDULER_MODE = SCHEDULER::Baseline;
                 else if (option == "BARM")     command.SCHEDULER_MODE = SCHEDULER::BARM;
                 else if (option == "LazyB")    command.SCHEDULER_MODE = SCHEDULER::LazyB;
+                else if (option == "My")       command.SCHEDULER_MODE = SCHEDULER::My;
                 else ASSERT(false, "Wrong argument, try --help");
                 scheduler_name = option;
             } 

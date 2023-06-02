@@ -207,6 +207,54 @@ GPU::launchKernel(Kernel* kernel)
 
 
 /** ===============================================================================================
+ * \name    terminateKernel
+ * 
+ * \brief   Erase the kernel from the GPU runningKernels queue, clear all used resource inlcudes in
+ *          SM, Warp, GMMU
+ * 
+ * \param   model_id  the model id going to terminate
+ * 
+ * \return  true / false of terminate kernel
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+GPU::terminateModel (int model_id)
+{
+    log_D("GPU", "terminateModel");
+    /* Release GMMU */
+    mGMMU.terminateModel(model_id);
+
+    /* Release SM */
+    for (auto kernel : runningKernels)
+    {
+        if (kernel->modelID == model_id)
+        {
+            for (auto& sm : mSMs) sm.second.terminateKernel(kernel);
+            kernel->running = false;
+        }
+    }
+    runningKernels.remove_if([](Kernel* k){return !k->running;});
+
+    /* Release commandQueue */
+    queue<Kernel*> remainingKernels;
+    while(!commandQueue.empty())
+    {
+        Kernel* kernel = commandQueue.front();
+        ASSERT(kernel, "Termiate kernel error");
+
+        if (kernel->modelID == model_id) continue;
+
+        commandQueue.pop();
+    }
+    commandQueue = remainingKernels;
+
+    return true;
+}
+
+
+/** ===============================================================================================
  * \name    statistic
  * 
  * \brief   Record the SM runtime information
@@ -234,12 +282,12 @@ GPU::statistic()
  * \endcond
  * ================================================================================================
  */
-list<int>
+unordered_set<int>
 GPU::getIdleSMs()
 {
-    list<int> available_list = {};
+    unordered_set<int> available_list = {};
     
-    for (auto& sm : mSMs) if (sm.second.isIdel()) available_list.push_back(sm.first);    
+    for (auto& sm : mSMs) if (sm.second.isIdel()) available_list.insert(sm.first);    
 
     return available_list;
 }

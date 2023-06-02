@@ -22,20 +22,18 @@ int Model::modelCount = 0;
  * 
  * \param   app_id          the application index
  * \param   model_type      the model type
- * \param   input_size      [batch = 1, channel, height, width]
- * \param   batch_size      the number of launched tasks when arrival
- * \param   arrival_time    the model arrival time
- * \param   deadline        the model deadline
+ * \param   task            the task infomations include arrival_time, deadline, input_size, and data
  * 
  * \endcond
  * ================================================================================================
  */
-Model::Model(int app_id, const char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time, unsigned long long deadline)
-    : appID(app_id), modelType(model_type), modelID(modelCount++), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), deadLine(deadline)
+Model::Model(int app_id, const char* model_type, Task task)
+    : appID(app_id), modelType(model_type), modelID(modelCount++), task(task)
 {
-    ASSERT(input_size[BATCH] == 1);
     modelGraph = new LayerGroup();
     startTime = total_gpu_cycle;
+
+    buildLayerGraph();
 }
 
 
@@ -50,6 +48,15 @@ Model::Model(int app_id, const char* model_type, vector<int> input_size, int bat
 Model::~Model()
 {
     delete modelGraph;
+    for (auto kernel : kernelContainer)
+    {
+        while(!kernel.requests.empty())
+        {
+            auto request = kernel.requests.front();
+            kernel.requests.pop();
+            delete request;
+        }
+    }
 }
 
 
@@ -66,7 +73,7 @@ Model::~Model()
 void
 Model::setBatchSize (int batch_size) 
 {
-    batchSize = batch_size;
+    task.inputSize[BATCH] = batch_size;
     modelGraph->changeBatch(batch_size);
 }
 
@@ -103,7 +110,53 @@ Model::memoryAllocate(MMU* mmu)
 PageRecord
 Model::memoryRelease(MMU* mmu)
 {
-    for(auto& kernel : kernelContainer) page_record += kernel.memoryRelease(mmu);
+#if (RECORD_MODEL_INFORMATIONS)
+
+    Model::ModelInfo info;
+    unordered_set<int> io_va_list, filter_va_list;
+
+    for(auto& kernel : kernelContainer) 
+    {
+        io_va_list.insert(kernel.srcLayer->getIFMap().first);
+        io_va_list.insert(kernel.srcLayer->getOFMap().first);
+        filter_va_list.insert(kernel.srcLayer->getFilter().first);
+
+        info += kernel.getKernelInfo();
+    }
+
+    for (auto va : io_va_list) info.ioMemCount += mmu->lookup(va);
+    for (auto va : filter_va_list) info.filterMemCount += mmu->lookup(va);
+
+    std::cout << "Summary: " << modelType << " ("
+              << std::right << std::setw(4)  << task.inputSize[BATCH]    << ", "
+              << std::right << std::setw(4)  << task.inputSize[CHANNEL]  << ", "
+              << std::right << std::setw(3)  << task.inputSize[HEIGHT]   << ", "
+              << std::right << std::setw(3)  << task.inputSize[WIDTH] 
+              << std::left  << std::setw(10) << ")" << std::endl;
+
+    std::cout << std::left << std::setw(15) << "Num Layer"; 
+    std::cout << std::left << std::setw(15) << "Request"; 
+    std::cout << std::left << std::setw(15) << "ioMem"; 
+    std::cout << std::left << std::setw(15) << "filterMem"; 
+    std::cout << std::left << std::setw(15) << "Read"; 
+    std::cout << std::left << std::setw(15) << "Write"; 
+    std::cout << std::left << std::setw(15) << "Cycle"; 
+    std::cout << std::endl;
+    
+    std::cout << std::left << std::setw(15) << kernelContainer.size(); 
+    std::cout << std::left << std::setw(15) << info.numOfRequest; 
+    std::cout << std::left << std::setw(15) << info.ioMemCount; 
+    std::cout << std::left << std::setw(15) << info.filterMemCount; 
+    std::cout << std::left << std::setw(15) << info.numOfRead; 
+    std::cout << std::left << std::setw(15) << info.numOfWrite; 
+    std::cout << std::left << std::setw(15) << info.numOfCycle; 
+    std::cout << endl;
+#endif
+
+    for(auto& kernel : kernelContainer) 
+    {
+        page_record += kernel.memoryRelease(mmu);
+    }
 
     return page_record;
 }
@@ -143,9 +196,9 @@ Model::compileToKernel()
 /** ===============================================================================================
  * \name    findReadyKernels
  * 
- * \brief   Make the kernel dependency.
+ * \brief   Find all ready kernel of the model
  * 
- * \return  reference of model kernels
+ * \return  a list of ready kernel pointer
  * 
  * \endcond
  * ================================================================================================
@@ -163,6 +216,28 @@ Model::findReadyKernels()
         
     }
     return readyList;
+}
+
+
+/** ===============================================================================================
+ * \name    getRunningKernels
+ * 
+ * \brief   Get all running kernels
+ * 
+ * \return  a list of running kernel pointer
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+list<Kernel*>
+Model::getRunningKernels()
+{
+    list<Kernel*> runningList;
+    for (auto& kernel : kernelContainer)
+    {
+        if(kernel.isRunning()) runningList.emplace_back(&kernel);
+    }
+    return runningList;
 }
 
 
@@ -208,6 +283,8 @@ Model::checkFinish()
  * 
  * \return  Model::ModelInfo
  * 
+ * \note    Can open the \b RECORD_MODEL_INFORMATIONS flag in App_config.h to extract the infomation
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -218,37 +295,69 @@ Model::getModelInfo(const char* model_type)
 
     if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
+        Info.numOfRequest   = 8494;
         Info.ioMemCount     = 9518;
         Info.filterMemCount = 62638;
+        Info.numOfRead      = 941088;
+        Info.numOfWrite     = 8494;
+        Info.numOfCycle     = 170688;
         Info.inputSize      = {1, 32, 32};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
-        Info.ioMemCount     = -1;
-        Info.filterMemCount = -1;
-        Info.inputSize      = {3, 227, 227};
+        Info.numOfRequest   = 158824;
+        Info.ioMemCount     = 171368;
+        Info.filterMemCount = 30075936;
+        Info.numOfRead      = 451046656;
+        Info.numOfWrite     = 158824;
+        Info.numOfCycle     = 3094016;
+        Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
-        Info.ioMemCount     = 4166632;
-        Info.filterMemCount = 39294144;
-        Info.inputSize      = {3, 224, 224};
+        Info.numOfRequest   = 828904;
+        Info.ioMemCount     = 649448;
+        Info.filterMemCount = 21992640;
+        Info.numOfRead      = 1050410496;
+        Info.numOfWrite     = 828904;
+        Info.numOfCycle     = 8384256;
+        Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
+
+        // Info.numOfLayers    = 28;
+        // Info.ioMemCount     = 4166632;
+        // Info.filterMemCount = 39294144;
+        // Info.inputSize      = {3, 224, 224};
+        // Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
-        Info.ioMemCount     = 15262696;
-        Info.filterMemCount = 140785344;
-        Info.inputSize      = {3, 224, 224};
+        Info.numOfRequest   = 3781608;
+        Info.ioMemCount     = 3794152;
+        Info.filterMemCount = 56899264;
+        Info.numOfRead      = 7931585792;
+        Info.numOfWrite     = 3781608;
+        Info.numOfCycle     = 35397120;
+        Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
+
+        // Info.numOfLayers    = 22;
+        // Info.ioMemCount     = 15262696;
+        // Info.filterMemCount = 140785344;
+        // Info.inputSize      = {3, 224, 224};
+        // Info.outputSize     = {1000};
 
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
-        Info.ioMemCount     = 8394704;
-        Info.filterMemCount = 107286016;
-        Info.inputSize      = {3, 224, 224};
+        Info.numOfRequest   = 1198778;
+        Info.ioMemCount     = 1254762;
+        Info.filterMemCount = 44561920;
+        Info.numOfRead      = 2045716128;
+        Info.numOfWrite     = 1198778;
+        Info.numOfCycle     = 9824148;
+        Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
 
     }
@@ -272,22 +381,20 @@ Model::buildLayerGraph()
 {
     log_T("Model", "buildLayerGraph");
 
-    vector<int> size = {batchSize, inputSize[CHANNEL], inputSize[HEIGHT], inputSize[WIDTH]};
-
     if (strcmp(modelType, "LeNet") == 0) {
-        LeNet(size);
+        LeNet(task.inputSize);
 
     } else if (strcmp(modelType, "CaffeNet") == 0) {
-        CaffeNet(size);
+        CaffeNet(task.inputSize);
 
     } else if (strcmp(modelType, "ResNet18") == 0) {
-        ResNet18(size);
+        ResNet18(task.inputSize);
 
     } else if (strcmp(modelType, "VGG16") == 0) {
-        VGG16(size);
+        VGG16(task.inputSize);
 
     } else if (strcmp(modelType, "GoogleNet") == 0) {
-        GoogleNet(size);
+        GoogleNet(task.inputSize);
 
     }
 }

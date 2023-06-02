@@ -174,4 +174,11 @@ class Request;
 #define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))  // unit (cycle)
 #define TRANSFER_SET_SIZE                   80 
 
+/* ************************************************************************************************
+ * Other Flags
+ * ************************************************************************************************
+ */
+#define RECORD_MODEL_INFORMATIONS           true
+
+
 #endif

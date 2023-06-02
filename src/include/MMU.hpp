@@ -44,7 +44,8 @@ public:
  * ************************************************************************************************
  */
 public:
-    void memoryAllocate (int va, int numOfByte);
+    int  lookup (int va);
+    bool memoryAllocate (int va, int numOfByte);
     void memoryRelease  (int va);
     vector<unsigned long long> addressTranslate (int va);
 

@@ -101,8 +101,8 @@ void
 Kernel::addRequest(Request* request)
 {
     request->requst_id = requests.size();
-    kernelInfo.numOfRead  += request->readPages.size();
-    kernelInfo.numOfWrite += request->writePages.size();
+    for (auto access : request->readPages ) kernelInfo.numOfRead  += access.second;
+    for (auto access : request->writePages) kernelInfo.numOfWrite += access.second;
     kernelInfo.numOfCycle += request->numOfInstructions;
     kernelInfo.numOfRequest++;
     
@@ -324,6 +324,7 @@ KernelGroup::compileRequest (MMU* mmu)
         kernel.first->compileRequest(mmu);
         kernelInfo += kernel.first->kernelInfo;
         kernel.first->startCycle = total_gpu_cycle;
+        kernel.first->running    = true;
     }
 
     /* *******************************************************************
@@ -410,5 +411,6 @@ KernelGroup::handleKernelCompletion()
 #endif
 
     delete recorder;
+    delete SM_List;
     delete this;
 }

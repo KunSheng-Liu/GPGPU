@@ -42,20 +42,6 @@ public:
    ~Application();
 
 /* ************************************************************************************************
- * Type Define
- * ************************************************************************************************
- */
-struct Task{
-    int arrivalTime;
-    int deadLine;
-    int appIndex;
-    vector<unsigned char> data;
-
-    Task (int arrival_time, int dead_line, int app_index, vector<unsigned char> data) 
-        : arrivalTime(arrival_time), deadLine(dead_line), appIndex(app_index), data(data) {}
-};
-
-/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
@@ -81,10 +67,7 @@ public:
 
     bool finish;
 
-    list<int> SM_budget;
-
-    queue<Task> tasks;
-    queue<Task> dropOut_tasks;
+    unordered_set<int> SM_budget;
 
     /* Model information */
     Model::ModelInfo modelInfo;

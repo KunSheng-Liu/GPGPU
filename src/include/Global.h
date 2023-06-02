@@ -22,8 +22,8 @@
 /* Policy*/
 typedef enum {
 	Greedy, Baseline,
-	BARM,
-	LazyB,
+	BARM, LazyB,
+	My
 }SCHEDULER;
 typedef enum {
     SEQUENTIAL, PARALLEL,

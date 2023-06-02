@@ -38,8 +38,10 @@ public:
 
 public:
     virtual bool Inference_Admission ();
-    virtual bool Model_Launcher      ();
     virtual bool Kernel_Scheduler    ();
+
+public:
+    void missDeadlineHandler ();
 
 protected:
     CPU* mCPU;
@@ -126,8 +128,8 @@ public:
  */
 private:
     const unsigned long long modelCycle = 1623622;
-    const unsigned long long layerCycles[28] {167406, 83836, 83751, 139581, 84167, 83751, 139581, 84167, 83751, 167680, 111999
-        , 83803, 139615, 84107, 83688, 112475, 56084, 55829, 83688, 28197, 83688, 111882, 84267, 55799, 84242, 56380, 84730, 27899};
+    const unsigned long long layerCycles[28] {139487, 83835, 83750, 56133, 111670, 83750, 56133, 111670, 83750, 111957, 167500
+        , 83802, 56397, 111710, 83687, 56084, 112185, 83687, 28196, 55817, 83687, 84267, 111581, 84241, 56379, 55793, 84730, 55922};
     
 };
 
@@ -142,6 +144,8 @@ public:
     Scheduler_My (CPU* cpu) : Scheduler(cpu) {}
 
 public:
+    bool Inference_Admission () override;
+    bool Kernel_Scheduler    () override;
 };
 
 #endif

@@ -22,7 +22,7 @@ Scheduler_BARM::Inference_Admission ()
     log_T("CPU", "Inference_Admission: BARM");
 
     /*  Get avaiable SM list */
-    list<int> available_sm = mCPU->mGPU->getIdleSMs();
+    unordered_set<int> available_sm = mCPU->mGPU->getIdleSMs();
     if (available_sm.empty()) return false;
 
     ASSERT(false, "haven't implement SMD");

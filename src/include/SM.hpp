@@ -71,6 +71,7 @@ public:
     void cycle ();
 
     bool bindKernel(Kernel* kernel);
+    bool terminateKernel (Kernel* kernel);
     void checkBlockFinish();
 
     bool isComputing();

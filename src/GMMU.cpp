@@ -197,6 +197,38 @@ GMMU::Page_Fault_Handler()
 
 
 /** ===============================================================================================
+ * \name    terminateModel
+ * 
+ * \brief   Erase all access from queues if the model is terminate
+ * 
+ * \param   model_id  the model id going to terminate
+ * 
+ * \return  true / false of terminate kernel
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+GMMU::terminateModel(int model_id)
+{
+    sm_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    gmmu_to_sm_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+
+    page_fault_finish_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    page_fault_process_queue.erase(model_id);
+    if (page_fault_process_queue.empty()) wait_cycle = 0;
+
+    mMC->mc_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    mMC->gmmu_to_mc_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+
+    freeCGroup(model_id);
+    
+
+    return true;
+}
+
+
+/** ===============================================================================================
  * \name    setCGroupSize
  * 
  * \brief   Set the CGroup Size to the sepcific model

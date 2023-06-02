@@ -27,6 +27,18 @@
 #include "Layers.hpp"
 #include "LayerGroup.hpp"
 
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct Task{
+    const int arrivalTime, deadLine;
+    vector<int> inputSize;
+    vector<unsigned char> data;
+
+    Task (int arrival_time, int dead_line, vector<int> input_size, vector<unsigned char> data) 
+        : arrivalTime(arrival_time), deadLine(dead_line), inputSize(input_size), data(data) {}
+};
 
 /** ===============================================================================================
  * \name    Model
@@ -44,7 +56,7 @@ class Model
  */ 
 public:
 
-    Model(int app_id, const char* model_type, vector<int> input_size, int batch_size = 0, unsigned long long arrival_time = 0, unsigned long long deadline = -1);
+    Model(int app_id, const char* model_type, Task task);
 
    ~Model();
 
@@ -55,13 +67,27 @@ public:
 public:
     struct ModelInfo {
         const char* modelName;
-        int numOfLayers;
-        int ioMemCount;         // unit (Byte)
-        int filterMemCount;     // unit (Byte)
-        vector<int> inputSize;  // [Channel, Height, Width]
-        vector<int> outputSize; // [Channel, Height, Width]
+        unsigned numOfLayers;
+        unsigned numOfRequest;
+        unsigned long long numOfCycle;
+        unsigned long long ioMemCount;      // unit (Byte)
+        unsigned long long filterMemCount;  // unit (Byte)
+        unsigned long long numOfRead;       // unit (Byte)
+        unsigned long long numOfWrite;      // unit (Byte)
+        vector<int> inputSize;              // [Channel, Height, Width]
+        vector<int> outputSize;             // [Channel, Height, Width]
 
-        ModelInfo(const char* model_name) : modelName(model_name) {}
+        ModelInfo(const char* model_name = (char*)"Null") : modelName(model_name) 
+            , numOfLayers(0), numOfRequest(0), numOfCycle(0), ioMemCount(0), filterMemCount(0)
+            , numOfRead(0), numOfWrite(0), inputSize({}), outputSize({}) {}
+
+        ModelInfo& operator+= (const Kernel::KernelInfo& other) {
+        numOfRead    += other.numOfRead;
+        numOfWrite   += other.numOfWrite;
+        numOfCycle   += other.numOfCycle;
+        numOfRequest += other.numOfRequest;
+        return *this;
+    }
     };
 
 /* ************************************************************************************************
@@ -79,12 +105,14 @@ public:
     bool checkFinish ();
 
     int   getNumOfLayer (void) {return numOfLayer;}
-    int   getBatchSize  (void) {return batchSize;}
+    int   getBatchSize  (void) {return task.inputSize[BATCH];}
     const char* getModelName  (void) {return modelType;}
 
     list<Kernel*> findReadyKernels ();
-    vector<Kernel>& compileToKernel ();
+    list<Kernel*> getRunningKernels ();
     vector<bool> getKernelStatus ();
+    
+    vector<Kernel>& compileToKernel ();
 
     pair<int, vector<unsigned char>*> getIFMap  (void) {return modelGraph->getIFMap();}
     pair<int, vector<unsigned char>*> getOFMap  (void) {return modelGraph->getOFMap();}
@@ -122,9 +150,10 @@ public:
     const char* modelType;
 
 	unsigned long long startTime, endTime;
-    unsigned long long arrivalTime, deadLine;
 
-    list<int> SM_budget;
+    Task task;
+
+    unordered_set<int> SM_budget;
     
     RuntimeRecord recorder;
 
@@ -137,11 +166,6 @@ protected:
 
     /* Number of layer */
     int numOfLayer;
-
-    /* Batch size of model */
-    int batchSize;
-
-    vector<int> inputSize;
 
     LayerGroup* modelGraph;
     

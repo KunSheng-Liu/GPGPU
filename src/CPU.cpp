@@ -29,6 +29,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
     {
         mScheduler = new Scheduler_LazyB ( this );
     } 
+    
+    else if (command.SCHEDULER_MODE == SCHEDULER::My) {
+        mScheduler = new Scheduler_My ( this );
+    }
 
     else if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SCHEDULER_MODE == SCHEDULER::Greedy) {
         mScheduler = new Scheduler_Greedy ( this );
@@ -61,7 +65,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::CaffeNet)
         {
             mAPPs.push_back(new Application ((char*)"CaffeNet"
-                , {1, 1, 32, 32}
+                , {1, 1, 112, 112}
                 , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
                 , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
                 , GPU_F * TASK_DEADLINE / 1000
@@ -71,7 +75,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::ResNet18)
         {
             mAPPs.push_back(new Application ((char*)"ResNet18"
-                , {1, 1, 32, 32}
+                , {1, 1, 112, 112}
                 , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
                 , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
                 , GPU_F * TASK_DEADLINE / 1000
@@ -81,7 +85,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::GoogleNet)
         {
             mAPPs.push_back(new Application ((char*)"GoogleNet"
-                , {1, 1, 32, 32}
+                , {1, 1, 112, 112}
                 , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
                 , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
                 , GPU_F * TASK_DEADLINE / 1000
@@ -91,7 +95,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::VGG16)
         {
             mAPPs.push_back(new Application ((char*)"VGG16"
-                , {1, 1, 32, 32}
+                , {1, 1, 112, 112}
                 , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
                 , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
                 , GPU_F * TASK_DEADLINE / 1000
@@ -160,10 +164,10 @@ CPU::cycle()
 {
     log_I("CPU Cycle", to_string(total_gpu_cycle));
 
-    Check_Finish_Kernel();
-
-    mScheduler->Inference_Admission();
-
+    (Check_Finish_Kernel() || mGPU->isIdle()) &&
+    
+    mScheduler->Inference_Admission() && 
+    
     mScheduler->Kernel_Scheduler();
 
     /* check new task */
@@ -211,7 +215,7 @@ CPU::Check_Finish_Kernel()
                 continue;
             }
              
-            string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->arrivalTime) + ", " + to_string((*model)->deadLine) + ", " + to_string((*model)->startTime) + ", " + to_string(total_gpu_cycle) + "]";
+            string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->task.arrivalTime) + ", " + to_string((*model)->task.deadLine) + ", " + to_string((*model)->startTime) + ", " + to_string(total_gpu_cycle) + "]";
             log_W("Model", buff);
             
             /* Release the used memory */

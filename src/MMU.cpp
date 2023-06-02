@@ -26,6 +26,28 @@ MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(DRAM_SP
 
 
 /** ===============================================================================================
+ * \name    lookup
+ * 
+ * \brief   Lookup the whether the virtial address is exist
+ * 
+ * \param   va          the virtual address going to allcate
+ * 
+ * \return  return the number of byte of the virtial address
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+int 
+MMU::lookup (int va)
+{
+    pair<Page*, int> dummy;
+    if (mTLB.lookup(va, dummy)) return dummy.second;
+    
+    return 0;
+}
+
+
+/** ===============================================================================================
  * \name    memoryAllocate
  * 
  * \brief   Allocate memory for CPU virtual address to physical address.
@@ -36,21 +58,25 @@ MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(DRAM_SP
  * \endcond
  * ================================================================================================
  */
-void 
+bool 
 MMU::memoryAllocate (int va, int numOfByte)
 {
-    if (numOfByte == 0) return;
+    ASSERT(numOfByte > 0, "Try to allocate zero space");
     
-    pair<Page*, int> dummy;
-    if (mTLB.lookup(va, dummy)) 
+    if (lookup(va)) 
     {
         log_I("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte) + " The virtual address already been allocated");
-
-    } else {
-        log_V("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte));
-        Page* PP = mMC->memoryAllocate(numOfByte);
-        mTLB.insert(va, make_pair(PP, numOfByte));
+        return false;
     }
+
+#if (PRINT_MEMORY_ALLOCATION)
+    log("memoryAllocate", "VA: " + to_string(va) + " Size: " + to_string(numOfByte), Color::Cyan);
+#endif
+
+    Page* PP = mMC->memoryAllocate(numOfByte);
+    mTLB.insert(va, make_pair(PP, numOfByte));
+
+    return true;
 }
 
 

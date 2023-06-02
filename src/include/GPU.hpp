@@ -86,11 +86,12 @@ public:
     void cycle ();
 
     bool launchKernel (Kernel* kernel);
+    bool terminateModel (int model_id);
     void statistic();
 
     bool isIdle() {return runningKernels.empty() && commandQueue.empty();}
     GMMU* getGMMU() {return &mGMMU;}
-    list<int> getIdleSMs();
+    unordered_set<int> getIdleSMs();
 
 private:
     void Runtime_Block_Scheduling();

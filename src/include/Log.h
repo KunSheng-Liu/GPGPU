@@ -16,14 +16,33 @@
 #include "App_config.h"
 
 /* ************************************************************************************************
+ * Enumeration
+ * ************************************************************************************************
+ */
+typedef enum {
+    Default = 0,
+    Red     = 31,
+    Green   = 32,
+    Yellow  = 33,
+    Blue    = 34,
+    Cyan    = 36,
+} Color;
+
+/* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
+
+inline void log (std::string tag, std::string logInfo, Color color = Color::Default)
+{
+    std::cout << "\033[1;" << color << "m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+}
+
 /* ERROR */
 inline void log_E (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= ERROR
-    std::cout << "\033[1;31m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+    log (tag, logInfo, Color::Red);
 #endif
 }
 
@@ -31,7 +50,7 @@ inline void log_E (std::string tag, std::string logInfo)
 inline void log_W (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= WARNNING
-    std::cout << "\033[1;34m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+    log (tag, logInfo, Color::Blue);
 #endif
 }
 
@@ -39,7 +58,7 @@ inline void log_W (std::string tag, std::string logInfo)
 inline void log_I (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= INFO
-    std::cout << "\033[1;32m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+    log (tag, logInfo, Color::Green);
 #endif
 }
 
@@ -47,7 +66,7 @@ inline void log_I (std::string tag, std::string logInfo)
 inline void log_D (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= DEBUG
-    std::cout << "\033[1;36m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+    log (tag, logInfo, Color::Cyan);
 #endif
 }
 
@@ -55,7 +74,7 @@ inline void log_D (std::string tag, std::string logInfo)
 inline void log_T (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= TRACE
-    std::cout << "\033[1;33m" << tag << ": " << logInfo << "\033[0m" << std::endl;
+    log (tag, logInfo, Color::Yellow);
 #endif
 }
 
@@ -63,7 +82,7 @@ inline void log_T (std::string tag, std::string logInfo)
 inline void log_V (std::string tag, std::string logInfo)
 {
 #if LOG_LEVEL >= VERBOSE
-    std::cout << tag << ": " << logInfo << std::endl;
+    log (tag, logInfo, Color::Default);
 #endif
 }
 

@@ -247,12 +247,53 @@ SM::bindKernel(Kernel* kernel)
             if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
         }
         
-#if (LOG_LEVEL >= VERBOSE)
+#if (PRINT_SM_ALLCOATION_RESULT)
         std::cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
 #endif
         runningBlocks.emplace_back(move(b));
         resource.remaining_blocks--;
     }
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    terminateKernel
+ * 
+ * \brief   Erase the kernel from the SM runningBlocks queue, clear all used resource inlcudes in
+ *          Block, Warp, threads
+ * 
+ * \param   kernel  the kernel pointer going to terminate
+ * 
+ * \return  true / false of terminate kernel
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+SM::terminateKernel(Kernel* kernel)
+{
+    for (auto block : runningBlocks)
+    {
+        if (block->runningKernel == kernel)
+        {
+            for (auto warp : block->warps)
+            {
+                warp->record = {};
+                for (auto thread : warp->mthreads)
+                {
+                    delete thread.request;
+                    delete thread.access;
+                }
+                warp->gmmu_to_sm_queue.clear();
+                warp->isBusy = false;
+                warp->isIdle = true;
+
+            }
+            std::cout << "Release kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << block->warps.size() << endl;
+        }
+    }
+    runningBlocks.remove_if([kernel](Block* b){return b->runningKernel == kernel;});
     return true;
 }
 
@@ -312,8 +353,8 @@ SM::checkBlockFinish()
 void
 SM::recycleResource(Block* block)
 {
-#if (LOG_LEVEL >= VERBOSE)
-    std::cout << "Release block: " << block->block_id << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
+#if (PRINT_SM_ALLCOATION_RESULT)
+    std::cout << "Release kernel:" << block->runningKernel->kernelID << " to SM: " << smID << " with warps: " << block->warps.size() << endl;
 #endif
 
     for (auto& warp : block->warps)

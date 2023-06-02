@@ -46,11 +46,11 @@ public:
  * ************************************************************************************************
  */
 struct KernelInfo {
-    int numOfRead    = 0;
-    int numOfWrite   = 0;
-    int numOfCycle   = 0;
-    int numOfMemory  = 0;
-    int numOfRequest = 0;
+    unsigned long long numOfRead    = 0;
+    unsigned long long numOfWrite   = 0;
+    unsigned long long numOfCycle   = 0;
+    unsigned long long numOfMemory  = 0;
+    unsigned long long numOfRequest = 0;
 
     KernelInfo& operator+= (const KernelInfo& other) {
         numOfRead    += other.numOfRead;
@@ -106,7 +106,7 @@ public:
     KernelInfo kernelInfo;
 
     // RuntimeInfo* recorder;
-    list<int>* SM_List;
+    unordered_set<int>* SM_List;
 
     RuntimeRecord* recorder;
 

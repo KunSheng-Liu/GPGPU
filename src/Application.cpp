@@ -34,7 +34,7 @@ int Application::appCount = 0;
 Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time
                                     , unsigned long long  period, unsigned long long deadline, unsigned long long end_time)
     : appID(appCount++), modelType(model_type), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), period(period)
-    , deadline(deadline), endTime(end_time), modelInfo(Model::getModelInfo(model_type)), SM_budget({}), finish(false)
+    , deadline(deadline), endTime(end_time), SM_budget({}), modelInfo(Model::getModelInfo(model_type)), finish(false)
 {
     ASSERT(input_size[BATCH] == 1);
     string name = model_type;
@@ -74,11 +74,11 @@ Application::cycle()
     {
         if (total_gpu_cycle >= arrivalTime)
         {
-            for (int i = 0; i < batchSize; i++) tasks.push(Task(total_gpu_cycle, arrivalTime + deadline, appID, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1)));
+            for (int i = 0; i < batchSize; i++) runningModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
             arrivalTime += period;
         }
     }
     
     /* check application finish */
-    else if(runningModels.empty() && tasks.empty()) finish = true;
+    else if(runningModels.empty()) finish = true;
 }
