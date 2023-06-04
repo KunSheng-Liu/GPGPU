@@ -178,7 +178,7 @@ class Request;
  * Other Flags
  * ************************************************************************************************
  */
-#define RECORD_MODEL_INFORMATIONS           true
+#define RECORD_MODEL_INFORMATIONS           false
 
 
 #endif

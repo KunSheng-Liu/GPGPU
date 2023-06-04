@@ -34,7 +34,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         mScheduler = new Scheduler_My ( this );
     }
 
-    else if (command.INFERENCE_MODE == INFERENCE_TYPE::SEQUENTIAL || command.SCHEDULER_MODE == SCHEDULER::Greedy) {
+    else if (command.SCHEDULER_MODE == SCHEDULER::Greedy) {
         mScheduler = new Scheduler_Greedy ( this );
     }
 

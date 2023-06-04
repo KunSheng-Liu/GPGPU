@@ -49,7 +49,6 @@ int main (int argc, char** argv)
 void parser_cmd (int argc, char** argv) 
 {
     string scheduler_name = "Greedy";
-    string inference_name = "Sequential";
     string batch_name     = "Disable";
     string mem_name       = "None";
     
@@ -70,18 +69,18 @@ void parser_cmd (int argc, char** argv)
             } 
             catch(exception e) ASSERT(false, "Wrong argument, try --help");
         }
-        else if (flag == "-I" || flag == "--inference-method")
-        {
-            try{
-                string option = argv[i++];
-                if (option == "Sequential")    command.INFERENCE_MODE = INFERENCE_TYPE::SEQUENTIAL;
-                else if (option == "Parallel") command.INFERENCE_MODE = INFERENCE_TYPE::PARALLEL;
-                else ASSERT(false, "Wrong argument, try --help");
-                inference_name = option;
-            } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+        // else if (flag == "-I" || flag == "--inference-method")
+        // {
+        //     try{
+        //         string option = argv[i++];
+        //         if (option == "Sequential")    command.INFERENCE_MODE = INFERENCE_TYPE::SEQUENTIAL;
+        //         else if (option == "Parallel") command.INFERENCE_MODE = INFERENCE_TYPE::PARALLEL;
+        //         else ASSERT(false, "Wrong argument, try --help");
+        //         inference_name = option;
+        //     } 
+        //     catch(exception e) ASSERT(false, "Wrong argument, try --help");
             
-        }
+        // }
         else if (flag == "-B" || flag == "--batch-inference") 
         {
             try{
@@ -147,5 +146,5 @@ void parser_cmd (int argc, char** argv)
         } else ASSERT(false, "Wrong argument, try --help");
     }
 
-    program_name = inference_name + "_" + batch_name + "_" + scheduler_name + "_" + mem_name;
+    program_name = scheduler_name + "_" + batch_name + "_" + mem_name;
 }

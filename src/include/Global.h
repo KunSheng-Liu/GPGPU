@@ -25,9 +25,6 @@ typedef enum {
 	BARM, LazyB,
 	My
 }SCHEDULER;
-typedef enum {
-    SEQUENTIAL, PARALLEL,
-}INFERENCE_TYPE;
 
 typedef enum {
     DISABLE, MAX,
@@ -71,12 +68,11 @@ struct RuntimeRecord
 
 struct Command {
     SCHEDULER    	SCHEDULER_MODE;
-    INFERENCE_TYPE 	INFERENCE_MODE;
     BATCH_METHOD   	BATCH_MODE;
     MEM_ALLOCATION 	MEM_MODE;
     std::list<std::pair<APPLICATION, int>> TASK_LIST;
 
-    Command() : SCHEDULER_MODE(Greedy), INFERENCE_MODE(SEQUENTIAL), BATCH_MODE(DISABLE), MEM_MODE(None) {}
+    Command() : SCHEDULER_MODE(Greedy), BATCH_MODE(DISABLE), MEM_MODE(None) {}
 };
 
 /* ************************************************************************************************
