@@ -77,9 +77,8 @@ public:
         vector<int> inputSize;              // [Channel, Height, Width]
         vector<int> outputSize;             // [Channel, Height, Width]
 
-        ModelInfo(const char* model_name = (char*)"Null") : modelName(model_name) 
-            , numOfLayers(0), numOfRequest(0), numOfCycle(0), ioMemCount(0), filterMemCount(0)
-            , numOfRead(0), numOfWrite(0), inputSize({}), outputSize({}) {}
+        unsigned long long totalExecuteTime;
+        vector<unsigned long long> layerExecuteTime;
 
         ModelInfo& operator+= (const Kernel::KernelInfo& other) {
         numOfRead    += other.numOfRead;
@@ -87,7 +86,11 @@ public:
         numOfCycle   += other.numOfCycle;
         numOfRequest += other.numOfRequest;
         return *this;
-    }
+        }
+
+        ModelInfo(const char* model_name = (char*)"Null") : modelName(model_name) 
+            , numOfLayers(0), numOfRequest(0), numOfCycle(0), ioMemCount(0), filterMemCount(0)
+            , numOfRead(0), numOfWrite(0), inputSize({}), outputSize({}), totalExecuteTime(0), layerExecuteTime({}) {}
     };
 
 /* ************************************************************************************************

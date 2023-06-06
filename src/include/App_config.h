@@ -99,8 +99,7 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */ 
-#define SIMULATION_TIME                     100                     // unit (ms)
-#define TASK_DEADLINE                       100                     // unit (ms)
+#define SIMULATION_TIME                     10                      // unit (ms)
 #define PERFECT_ACCESS                      false                   // Is VRAM space is always enough ?
 #define COMPULSORY_MISS                     true                    // Initial the data in the DRAM ?
 #define THREAD_KERNEL_COMPILE               true

@@ -56,9 +56,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         {
             mAPPs.push_back(new Application ((char*)"LeNet"
                 , {1, 1, 32, 32}
-                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
-                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
-                , GPU_F * TASK_DEADLINE / 1000
+                , get<0>(task.second)
+                , get<1>(task.second) * GPU_F / 1000
+                , get<2>(task.second) * GPU_F / 1000
+                , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -66,9 +67,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         {
             mAPPs.push_back(new Application ((char*)"CaffeNet"
                 , {1, 1, 112, 112}
-                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
-                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
-                , GPU_F * TASK_DEADLINE / 1000
+                , get<0>(task.second)
+                , get<1>(task.second) * GPU_F / 1000
+                , get<2>(task.second) * GPU_F / 1000
+                , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -76,9 +78,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         {
             mAPPs.push_back(new Application ((char*)"ResNet18"
                 , {1, 1, 112, 112}
-                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
-                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
-                , GPU_F * TASK_DEADLINE / 1000
+                , get<0>(task.second)
+                , get<1>(task.second) * GPU_F / 1000
+                , get<2>(task.second) * GPU_F / 1000
+                , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -86,9 +89,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         {
             mAPPs.push_back(new Application ((char*)"GoogleNet"
                 , {1, 1, 112, 112}
-                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
-                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
-                , GPU_F * TASK_DEADLINE / 1000
+                , get<0>(task.second)
+                , get<1>(task.second) * GPU_F / 1000
+                , get<2>(task.second) * GPU_F / 1000
+                , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -96,35 +100,36 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         {
             mAPPs.push_back(new Application ((char*)"VGG16"
                 , {1, 1, 112, 112}
-                , (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? 1 : task.second, 0
-                , GPU_F / (command.SCHEDULER_MODE == SCHEDULER::LazyB) ? GPU_F / task.second : -1
-                , GPU_F * TASK_DEADLINE / 1000
+                , get<0>(task.second)
+                , get<1>(task.second) * GPU_F / 1000
+                , get<2>(task.second) * GPU_F / 1000
+                , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
         else if(task.first == APPLICATION::LIGHT)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
         }
         else if (task.first == APPLICATION::HEAVY)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
         }
         else if (task.first == APPLICATION::MIX)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
         }
         else if (task.first == APPLICATION::ALL)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, 1));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     1));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
         }
         else {
             ASSERT(false, "Test set error");

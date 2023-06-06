@@ -70,7 +70,7 @@ struct Command {
     SCHEDULER    	SCHEDULER_MODE;
     BATCH_METHOD   	BATCH_MODE;
     MEM_ALLOCATION 	MEM_MODE;
-    std::list<std::pair<APPLICATION, int>> TASK_LIST;
+    std::list<std::pair<APPLICATION, std::tuple<int /*batch_size*/, float /*arrival_time*/, float /*period*/, float /*deadline*/>>> TASK_LIST;
 
     Command() : SCHEDULER_MODE(Greedy), BATCH_MODE(DISABLE), MEM_MODE(None) {}
 };

@@ -24,6 +24,8 @@ int Layer::vaCount = 0;
  * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
  * \param   activation_type     the activation type
  * 
+ * \note    use char* to store the layer_type is because it much easier to print out
+ * 
  * \endcond
  * ================================================================================================
  */

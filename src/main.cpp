@@ -109,16 +109,22 @@ void parser_cmd (int argc, char** argv)
         {
             try{
                 string option = argv[i++];
-                if (option == "LeNet")          command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     atoi(argv[i++])));
-                else if (option == "CaffeNet")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::CaffeNet,  atoi(argv[i++])));
-                else if (option == "ResNet18")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  atoi(argv[i++])));
-                else if (option == "GoogleNet") command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, atoi(argv[i++])));
-                else if (option == "VGG16")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     atoi(argv[i++])));
-                else if (option == "All")       command.TASK_LIST.emplace_back(make_pair(APPLICATION::ALL,       1));
-                else if (option == "Light")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::LIGHT,     1));
-                else if (option == "Heavy")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::HEAVY,     1));
-                else if (option == "Test1")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST1,     1));
-                else if (option == "Test2")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST2,     1));
+                float batch_size   = atof(argv[i++]);
+                float arrival_time = atof(argv[i++]);
+                float period       = atof(argv[i++]);
+                float deadline     = atof(argv[i++]);
+                auto task_config = make_tuple(batch_size, arrival_time, period, deadline);
+                
+                if (option == "LeNet")          command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task_config));
+                else if (option == "CaffeNet")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::CaffeNet,  task_config));
+                else if (option == "ResNet18")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  task_config));
+                else if (option == "GoogleNet") command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, task_config));
+                else if (option == "VGG16")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     task_config));
+                else if (option == "All")       command.TASK_LIST.emplace_back(make_pair(APPLICATION::ALL,       task_config));
+                else if (option == "Light")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::LIGHT,     task_config));
+                else if (option == "Heavy")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::HEAVY,     task_config));
+                else if (option == "Test1")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST1,     task_config));
+                else if (option == "Test2")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST2,     task_config));
                 else ASSERT(false, "Wrong argument, try --help");
             } 
             catch(exception e) ASSERT(false, "Wrong argument, try --help");
@@ -136,7 +142,7 @@ void parser_cmd (int argc, char** argv)
 
             std::cout << "Examples:" << std::endl;
             std::cout << "\t./GPGPU" << std::endl;
-            std::cout << "\t./GPGPU -I Sequential -T ResNet18 3 -T VGG16 1 -T GoogleNet 2" << std::endl;
+            std::cout << "\t./GPGPU -I Sequential -T ResNet18 3 0 -1 100 -T VGG16 1 0 10 100 -T GoogleNet 2 0 2 10 " << std::endl;
             std::cout << "\t./GPGPU -sm-dispatch Baseline -M Average" << std::endl;
 
             std::cout << "Default:" << std::endl;

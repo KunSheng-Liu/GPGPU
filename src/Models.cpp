@@ -303,6 +303,10 @@ Model::getModelInfo(const char* model_type)
         Info.numOfCycle     = 170688;
         Info.inputSize      = {1, 32, 32};
         Info.outputSize     = {1000};
+        Info.totalExecuteTime = 474427;
+        Info.layerExecuteTime = {
+            55824, 55802, 55840, 55806, 83687, 55844, 55810, 55814
+        };
 
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
@@ -314,6 +318,10 @@ Model::getModelInfo(const char* model_type)
         Info.numOfCycle     = 3094016;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
+        Info.totalExecuteTime = 1062419;
+        Info.layerExecuteTime = {
+            279011, 83687, 111581, 83687, 83906, 84010, 84010, 56091, 27902, 55922, 56306, 56306
+        };
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
@@ -325,12 +333,12 @@ Model::getModelInfo(const char* model_type)
         Info.numOfCycle     = 8384256;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-
-        // Info.numOfLayers    = 28;
-        // Info.ioMemCount     = 4166632;
-        // Info.filterMemCount = 39294144;
-        // Info.inputSize      = {3, 224, 224};
-        // Info.outputSize     = {1000};
+        Info.totalExecuteTime = 2377800;
+        Info.layerExecuteTime = {
+            139487, 83835, 83750, 56133, 111670, 83750, 56133, 111670, 83750, 111957, 167500, 83802, 
+            56397, 111710, 83687, 56084, 112185, 83687, 28196, 55817, 83687, 84267, 111581, 84241, 
+            56379, 55793, 84730, 55922
+        };
 
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
@@ -342,12 +350,11 @@ Model::getModelInfo(const char* model_type)
         Info.numOfCycle     = 35397120;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-
-        // Info.numOfLayers    = 22;
-        // Info.ioMemCount     = 15262696;
-        // Info.filterMemCount = 140785344;
-        // Info.inputSize      = {3, 224, 224};
-        // Info.outputSize     = {1000};
+        Info.totalExecuteTime = 2451263;
+        Info.layerExecuteTime = {
+            725317, 111644, 56298, 85341, 87075, 56288, 84720, 86519, 86519, 56331, 83906, 114860, 
+            114860, 56317, 112203, 112203, 112203, 56054, 83687, 56306, 56306, 56306
+        };
 
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
@@ -359,6 +366,17 @@ Model::getModelInfo(const char* model_type)
         Info.numOfCycle     = 9824148;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
+        Info.totalExecuteTime = 9409818;
+        Info.layerExecuteTime = {
+            139487, 83835, 55843, 83835, 83854, 55820, 27902, 83854, 55796, 111610, 83748, 7, 83854, 
+            55800, 7, 167445, 27908, 83906, 83802, 55796, 111598, 83782, 7, 83906, 55804, 7, 836828, 
+            55856, 27902, 111584, 83776, 7, 168384, 83748, 7, 111586, 55804, 7, 167440, 27902, 111614, 
+            111612, 27902, 223190, 83766, 7, 111614, 55804, 7, 167440, 27902, 111614, 83802, 27902, 
+            223190, 83766, 7, 111614, 55804, 7, 139545, 27902, 111614, 111610, 27902, 223190, 83782, 
+            7, 111614, 55804, 7, 139547, 27902, 111586, 83828, 7, 224066, 83782, 7, 83776, 111588, 
+            55812, 7, 446314, 55900, 27902, 140086, 83828, 27902, 334746, 55878, 7, 111586, 55812, 7, 
+            111690, 27902, 111586, 83854, 7, 334742, 55908, 7, 111586, 55812, 7, 197334, 55922
+        };
 
     }
 

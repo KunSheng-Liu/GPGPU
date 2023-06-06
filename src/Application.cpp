@@ -28,6 +28,8 @@ int Application::appCount = 0;
  * \param   deadline        the deadline of each task from it arrival time | unit (cycle)
  * \param   end_time        the end_time of the application                | unit (cycle)
  * 
+ * \note    use char* to store the model_type is because it much easier to print out
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -80,5 +82,7 @@ Application::cycle()
     }
     
     /* check application finish */
-    else if(runningModels.empty()) finish = true;
+    else if(runningModels.empty()) {
+        finish = true;
+    }
 }
