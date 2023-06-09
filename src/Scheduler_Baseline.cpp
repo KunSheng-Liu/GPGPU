@@ -11,14 +11,11 @@
 /** ===============================================================================================
  * \name    Baseline_Inference_Admission
  * 
- * \brief   Allocate SM to every application, but each application can only execte one model in a 
- *          time.
+ * \brief   Allocate all SM to every application and its models
  * 
  * \note    * This defualt scheduler didn't block SM to any application, just build tasks into model
  *          and launch all ready kernels to GPU's commandQueue. Which leads the kernel contension
  *          the SM resource in GPU core.
- * 
- * \note    * All application can run one model once a time
  * 
  * \endcond
  * ================================================================================================
@@ -43,16 +40,18 @@ Scheduler::Inference_Admission ()
     
     for (auto app : mCPU->mAPPs)
     {
-        for (auto rmodel = app->runningModels.rbegin(); rmodel != app->runningModels.rend(); rmodel++)
+        while(!app->waitingModels.empty())
         {
-            if ((*rmodel)->SM_budget.empty()) (*rmodel)->SM_budget = available_sm;
-            else break;
+            auto model = app->waitingModels.front();
+            model->SM_budget = available_sm;
 
 #if (PRINT_SM_ALLCOATION_RESULT)
-            std::cout << "APP: " << app->appID << " Model: " << (*rmodel)->modelID << " get SM: ";
-            for (auto sm_id : (*rmodel)->SM_budget) std::cout << sm_id << ", ";
+            std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
+            for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
             std::cout << std::endl;
 #endif
+            app->runningModels.push_back(model);
+            app->waitingModels.pop_front();
         }
     }
 
@@ -151,6 +150,40 @@ Scheduler::Kernel_Scheduler ()
 
 
 /** ===============================================================================================
+ * \name    Memory_Allocator
+ * 
+ * \brief   Allocate GPU unified memory (DRAM + VRAM) space to every application
+ * 
+ * \note    * This defualt scheduler didn't block SM to any application, just build tasks into model
+ *          and launch all ready kernels to GPU's commandQueue. Which leads the kernel contension
+ *          the SM resource in GPU core.
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool 
+Scheduler::Memory_Allocator ()
+{  
+    if (command.MEM_MODE == MEM_ALLOCATION::None)
+    {
+        mCPU->mGPU->getGMMU()->setCGroupSize(-1, VRAM_SPACE / PAGE_SIZE);
+    }
+    else if (command.MEM_MODE == MEM_ALLOCATION::Average)
+    {
+        map<int, int> memory_budget;
+        int size = VRAM_SPACE / PAGE_SIZE;
+
+        for (auto app : mCPU->mAPPs) memory_budget[app->appID] += floor(size / mCPU->mAPPs.size());
+
+        for (size_t i = 0; i < size % mCPU->mAPPs.size(); i++) memory_budget[mCPU->mAPPs[i]->appID]++;
+        
+        for (auto app_pair : memory_budget) mCPU->mGPU->getGMMU()->setCGroupSize(app_pair.first, app_pair.second);
+    }
+
+}
+
+
+/** ===============================================================================================
  * \name    missDeadlineHandler
  * 
  * \brief   Check no model miss deadline, if so, terminate model
@@ -163,20 +196,52 @@ Scheduler::missDeadlineHandler ()
 {  
     for (auto app : mCPU->mAPPs)
     {
+        list<Model*> missModels = {};
+        auto model_info = app->modelInfo;
+        
+        /* check waiting model */
+        for (auto model = app->waitingModels.begin(); model != app->waitingModels.end();)
+        {
+            if ((*model)->task.deadLine - model_info.totalExecuteTime <= total_gpu_cycle)
+            {
+                missModels.push_back(*model);
+                app->waitingModels.erase(model++);
+            } else {
+                model++;
+            }
+        }
+
+        /* check running model */
         for (auto model = app->runningModels.begin(); model != app->runningModels.end();)
         {
-            if ((*model)->task.deadLine <= total_gpu_cycle)
+            int remaining_cycle = 0;
+            auto kernel_status = (*model)->getKernelStatus();
+            for (int i = 0; i < model_info.numOfLayers; i++) if(!kernel_status[i]) remaining_cycle += model_info.layerExecuteTime[i];
+            
+            if ((*model)->task.deadLine - remaining_cycle <= total_gpu_cycle)
             {
-                std::cout << "Model " << (*model)->modelID << " miss deadline!" << std::endl;
-                (*model)->memoryRelease(&mCPU->mMMU);
-
-                mCPU->mGPU->terminateModel((*model)->modelID);
-
-                delete *model;
+                missModels.push_back(*model);
                 app->runningModels.erase(model++);
             } else {
                 model++;
             }
+        }
+
+        /* handle miss deadline */
+        for (auto model : missModels)
+        {
+            string buff = to_string(model->modelID) + " " + model->getModelName() + " with " + to_string(model->getBatchSize()) + " batch size miss deadline! [" + to_string(model->task.arrivalTime) + ", " + to_string(model->task.deadLine) + ", " + to_string(model->startTime) + ", " + to_string(total_gpu_cycle) + "]";
+            log_E("Model", buff);
+
+            ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                file << "App " << model->appID << " Model " << buff << endl;
+            file.close();
+
+            model->memoryRelease(&mCPU->mMMU);
+
+            mCPU->mGPU->terminateModel(model->appID, model->modelID);
+
+            delete model;
         }
     }
 }
@@ -196,7 +261,11 @@ bool
 Scheduler_Greedy::Inference_Admission ()
 {  
     log_T("CPU", "Inference_Admission: Greedy");
-
+    
+    /* *******************************************************************
+     * Check the models haven't miss deadline, if so, terminate model
+     * *******************************************************************
+     */
     missDeadlineHandler();
 
     /*  Get avaiable SM list */
@@ -209,8 +278,9 @@ Scheduler_Greedy::Inference_Admission ()
      */
     for (auto app : mCPU->mAPPs)
     {
-        for (auto model : app->runningModels)
+        if (!app->waitingModels.empty())
         {
+            auto model = app->waitingModels.front();
             model->SM_budget = move(available_sm);
 
 #if (PRINT_SM_ALLCOATION_RESULT)
@@ -218,9 +288,12 @@ Scheduler_Greedy::Inference_Admission ()
             for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
             std::cout << std::endl;
 #endif
-            return true;
+
+            app->runningModels.push_back(model);
+            app->waitingModels.pop_front();
+            break;
         }
     }
 
-    return false;
+    return true;
 }

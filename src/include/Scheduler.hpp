@@ -39,8 +39,9 @@ public:
 public:
     virtual bool Inference_Admission ();
     virtual bool Kernel_Scheduler    ();
+    virtual bool Memory_Allocator    ();
 
-public:
+protected:
     void missDeadlineHandler ();
 
 protected:
@@ -137,6 +138,14 @@ public:
 public:
     bool Inference_Admission () override;
     bool Kernel_Scheduler    () override;
+
+protected:
+    bool Workload_SM_Allocator ();
+    bool Rescue_SM_Allocator   ();
+
+private:
+    map<int, list<Model*>> abandonedModels = {};
+
 };
 
 #endif

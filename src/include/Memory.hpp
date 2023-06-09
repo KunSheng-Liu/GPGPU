@@ -27,6 +27,7 @@ typedef enum {
 }AccessType;
 
 struct MemoryAccess {
+    int app_id;
     int model_id;
 	int sm_id;
 	int block_id;
@@ -37,8 +38,8 @@ struct MemoryAccess {
 
     vector<unsigned long long> pageIDs = {};
 
-    MemoryAccess(int model_id, int sm_id, int block_id, int warp_id, int thread_id, int request_id, AccessType type) 
-            : model_id(model_id), sm_id(sm_id), block_id(block_id), warp_id(warp_id), thread_id(thread_id), request_id(request_id), type(type) {}
+    MemoryAccess(int app_id, int model_id, int sm_id, int block_id, int warp_id, int thread_id, int request_id, AccessType type) 
+            : app_id(app_id), model_id(model_id), sm_id(sm_id), block_id(block_id), warp_id(warp_id), thread_id(thread_id), request_id(request_id), type(type) {}
 };
 
 /** ===============================================================================================

@@ -48,10 +48,10 @@ public:
 public:
     void cycle ();
 
-    bool terminateModel (int model_id);
+    bool terminateModel (int app_id, int model_id);
 
-    void setCGroupSize (int model_id, unsigned capacity);
-    void freeCGroup (int model_id);
+    void setCGroupSize (int app_id, unsigned capacity);
+    void freeCGroup (int app_id);
     pair<int, LRU_TLB<unsigned long long, Page*>>* getCGroup (int model_id);
 
 private:

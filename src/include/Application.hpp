@@ -37,7 +37,7 @@ class Application
 public:
 
     Application(char* model_type, vector<int> input_size, int batch_size = 1, unsigned long long arrival_time = 0, unsigned long long  period = -1
-        , unsigned long long deadline = -1, unsigned long long end_time = GPU_F);
+        /* , unsigned long long deadline = -1 */, unsigned long long end_time = GPU_F);
 
    ~Application();
 
@@ -47,6 +47,8 @@ public:
  */
 public:
     void cycle ();
+
+    void setDeadline (unsigned long long _deadline) {deadline = _deadline;}
     
 /* ************************************************************************************************
  * Parameter
@@ -73,6 +75,7 @@ public:
     Model::ModelInfo modelInfo;
 
     /* Running Models */
+    list<Model*> waitingModels = {};
     list<Model*> runningModels = {};
 
 private:

@@ -86,7 +86,7 @@ public:
     void cycle ();
 
     bool launchKernel (Kernel* kernel);
-    bool terminateModel (int model_id);
+    bool terminateModel (int app_id, int model_id);
     void statistic();
 
     bool isIdle() {return runningKernels.empty() && commandQueue.empty();}

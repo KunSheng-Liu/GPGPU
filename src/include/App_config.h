@@ -79,7 +79,7 @@ class Request;
 #define LOG_LEVEL                           WARNNING
 #define LOG_OUT_PATH                        "./log/"
 #define PRINT_TIME_STEP                     false
-#define PRINT_SM_ALLCOATION_RESULT          false
+#define PRINT_SM_ALLCOATION_RESULT          true
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_ACCESS_PATTERN                false
@@ -113,7 +113,7 @@ class Request;
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
     #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
-    #define DISK_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
+    #define VRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s

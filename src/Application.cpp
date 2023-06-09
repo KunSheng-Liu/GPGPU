@@ -34,11 +34,11 @@ int Application::appCount = 0;
  * ================================================================================================
  */
 Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time
-                                    , unsigned long long  period, unsigned long long deadline, unsigned long long end_time)
+                                    , unsigned long long  period /* , unsigned long long deadline */, unsigned long long end_time)
     : appID(appCount++), modelType(model_type), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), period(period)
-    , deadline(deadline), endTime(end_time), SM_budget({}), modelInfo(Model::getModelInfo(model_type)), finish(false)
+    /* , deadline(deadline) */, endTime(end_time), SM_budget({}), modelInfo(Model::getModelInfo(model_type)), finish(false)
 {
-    ASSERT(input_size[BATCH] == 1);
+    ASSERT(input_size[BATCH] == 1, "Dimension error");
     string name = model_type;
     program_name += "_" + to_string(batchSize) + name;
 }
@@ -76,13 +76,13 @@ Application::cycle()
     {
         if (total_gpu_cycle >= arrivalTime)
         {
-            for (int i = 0; i < batchSize; i++) runningModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
+            for (int i = 0; i < batchSize; i++) waitingModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
             arrivalTime += period;
         }
     }
     
     /* check application finish */
-    else if(runningModels.empty()) {
+    else if(waitingModels.empty() && runningModels.empty()) {
         finish = true;
     }
 }

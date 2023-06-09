@@ -105,7 +105,7 @@ GPU::Runtime_Block_Scheduling()
         for (auto sm_id : *kernel->SM_List) success |= mSMs[sm_id].bindKernel(kernel);
 
         success ? runningKernels.push_back(kernel) : remainingKernels.push(kernel);
-        mem_allocate = success;
+        mem_allocate |= success;
 
         commandQueue.pop();
     }
@@ -138,7 +138,8 @@ GPU::Memory_Allocation()
     else if (command.MEM_MODE == MEM_ALLOCATION::Average)
     {
         map<int, int> memory_budget;
-        for (auto kernel : runningKernels) memory_budget[kernel->modelID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
+        int size = DRAM_SPACE / PAGE_SIZE;
+        for (auto kernel : runningKernels) memory_budget[kernel->appID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
 
         for (auto model_pair : memory_budget) mGMMU.setCGroupSize(model_pair.first, model_pair.second);
     }
@@ -163,7 +164,7 @@ GPU::Check_Finish_Kernel()
         if (kernel->requests.empty())
         {
             kernel->finish = true;
-            for (int sm_id : *kernel->SM_List) kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
+            for (int i = 0; i < GPU_SM_NUM; i++) kernel->finish &= mSMs[i].checkKernelComplete(kernel);
             
             if (kernel->finish) 
             {
@@ -212,6 +213,8 @@ GPU::launchKernel(Kernel* kernel)
  * \brief   Erase the kernel from the GPU runningKernels queue, clear all used resource inlcudes in
  *          SM, Warp, GMMU
  * 
+ * \param   app_id    the application id of the model
+ * 
  * \param   model_id  the model id going to terminate
  * 
  * \return  true / false of terminate kernel
@@ -220,11 +223,11 @@ GPU::launchKernel(Kernel* kernel)
  * ================================================================================================
  */
 bool
-GPU::terminateModel (int model_id)
+GPU::terminateModel (int app_id, int model_id)
 {
     log_D("GPU", "terminateModel");
     /* Release GMMU */
-    mGMMU.terminateModel(model_id);
+    mGMMU.terminateModel(app_id, model_id);
 
     /* Release SM */
     for (auto kernel : runningKernels)

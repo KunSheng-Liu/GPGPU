@@ -152,7 +152,7 @@ public:
     /* Name of model */
     const char* modelType;
 
-	unsigned long long startTime, endTime;
+	unsigned long long startTime = -1, endTime = -1;
 
     Task task;
 

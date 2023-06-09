@@ -140,7 +140,7 @@ SM::cycle()
                 /* Handle the read addresses */
                 if (thread.readIndex != thread.request->readPages.size()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
+                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
                     
                     for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.readIndex != thread.request->readPages.size();)
                     {
@@ -162,7 +162,7 @@ SM::cycle()
                 /* Handle the write addresses */ 
                 else if (!thread.request->writePages.empty()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
+                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
                     
                     for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && !thread.request->writePages.empty(); i++)
                     {
@@ -354,7 +354,7 @@ void
 SM::recycleResource(Block* block)
 {
 #if (PRINT_SM_ALLCOATION_RESULT)
-    std::cout << "Release kernel:" << block->runningKernel->kernelID << " to SM: " << smID << " with warps: " << block->warps.size() << endl;
+    std::cout << "Release kernel:" << block->runningKernel->kernelID << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
 #endif
 
     for (auto& warp : block->warps)

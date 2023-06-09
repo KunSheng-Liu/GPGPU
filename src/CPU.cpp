@@ -59,7 +59,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
-                , get<3>(task.second) * GPU_F / 1000
+                // , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -70,7 +70,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
-                , get<3>(task.second) * GPU_F / 1000
+                // , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -81,7 +81,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
-                , get<3>(task.second) * GPU_F / 1000
+                // , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -92,7 +92,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
-                , get<3>(task.second) * GPU_F / 1000
+                // , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -103,7 +103,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
-                , get<3>(task.second) * GPU_F / 1000
+                // , get<3>(task.second) * GPU_F / 1000
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -136,7 +136,13 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         }
     }
 
-    
+    /* *******************************************************************
+     * Set deadline
+     * *******************************************************************
+     */
+    unsigned long long deadline = 0;
+    for (auto app : mAPPs) deadline += app->batchSize * app->modelInfo.totalExecuteTime;
+    for (auto app : mAPPs) app->setDeadline(deadline * 0.8);
 }
 
 
@@ -169,11 +175,12 @@ CPU::cycle()
 {
     log_I("CPU Cycle", to_string(total_gpu_cycle));
 
-    (Check_Finish_Kernel() || mGPU->isIdle()) &&
+    if (Check_Finish_Kernel() || mGPU->isIdle())
+    {
+        mScheduler->Inference_Admission();
     
-    mScheduler->Inference_Admission() && 
-    
-    mScheduler->Kernel_Scheduler();
+        mScheduler->Kernel_Scheduler();
+    }
 
     /* check new task */
     for (auto app: mAPPs)
@@ -225,7 +232,7 @@ CPU::Check_Finish_Kernel()
             
             /* Release the used memory */
             PageRecord page_record = (*model)->memoryRelease(&mMMU);
-            mGPU->getGMMU()->freeCGroup((*model)->modelID);
+            mGPU->getGMMU()->freeCGroup((*model)->appID);
 
             /* Record the kernel information into file */
             ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);

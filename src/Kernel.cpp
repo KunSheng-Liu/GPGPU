@@ -366,7 +366,7 @@ KernelGroup::handleKernelCompletion()
     finish = true;
     running = false;
 
-    string buff = "Finish kernelGroup [";
+    string buff = "[";
     for (auto kernel : kernel_list) 
     {
         buff += to_string(kernel.first->kernelID) + ", ";
@@ -374,9 +374,11 @@ KernelGroup::handleKernelCompletion()
         kernel.first->running = false;
     //    *kernel.first->recorder += *recorder;
     }
-    buff += "]";
+    buff += "] (";
+    buff += kernel_list.front().first->srcLayer->layerType;
+    buff += ") is finished ";
 
-    log_W(buff, "[" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
+    log_W("kernelGroup", buff + "[" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
 
     /* *******************************************************************
      * Record the kernel information into file

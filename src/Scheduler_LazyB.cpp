@@ -19,8 +19,7 @@
 /** ===============================================================================================
  * \name    LazyB_Inference_Admission
  * 
- * \brief   Only one model can be running in a time, therefore launch the tasks that can be merge
- *          into the model without violate the deadline.
+ * \brief   Launch the tasks that can be merge into the model without violate the deadline.
  * 
  * \note    cannot terminate model when it's kernel is already running due to the sharing filter
  * 
@@ -31,8 +30,6 @@ bool
 Scheduler_LazyB::Inference_Admission ()
 {  
     log_T("CPU", "Inference_Admission: LazyB");
-    if (mCPU->mAPPs.empty()) return false;
-    // ASSERT(mCPU->mAPPs.size() == 1, "LazyB can only run one application");
 
     /* *******************************************************************
      * Check the models haven't miss deadline, if so, terminate model
@@ -58,48 +55,37 @@ Scheduler_LazyB::Inference_Admission ()
         }
     }
 
-    unordered_set<int> available_sm = mCPU->mGPU->getIdleSMs();
+    /* *******************************************************************
+     * Check the remaining slack time, and allocate SM
+     * *******************************************************************
+     */
     for (auto app : app_list)
     {
-        /* *******************************************************************
-         * Check the SM used for application is Idle
-         * *******************************************************************
-         */
-        bool isReady = true;
-        for (auto sm_id : app->SM_budget) isReady &= (available_sm.find(sm_id) != available_sm.end());
-        if (!isReady) continue;
-
-        /* *******************************************************************
-         * Sort the models
-         * *******************************************************************
-         */
-        app->runningModels.sort([](Model*& a, Model*& b){
-            return a->findReadyKernels().front()->kernelID > b->findReadyKernels().front()->kernelID;
-        });
-
-#if (PRINT_LAZY_BATCHING)
-        for (auto model : app->runningModels)
+        if (!app->waitingModels.empty())
         {
-            cout << "Model " << model->modelID << " with " << model->getBatchSize() << " batch size: Ready kernel list: ";
-            for (auto kernel : model->findReadyKernels()) cout << kernel->srcLayer->layerID << ", ";
-            cout << endl;
-        }
+            int batch_budget = LAZYB_MAX_BATCH_SIZE;
+            double slack_time = app->arrivalTime - total_gpu_cycle;
+
+            for (auto model : app->runningModels)
+            {
+                auto kernel_status = model->getKernelStatus();
+                for (int i = 0; i < model->getNumOfLayer(); i++) if (!kernel_status[i]) slack_time -= model->getBatchSize() * app->modelInfo.layerExecuteTime[i];
+            }
+
+            int new_model = min(floor(slack_time / app->modelInfo.totalExecuteTime), (double)app->waitingModels.size());
+            for (int i = 0; i < new_model; i++)
+            {
+                auto model = app->waitingModels.front();
+                model->SM_budget = app->SM_budget;
+
+#if (PRINT_SM_ALLCOATION_RESULT)
+                std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
+                for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
+                std::cout << std::endl;
 #endif
-        /* *******************************************************************
-         * Check the remaining slack time, and allocate SM
-         * *******************************************************************
-         */
-        int batch_budget = LAZYB_MAX_BATCH_SIZE;
-        unsigned long long slack_time = app->runningModels.back()->task.deadLine - total_gpu_cycle;
-
-        for (auto rmodel = app->runningModels.rbegin(); rmodel != app->runningModels.rend(); rmodel++)
-        {
-            auto kernel_stat =  (*rmodel)->getKernelStatus();
-            for (int i = 0; i < (*rmodel)->getNumOfLayer(); i++) if (!kernel_stat[i]) slack_time -= (*rmodel)->getBatchSize() * app->modelInfo.layerExecuteTime[i];
-
-            batch_budget -= (*rmodel)->getBatchSize();
-            if (slack_time >= 0 && batch_budget >= 0) (*rmodel)->SM_budget = app->SM_budget;
-            else (*rmodel)->SM_budget = {};
+                app->runningModels.push_front(model);
+                app->waitingModels.pop_front();
+            }
         }
     }
 
@@ -120,8 +106,9 @@ bool
 Scheduler_LazyB::Kernel_Scheduler ()
 {  
     log_T("CPU", "Kernel_Scheduler: LazyB");
+
     /* *******************************************************************
-     * Assign SM to each application according to its model needed pages
+     * Get Idle SMs
      * *******************************************************************
      */
     unordered_set<int> available_sm = mCPU->mGPU->getIdleSMs();
@@ -136,36 +123,29 @@ Scheduler_LazyB::Kernel_Scheduler ()
         for (auto sm_id : app->SM_budget) isReady &= (available_sm.find(sm_id) != available_sm.end());
         if (!isReady || app->runningModels.empty()) continue;
 
+#if (PRINT_LAZY_BATCHING)
+        for (auto model : app->runningModels)
+        {
+            cout << "Model " << model->modelID << " with " << model->getBatchSize() << " batch size: Ready kernel list: ";
+            for (auto kernel : model->findReadyKernels()) cout << kernel->srcLayer->layerID << ", ";
+            cout << endl;
+        }
+#endif
+        
         /* *******************************************************************
          * Perform merge
          * *******************************************************************
          */
         vector<pair<Kernel*, int>> sync_kernels;
-        unordered_set<int>* sm_list = new unordered_set<int>;
 
-        int latest_layer_id;
-        auto model = app->runningModels.begin();
-
-        while (model != app->runningModels.end())
-        {   
-            if (!(*model)->SM_budget.empty())
-            {
-                latest_layer_id = (*model)->findReadyKernels().front()->srcLayer->layerID;
-                break;
-            }
-            model++;
-        }
-
-        while (model != app->runningModels.end())
+        int latest_layer_id = app->runningModels.front()->findReadyKernels().front()->srcLayer->layerID;
+        for (auto model : app->runningModels)
         {
-            auto kernel = (*model)->findReadyKernels().front();
-            kernel->SM_List = &(*model)->SM_budget;
+            auto kernel = model->findReadyKernels().front();
             if (kernel->srcLayer->layerID == latest_layer_id)
             {
-                sync_kernels.push_back(make_pair(kernel, (*model)->getBatchSize()));
-                sm_list->insert(kernel->SM_List->begin(), kernel->SM_List->end());
+                sync_kernels.push_back(make_pair(kernel, model->getBatchSize()));
             }
-            model++;
         }
 
         /* *******************************************************************
@@ -174,7 +154,7 @@ Scheduler_LazyB::Kernel_Scheduler ()
          */
         Kernel* kernel = (sync_kernels.size() == 1) ? sync_kernels.front().first : new KernelGroup(sync_kernels);
         
-        kernel->SM_List = move(sm_list);
+        kernel->SM_List = move(new unordered_set<int> (app->SM_budget));
         ASSERT(!kernel->SM_List->empty());
 
         if (kernel->compileRequest(&mCPU->mMMU))

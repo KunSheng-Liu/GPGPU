@@ -100,7 +100,7 @@ GMMU::Access_Processing()
     while(!sm_to_gmmu_queue.empty())
     {
         auto access = sm_to_gmmu_queue.front();
-        auto TLB = getCGroup(access->model_id);
+        auto TLB = getCGroup(access->app_id);
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
@@ -183,9 +183,8 @@ GMMU::Page_Fault_Handler()
             {
                 for (auto page_id : access->pageIDs)
                 {
-                    page_fault_process_queue[access->model_id].insert(page_id);
+                    page_fault_process_queue[access->app_id].insert(page_id);
                 }
-                
             }
             page_fault_finish_queue.splice(page_fault_finish_queue.end(), MSHRs);
             wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
@@ -201,6 +200,8 @@ GMMU::Page_Fault_Handler()
  * 
  * \brief   Erase all access from queues if the model is terminate
  * 
+ * \param   app_id    the application id of the model
+ * 
  * \param   model_id  the model id going to terminate
  * 
  * \return  true / false of terminate kernel
@@ -209,7 +210,7 @@ GMMU::Page_Fault_Handler()
  * ================================================================================================
  */
 bool
-GMMU::terminateModel(int model_id)
+GMMU::terminateModel(int app_id, int model_id)
 {
     sm_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
     gmmu_to_sm_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
@@ -221,8 +222,7 @@ GMMU::terminateModel(int model_id)
     mMC->mc_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
     mMC->gmmu_to_mc_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
 
-    freeCGroup(model_id);
-    
+    freeCGroup(app_id);
 
     return true;
 }
@@ -233,17 +233,17 @@ GMMU::terminateModel(int model_id)
  * 
  * \brief   Set the CGroup Size to the sepcific model
  * 
- * \param   model_id    the index of model
+ * \param   app_id      the index of application
  * \param   capacity    the capacity of the model's cgroup
  * 
  * \endcond
  * ================================================================================================
  */
 void
-GMMU::setCGroupSize (int model_id, unsigned capacity)
+GMMU::setCGroupSize (int app_id, unsigned capacity)
 {
-    mCGroups[model_id].second.resize(capacity);
-    mCGroups[model_id].first = capacity;
+    mCGroups[app_id].second.resize(capacity);
+    mCGroups[app_id].first = capacity;
 
 #if (LOG_LEVEL >= VERBOSE)
     std::cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << std::endl;
@@ -257,7 +257,7 @@ GMMU::setCGroupSize (int model_id, unsigned capacity)
  * 
  * \brief   Free up the CGroup of specific model
  * 
- * \param   model_id    the index of model
+ * \param   app_id    the index of application
  * 
  * \endcond
  * ================================================================================================
@@ -267,17 +267,13 @@ inline bool check (Page* const& page) { return page->location == SPACE_DRAM; }
  * ================================================================================================
  */
 void
-GMMU::freeCGroup (int model_id)
+GMMU::freeCGroup (int app_id)
 {
-    if (command.MEM_MODE == MEM_ALLOCATION::None)
-    {   
-        int release_count = mCGroups[-1].second.release( check );
-        log_V("freeCGroup", "release " + to_string(release_count) + " pages from the global CGroup");
-    }
-    else
+    auto it = mCGroups.find((command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id);
+    if (it != mCGroups.end()) 
     {
-        auto it = mCGroups.find(model_id);
-        if (it != mCGroups.end()) mCGroups.erase(it);
+        int release_count = (*it).second.second.release( check );
+        log_V("freeCGroup", "release " + to_string(release_count) + " pages from the CGroup " + to_string((*it).first));
     }
 }
 
@@ -287,20 +283,13 @@ GMMU::freeCGroup (int model_id)
  * 
  * \brief   Get the corresponding CGroup pointer
  * 
- * \param   model_id    the index of model
+ * \param   app_id    the index of application
  * 
  * \endcond
  * ================================================================================================
  */
 pair<int, LRU_TLB<unsigned long long, Page*>>*
-GMMU::getCGroup (int model_id)
+GMMU::getCGroup (int app_id)
 {
-    if (command.MEM_MODE == MEM_ALLOCATION::None)
-    {
-        return &mCGroups[-1];
-    }
-    else
-    {
-        return &mCGroups[model_id];
-    }
+    return &mCGroups[(command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id];
 }
