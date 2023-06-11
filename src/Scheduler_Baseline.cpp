@@ -167,19 +167,24 @@ Scheduler::Memory_Allocator ()
     if (command.MEM_MODE == MEM_ALLOCATION::None)
     {
         mCPU->mGPU->getGMMU()->setCGroupSize(-1, VRAM_SPACE / PAGE_SIZE);
+        return true;
     }
     else if (command.MEM_MODE == MEM_ALLOCATION::Average)
     {
         map<int, int> memory_budget;
+
         int size = VRAM_SPACE / PAGE_SIZE;
 
         for (auto app : mCPU->mAPPs) memory_budget[app->appID] += floor(size / mCPU->mAPPs.size());
 
-        for (size_t i = 0; i < size % mCPU->mAPPs.size(); i++) memory_budget[mCPU->mAPPs[i]->appID]++;
+        for (int i = 0; i < size % mCPU->mAPPs.size(); i++) memory_budget[mCPU->mAPPs[i]->appID]++;
         
-        for (auto app_pair : memory_budget) mCPU->mGPU->getGMMU()->setCGroupSize(app_pair.first, app_pair.second);
+        for (auto app : mCPU->mAPPs) mCPU->mGPU->getGMMU()->setCGroupSize(app->appID, memory_budget[app->appID]);
+        
+        return true;
     }
 
+    return false;
 }
 
 
@@ -278,7 +283,7 @@ Scheduler_Greedy::Inference_Admission ()
      */
     for (auto app : mCPU->mAPPs)
     {
-        if (!app->waitingModels.empty())
+        while (!app->waitingModels.empty())
         {
             auto model = app->waitingModels.front();
             model->SM_budget = move(available_sm);
@@ -291,8 +296,9 @@ Scheduler_Greedy::Inference_Admission ()
 
             app->runningModels.push_back(model);
             app->waitingModels.pop_front();
-            break;
         }
+        
+        if (!app->runningModels.empty()) break;
     }
 
     return true;

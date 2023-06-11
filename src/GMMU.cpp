@@ -179,16 +179,32 @@ GMMU::Page_Fault_Handler()
          */
         if (!MSHRs.empty())
         {
+            page_fault_process_queue = {};
+
+            /* *******************************************************************
+            * Find the demanded pages
+            * *******************************************************************
+            */
+            int page_count;
             for (auto access : MSHRs)
             {
-                for (auto page_id : access->pageIDs)
-                {
-                    page_fault_process_queue[access->app_id].insert(page_id);
-                }
+                unordered_set<unsigned long long> sm_list;
+                for (auto sm_id : access->pageIDs) if (!getCGroup(access->app_id)->second.lookup(sm_id)) sm_list.insert(sm_id);
+
+                page_count = 0;
+                for (auto page_fault_set : page_fault_process_queue) page_count += page_fault_set.second.size();
+                if (page_count + sm_list.size() > PCIE_ACCESS_BOUND) break;
+
+                /* add the page access into queue */
+                page_fault_process_queue[access->app_id].insert(sm_list.begin(), sm_list.end());
+                page_fault_finish_queue.push_back(access);
             }
-            page_fault_finish_queue.splice(page_fault_finish_queue.end(), MSHRs);
-            wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_fault_process_queue.size() * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
-            // wait_cycle = 1;
+
+            for (int i = 0; i < page_fault_finish_queue.size(); i++) MSHRs.pop_front();
+
+            wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+
+            std::cout << "Access pages: " << page_count << std::endl;
         }
     }
     

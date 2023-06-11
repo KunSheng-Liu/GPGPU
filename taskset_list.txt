@@ -1,23 +1,26 @@
-// -I [Sequential | Parallel] -B [Disable | Max] -S [Baseline] -M [None]
-// -T [Light | Heavy | Mix | ALL | LeNet | ResNet18 | VGG16 | GoogleNet] 
+// -S [Greedy | Baseline | LazyB | My] -B [Disable | Max] -M [None | Average]
+// -T [LeNet | CaffeNet | ResNet18 | VGG16 | GoogleNet | ALL |  Light | Heavy | Mix] 
 
-./GPGPU -I Sequential -B Disable -S Greedy   -M None -T LeNet 
-./GPGPU -I Sequential -B Max     -S Greedy   -M None -T LeNet 
-./GPGPU -I Parallel   -B Disable -S Greedy   -M None -T LeNet  
-./GPGPU -I Parallel   -B Max     -S Greedy   -M None -T LeNet 
-./GPGPU -I Parallel   -B Disable -S Baseline -M None -T LeNet 
-./GPGPU -I Parallel   -B Max     -S Baseline -M None -T LeNet
+// ./GPGPU -S Greedy    -B Disable  -M None  -T LeNet     1 0 -1 100
+// ./GPGPU -S Greedy    -B Disable  -M None  -T CaffeNet  1 0 -1 100
+// ./GPGPU -S Greedy    -B Disable  -M None  -T ResNet18  1 0 -1 100
+// ./GPGPU -S Greedy    -B Disable  -M None  -T VGG16     1 0 -1 100
+// ./GPGPU -S Greedy    -B Disable  -M None  -T GoogleNet 1 0 -1 100
 
-// ./GPGPU -I Sequential -B Disable -S Greedy   -M None -T Test1 
-// ./GPGPU -I Sequential -B Max     -S Greedy   -M None -T Test1 
-// ./GPGPU -I Parallel   -B Disable -S Greedy   -M None -T Test1 
-// ./GPGPU -I Parallel   -B Max     -S Greedy   -M None -T Test1 
-// ./GPGPU -I Parallel   -B Disable -S Baseline -M None -T Test1 
-// ./GPGPU -I Parallel   -B Max     -S Baseline -M None -T Test1 
+// ./GPGPU -S Greedy    -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S Greedy    -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100  
+// ./GPGPU -S Baseline  -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S Baseline  -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ./GPGPU -S LazyB     -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S LazyB     -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ./GPGPU -S My        -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S My        -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
 
-// ./GPGPU -I Sequential -B Disable -S Greedy   -M None -T Test2 
-// ./GPGPU -I Sequential -B Max     -S Greedy   -M None -T Test2 
-// ./GPGPU -I Parallel   -B Disable -S Greedy   -M None -T Test2 
-// ./GPGPU -I Parallel   -B Max     -S Greedy   -M None -T Test2 
-// ./GPGPU -I Parallel   -B Disable -S Baseline -M None -T Test2 
-// ./GPGPU -I Parallel   -B Max     -S Baseline -M None -T Test2 
+// ./GPGPU -S Greedy    -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S Greedy    -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100  
+// ./GPGPU -S Baseline  -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S Baseline  -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ./GPGPU -S LazyB     -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S LazyB     -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ./GPGPU -S My        -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU -S My        -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100

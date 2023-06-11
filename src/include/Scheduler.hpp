@@ -142,6 +142,9 @@ public:
 protected:
     bool Workload_SM_Allocator ();
     bool Rescue_SM_Allocator   ();
+    
+    bool APP_Level_SM_Allocator ();
+    bool Model_Level_SM_Allocator ();
 
 private:
     map<int, list<Model*>> abandonedModels = {};

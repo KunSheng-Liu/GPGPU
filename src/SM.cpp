@@ -76,7 +76,7 @@ SM::cycle()
             bool sync = true;
             for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
             
-            warp->isBusy = (block->runningKernel->requests.empty() && sync) ? false : true;
+            warp->isBusy = !(sync && block->runningKernel->requests.empty());
             if (!warp->isBusy) continue;
 
             /* *******************************************************************

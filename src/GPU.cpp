@@ -114,35 +114,6 @@ GPU::Runtime_Block_Scheduling()
 #if (LOG_LEVEL >= VERBOSE)
     for (auto kernel: runningKernels) log_V("running kernel id", to_string(kernel->kernelID));
 #endif
-
-    /* Allocate memory to running kernels */
-    if (mem_allocate) Memory_Allocation();
-}
-
-
-/** ===============================================================================================
- * \name    Memory_Allocation
- * 
- * \brief   Allocate memory to the model follow the rule
- * 
- * \endcond
- * ================================================================================================
- */
-void
-GPU::Memory_Allocation()
-{  
-    if (command.MEM_MODE == MEM_ALLOCATION::None)
-    {
-        mGMMU.setCGroupSize(-1, DRAM_SPACE / PAGE_SIZE);
-    }
-    else if (command.MEM_MODE == MEM_ALLOCATION::Average)
-    {
-        map<int, int> memory_budget;
-        int size = DRAM_SPACE / PAGE_SIZE;
-        for (auto kernel : runningKernels) memory_budget[kernel->appID] += DRAM_SPACE / PAGE_SIZE / runningKernels.size();
-
-        for (auto model_pair : memory_budget) mGMMU.setCGroupSize(model_pair.first, model_pair.second);
-    }
 }
 
 
@@ -175,9 +146,6 @@ GPU::Check_Finish_Kernel()
     }
 
     runningKernels.remove_if([](Kernel* k){return k->isFinish();});
-
-    /* Allocate memory to running kernels */
-    if (!finishedKernels.empty()) Memory_Allocation();
 }
 
 

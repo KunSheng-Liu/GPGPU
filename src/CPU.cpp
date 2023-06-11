@@ -109,27 +109,28 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         }
         else if(task.first == APPLICATION::LIGHT)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  task.second));
         }
         else if (task.first == APPLICATION::HEAVY)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     task.second));
         }
         else if (task.first == APPLICATION::MIX)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     task.second));
         }
         else if (task.first == APPLICATION::ALL)
         {
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, make_tuple(1, 0, -1, 100)));
-            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     make_tuple(1, 0, -1, 100)));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::CaffeNet,  task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::ResNet18,  task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::GoogleNet, task.second));
+            command.TASK_LIST.emplace_back(make_pair(APPLICATION::VGG16,     task.second));
         }
         else {
             ASSERT(false, "Test set error");
@@ -140,9 +141,13 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
      * Set deadline
      * *******************************************************************
      */
+#if (ENABLE_DEADLINE)
     unsigned long long deadline = 0;
     for (auto app : mAPPs) deadline += app->batchSize * app->modelInfo.totalExecuteTime;
-    for (auto app : mAPPs) app->setDeadline(deadline * 0.8);
+    for (auto app : mAPPs) app->setDeadline(deadline * DEADLINE_PERCENTAGE / 100);
+#else
+    for (auto app : mAPPs) app->setDeadline(-1);
+#endif
 }
 
 
@@ -180,6 +185,8 @@ CPU::cycle()
         mScheduler->Inference_Admission();
     
         mScheduler->Kernel_Scheduler();
+
+        mScheduler->Memory_Allocator();
     }
 
     /* check new task */

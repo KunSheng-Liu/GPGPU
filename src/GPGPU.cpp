@@ -97,7 +97,6 @@ GPGPU::run ()
 			gettimeofday(&end, NULL);
 			std::cout << "GPU cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
 #endif
-
 			if (++total_gpu_cycle % 10000 == 0) std::cout << total_gpu_cycle << std::endl;
 		}
 		if (clock_mask & CPU_MASK) {
