@@ -286,7 +286,7 @@ Scheduler_Greedy::Inference_Admission ()
         while (!app->waitingModels.empty())
         {
             auto model = app->waitingModels.front();
-            model->SM_budget = move(available_sm);
+            model->SM_budget = available_sm;
 
 #if (PRINT_SM_ALLCOATION_RESULT)
             std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
@@ -296,6 +296,8 @@ Scheduler_Greedy::Inference_Admission ()
 
             app->runningModels.push_back(model);
             app->waitingModels.pop_front();
+            
+            if (command.BATCH_MODE == BATCH_METHOD::DISABLE) break;
         }
         
         if (!app->runningModels.empty()) break;

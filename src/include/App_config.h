@@ -101,8 +101,8 @@ class Request;
  */ 
 #define SIMULATION_TIME                     10                      // unit (ms)
 
-#define ENABLE_DEADLINE                     false
-#define DEADLINE_PERCENTAGE                 80
+#define ENABLE_DEADLINE                     true
+#define DEADLINE_PERCENTAGE                 100
 
 #define PERFECT_ACCESS                      false                   // Is VRAM space is always enough ?
 #define COMPULSORY_MISS                     true                    // Initial the data in the DRAM ?
@@ -118,7 +118,7 @@ class Request;
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
     #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
-    #define VRAM_SPACE                      1     * pow(2, 28)      // unit (Byte)   32 GB
+    #define VRAM_SPACE                      256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
