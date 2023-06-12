@@ -150,7 +150,7 @@ Model::memoryRelease(MMU* mmu)
     std::cout << std::left << std::setw(15) << info.numOfRead; 
     std::cout << std::left << std::setw(15) << info.numOfWrite; 
     std::cout << std::left << std::setw(15) << info.numOfCycle; 
-    std::cout << endl;
+    std::cout << std::endl;
 #endif
 
     for(auto& kernel : kernelContainer) 

@@ -31,7 +31,8 @@ typedef enum {
 
 struct AccessThread {
 
-    int readIndex = 0;  // Read index for avoiding the erase overhead
+    int readIndex = 0;   // Read index for avoiding the erase overhead
+    int writeIndex = 0;  // Write index for avoiding the erase overhead
 
     Request* request;
     MemoryAccess* access;

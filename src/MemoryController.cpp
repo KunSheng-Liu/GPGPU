@@ -70,7 +70,7 @@ MemoryController::cycle()
             Page& page = mPages[page_id];
             if (page.location != SPACE_VRAM)
             {
-                cout << page_id << endl;
+                std::cout << page_id << std::endl;
                 ASSERT(page.location == SPACE_VRAM, "Memory access error: should in VRAM");
 
             }

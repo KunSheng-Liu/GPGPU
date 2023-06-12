@@ -146,7 +146,7 @@ void parser_cmd (int argc, char** argv)
             std::cout << "\t./GPGPU -sm-dispatch Baseline -M Average" << std::endl;
 
             std::cout << "Default:" << std::endl;
-            std::cout << "./GPGPU -S Greedy -I Sequential -B Disable -M None -T NULL" << endl;
+            std::cout << "./GPGPU -S Greedy -I Sequential -B Disable -M None -T NULL" << std::endl;
 
             exit(1);
         } else ASSERT(false, "Wrong argument, try --help");

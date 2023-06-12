@@ -126,9 +126,9 @@ Scheduler_LazyB::Kernel_Scheduler ()
 #if (PRINT_LAZY_BATCHING)
         for (auto model : app->runningModels)
         {
-            cout << "Model " << model->modelID << " with " << model->getBatchSize() << " batch size: Ready kernel list: ";
-            for (auto kernel : model->findReadyKernels()) cout << kernel->srcLayer->layerID << ", ";
-            cout << endl;
+            std::cout << "Model " << model->modelID << " with " << model->getBatchSize() << " batch size: Ready kernel list: ";
+            for (auto kernel : model->findReadyKernels()) std::cout << kernel->srcLayer->layerID << ", ";
+            std::cout << std::endl;
         }
 #endif
         

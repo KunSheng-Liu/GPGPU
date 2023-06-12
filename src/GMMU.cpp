@@ -202,9 +202,15 @@ GMMU::Page_Fault_Handler()
 
             for (int i = 0; i < page_fault_finish_queue.size(); i++) MSHRs.pop_front();
 
+#if (ENABLE_PAGE_FAULT_PENALTY)
             wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
-
-            std::cout << "Access pages: " << page_count << std::endl;
+#else            
+            wait_cycle = 1;
+#endif
+            log ("Demanded page number", to_string(page_count), Color::Cyan);
+            ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                file << "Demanded page number: " << page_count << std::endl;
+            file.close();
         }
     }
     
@@ -262,7 +268,7 @@ GMMU::setCGroupSize (int app_id, unsigned capacity)
     mCGroups[app_id].first = capacity;
 
 #if (LOG_LEVEL >= VERBOSE)
-    std::cout << "setCGroupSize: [" << model_id << ", " << mCGroups[model_id].first << "]" << std::endl;
+    std::cout << "setCGroupSize: [" << app_id << ", " << mCGroups[app_id].first << "]" << std::endl;
 #endif
     
 }

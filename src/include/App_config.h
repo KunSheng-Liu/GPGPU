@@ -104,9 +104,6 @@ class Request;
 #define ENABLE_DEADLINE                     true
 #define DEADLINE_PERCENTAGE                 100
 
-#define PERFECT_ACCESS                      false                   // Is VRAM space is always enough ?
-#define COMPULSORY_MISS                     true                    // Initial the data in the DRAM ?
-
 #define THREAD_KERNEL_COMPILE               true
 #define THREAD_NUM                          8
 
@@ -122,9 +119,6 @@ class Request;
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
-    #define PAGE_FAULT_PENALTY              20    * pow(0.1, 6)     // unit (s)
-
-    #define PREFETCH_SIZE                   floor((PAGE_FAULT_PENALTY) / ((PAGE_SIZE) / (PCIE_BANDWIDTH))) // unit (pages)
 
     /* Frequency */ 
     #define CPU_F                           1200000000.0            // unit (Hz)    1200 MHz
@@ -171,12 +165,15 @@ class Request;
 
 
 /* ************************************************************************************************
- * Global Configuration
+ * Page Fault Configuration
  * ************************************************************************************************
  */
-#define PAGE_FAULT_COMMUNICATION_CYCLE      (PAGE_FAULT_PENALTY) * (GMMU_F)                     // unit (cycle)
-#define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))     // unit (cycle)
-#define PCIE_ACCESS_BOUND                   floor((PAGE_FAULT_PENALTY) / ((PAGE_SIZE) / (PCIE_BANDWIDTH))) // unit (pages)
+#define ENABLE_PAGE_FAULT_PENALTY           true
+#define COMPULSORY_MISS                     true                                                            // Initial the data in the DRAM ? (deprecated)
+#define PAGE_FAULT_PENALTY                  20 * pow(0.1, 6)                                                // unit (s)
+#define PAGE_FAULT_COMMUNICATION_CYCLE      (PAGE_FAULT_PENALTY) * (GMMU_F)                                 // unit (cycle)
+#define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))                 // unit (cycle)
+#define PCIE_ACCESS_BOUND                   floor((PAGE_FAULT_PENALTY) / ((PAGE_SIZE) / (PCIE_BANDWIDTH)))  // unit (pages)
 
 /* ************************************************************************************************
  * Other Flags

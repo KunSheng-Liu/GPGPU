@@ -90,8 +90,8 @@ SM::cycle()
                 
                 auto& thread = warp->mthreads.at(access->thread_id);
 
-                /* Is the last access ? */
-                if (!thread.request->writePages.empty()) 
+                /* Is the access finish? */
+                if (thread.writeIndex == thread.request->writePages.size()) 
                     thread.state = Busy;
                 else 
                 {
@@ -137,7 +137,10 @@ SM::cycle()
 
                 auto& thread = warp->mthreads.at(i);
                 
-                /* Handle the read addresses */
+                /* ******************************
+                 * Handle the read addresses
+                 * ******************************
+                 */
                 if (thread.readIndex != thread.request->readPages.size()) 
                 {
                     thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
@@ -154,31 +157,48 @@ SM::cycle()
                         i -= count;
                     }
                     ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
-                } 
-                /* Executing the request */
-                else if (thread.request->numOfInstructions-- != 0) {
-                    continue;
                 }
-                /* Handle the write addresses */ 
-                else if (!thread.request->writePages.empty()) 
-                {
-                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
-                    
-                    for (int i = 0; i < GPU_MAX_ACCESS_NUMBER && !thread.request->writePages.empty(); i++)
-                    {
-                        auto& page_pair = thread.request->writePages.front();
-                        thread.access->pageIDs.push_back(page_pair.first);
-                        
-                        if ((--page_pair.second) == 0)
-                        {
-                            thread.request->writePages.erase(thread.request->writePages.begin());
-                        }
-                    }
-                } else {
+
+                /* ******************************
+                 * Executing the request
+                 * ******************************
+                 */
+                else if (thread.request->numOfInstructions-- > 0) {
                     continue;
                 }
 
-                /* push access to gmmu */
+                /* ******************************
+                 * Handle the write addresses
+                 * ******************************
+                 */
+                else if (thread.writeIndex != thread.request->writePages.size()) 
+                {
+                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
+                    
+                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.writeIndex != thread.request->writePages.size();)
+                    {
+                        auto& page_pair = thread.request->writePages.at(thread.writeIndex);
+
+                        int count = min(page_pair.second, i);
+                        thread.access->pageIDs.push_back(page_pair.first);
+                        page_pair.second -= count;
+
+                        (page_pair.second == 0) && (++thread.writeIndex);
+                        i -= count;
+                    }
+                    ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
+                } 
+
+                /* ******************************
+                 * Exception
+                 * ******************************
+                 */
+                else ASSERT(false, "Busy thread should not be idle");
+
+                /* ******************************
+                 * push access to gmmu
+                 * ******************************
+                 */
                 warp->record.launch_access_counter++;
                 warp->record.access_page_counter += thread.access->pageIDs.size();
 
@@ -191,7 +211,7 @@ SM::cycle()
                 {
                     std::cout << page_id << ", ";
                 }
-                std::cout << endl;
+                std::cout << std::endl;
 #endif
             } 
             log_V("Warp ID", to_string(warp->warpID));
@@ -248,7 +268,7 @@ SM::bindKernel(Kernel* kernel)
         }
         
 #if (PRINT_SM_ALLCOATION_RESULT)
-        std::cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << endl;
+        std::cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << std::endl;
 #endif
         runningBlocks.emplace_back(move(b));
         resource.remaining_blocks--;
@@ -290,7 +310,7 @@ SM::terminateKernel(Kernel* kernel)
                 warp->isIdle = true;
 
             }
-            std::cout << "Release kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << block->warps.size() << endl;
+            std::cout << "Release kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << block->warps.size() << std::endl;
         }
     }
     runningBlocks.remove_if([kernel](Block* b){return b->runningKernel == kernel;});
@@ -354,7 +374,7 @@ void
 SM::recycleResource(Block* block)
 {
 #if (PRINT_SM_ALLCOATION_RESULT)
-    std::cout << "Release kernel:" << block->runningKernel->kernelID << " from SM: " << smID << " with warps: " << block->warps.size() << endl;
+    std::cout << "Release kernel:" << block->runningKernel->kernelID << " from SM: " << smID << " with warps: " << block->warps.size() << std::endl;
 #endif
 
     for (auto& warp : block->warps)

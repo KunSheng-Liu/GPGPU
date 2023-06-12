@@ -541,11 +541,13 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     int f_offset  = c_o * f_count;
                     while (f_count != 0)
                     {
+                        ASSERT(floor(f_offset / PAGE_SIZE) < filterPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+
                         int count = (f_offset % PAGE_SIZE) ? min((int) ceil((float) f_offset / PAGE_SIZE) * PAGE_SIZE - f_offset, f_count) : min((int)PAGE_SIZE, f_count);
                         request->readPages.emplace_back(make_pair(filterPages[floor(f_offset / PAGE_SIZE)], count));
+                        
                         f_count -= count;
                         f_offset += count;
-
                     }
 
                     /* read input pages */
@@ -556,11 +558,12 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     {
                         for (int h_i = max(0, h_start); h_i < min(h_start + filterSize[HEIGHT], iFMapSize[HEIGHT]); h_i++)
                         {
-
                             for (int w_i = max(0, w_start); w_i < min(w_start + filterSize[WIDTH], iFMapSize[WIDTH]); w_i++)
                             {
                                 const int index = floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_i * iFMapSize[WIDTH] + w_i) / PAGE_SIZE);
-                                
+
+                                ASSERT(index < iFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+
                                 if (request->readPages.back().first != iFMapPages[index]) 
                                 {
                                     request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
@@ -687,11 +690,13 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     int f_offset  = c_o * f_count;
                     while (f_count != 0)
                     {
+                        ASSERT(floor(f_offset / PAGE_SIZE) < filterPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+
                         int count = (f_offset % PAGE_SIZE) ? min((int) ceil((float) f_offset / PAGE_SIZE) * PAGE_SIZE - f_offset, f_count) : min(PAGE_SIZE, f_count);
                         request->readPages.emplace_back(make_pair(filterPages[floor(f_offset / PAGE_SIZE)], count));
+                        
                         f_count -= count;
                         f_offset += count;
-                        
                     }
 
                     /* read input pages */
@@ -705,6 +710,8 @@ Pooling::issueLayer(ThreadArg* threadArg)
                             for (int w_i = max(0, w_start); w_i < min(w_start + filterSize[WIDTH], iFMapSize[WIDTH]); w_i++)
                             {
                                 const int index = floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_i * iFMapSize[WIDTH] + w_i) / PAGE_SIZE);
+                                
+                                ASSERT(index < iFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
                                 
                                 if (request->readPages.back().first != iFMapPages[index]) 
                                 {
@@ -840,35 +847,39 @@ Flatten::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = (oFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = (oFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (iFMapSize[BATCH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (iFMapSize[BATCH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
-    /* Use inverse order for let the address be closer */
-    for (int w_o = start_index; w_o < end_index; w_o++)
+    for (int b = start_index; b < end_index; b++)
     {
-        for (int h_o = 0; h_o < oFMapSize[HEIGHT]; h_o++)
+        for (int c_i = 0; c_i < iFMapSize[CHANNEL]; c_i++)
         {
-            for (int c_o = 0; c_o < oFMapSize[CHANNEL]; c_o++)
+            Request* request = new Request();
+
+            int i_count = iFMapSize[HEIGHT] * iFMapSize[WIDTH];
+            int i_offset  = b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH];
+            while (i_count != 0)
             {
-                for (int b = 0; b < oFMapSize[BATCH]; b++)
-                {                   
-                    Request* request = new Request();
-                    /* read input pages */
-                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_o * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_o * iFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
-
-                    /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
-
-                    // Performs data copy
-                    request->numOfInstructions = 1;
-
-                    threadArg->requestQueue->push(move(request));
-                }
+                int count = (i_offset % PAGE_SIZE) ? min((int) ceil((float) i_offset / PAGE_SIZE) * PAGE_SIZE - i_offset, i_count) : min((int)PAGE_SIZE, i_count);
                 
+                ASSERT(floor(i_offset / PAGE_SIZE) < iFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+                ASSERT(floor(i_offset / PAGE_SIZE) < oFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+
+                /* read input pages */
+                request->readPages.emplace_back(make_pair(iFMapPages[floor(i_offset / PAGE_SIZE)], count));
+                
+                /* write result to pages */
+                request->writePages.emplace_back(make_pair(oFMapPages[floor(i_offset / PAGE_SIZE)], count));
+                
+                // Performs data copy
+                request->numOfInstructions = 1;
+                
+                i_count -= count;
+                i_offset += count;
             }
-            
+
+            threadArg->requestQueue->push(move(request));
         }
-        
     }
 
     delete threadArg;
@@ -979,35 +990,39 @@ ByPass::issueLayer(ThreadArg* threadArg)
     pthread_mutex_unlock ( ioMutex );
 
     /* Thread compile start and end index */
-    int start_index = (iFMapSize[WIDTH] * threadArg->threadID) / threadArg->numThread;
-    int end_index   = (iFMapSize[WIDTH] * (threadArg->threadID + 1)) / threadArg->numThread;
+    int start_index = (iFMapSize[BATCH] * threadArg->threadID) / threadArg->numThread;
+    int end_index   = (iFMapSize[BATCH] * (threadArg->threadID + 1)) / threadArg->numThread;
 
-    /* Use inverse order for let the address be closer */
-    for (int w_o = start_index; w_o < end_index; w_o++)
+    for (int b = start_index; b < end_index; b++)
     {
-        for (int h_o = 0; h_o < iFMapSize[HEIGHT]; h_o++)
+        for (int c_i = 0; c_i < iFMapSize[CHANNEL]; c_i++)
         {
-            for (int c_o = 0; c_o < iFMapSize[CHANNEL]; c_o++)
+            Request* request = new Request();
+
+            int i_count = iFMapSize[HEIGHT] * iFMapSize[WIDTH];
+            int i_offset  = b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH];
+            while (i_count != 0)
             {
-                for (int b = 0; b < iFMapSize[BATCH]; b++)
-                {                   
-                    Request* request = new Request();
-                    /* read input pages */
-                    request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_o * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_o * iFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
-
-                    /* write result to pages */
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) / PAGE_SIZE)], 1));
-
-                    // Performs data copy
-                    request->numOfInstructions = 1;
-
-                    threadArg->requestQueue->push(move(request));
-                }
+                int count = (i_offset % PAGE_SIZE) ? min((int) ceil((float) i_offset / PAGE_SIZE) * PAGE_SIZE - i_offset, i_count) : min((int)PAGE_SIZE, i_count);
                 
+                ASSERT(floor(i_offset / PAGE_SIZE) < iFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+                ASSERT(floor(i_offset / PAGE_SIZE) < oFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+
+                /* read input pages */
+                request->readPages.emplace_back(make_pair(iFMapPages[floor(i_offset / PAGE_SIZE)], count));
+                
+                /* write result to pages */
+                request->writePages.emplace_back(make_pair(oFMapPages[floor(i_offset / PAGE_SIZE)], count));
+                
+                // Performs data copy
+                request->numOfInstructions = 1;
+                
+                i_count -= count;
+                i_offset += count;
             }
-            
+
+            threadArg->requestQueue->push(move(request));
         }
-        
     }
     
     delete threadArg;
@@ -1153,6 +1168,9 @@ Dense::issueLayer(ThreadArg* threadArg)
             for (int c_i = 0; c_i < ceil((float)filterSize[FILTER_CHANNEL_I] / PAGE_SIZE);)
             {
                 int count = min(filterSize[FILTER_CHANNEL_I] - c_i * PAGE_SIZE, PAGE_SIZE);
+
+                ASSERT(floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)    < iFMapPages.size(),  "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
+                ASSERT(floor((c_o * filterSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE) < filterPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
 
                 /* read input pages */
                 request->readPages.emplace_back(make_pair(iFMapPages[floor((b * iFMapSize[FILTER_CHANNEL_I] + c_i) / PAGE_SIZE)], count));

@@ -92,8 +92,6 @@ GPU::Runtime_Block_Scheduling()
 {  
     log_T("GPU", "Runtime_Block_Scheduling");
 
-    bool mem_allocate;
-
     /* Iterate all kernels inside the command Queue */
     queue<Kernel*> remainingKernels;
     while(!commandQueue.empty())
@@ -105,7 +103,6 @@ GPU::Runtime_Block_Scheduling()
         for (auto sm_id : *kernel->SM_List) success |= mSMs[sm_id].bindKernel(kernel);
 
         success ? runningKernels.push_back(kernel) : remainingKernels.push(kernel);
-        mem_allocate |= success;
 
         commandQueue.pop();
     }

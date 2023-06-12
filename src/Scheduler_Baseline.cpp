@@ -97,7 +97,7 @@ Scheduler::Kernel_Scheduler ()
         {
             std::cout << kernel->kernelID << ", ";
         }
-        std::cout << endl;
+        std::cout << std::endl;
 #endif
 
         /* *******************************************************************
@@ -239,7 +239,7 @@ Scheduler::missDeadlineHandler ()
             log_E("Model", buff);
 
             ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                file << "App " << model->appID << " Model " << buff << endl;
+                file << "App " << model->appID << " Model " << buff << std::endl;
             file.close();
 
             model->memoryRelease(&mCPU->mMMU);
@@ -296,7 +296,7 @@ Scheduler_Greedy::Inference_Admission ()
 
             app->runningModels.push_back(model);
             app->waitingModels.pop_front();
-            
+
             if (command.BATCH_MODE == BATCH_METHOD::DISABLE) break;
         }
         

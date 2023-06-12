@@ -191,12 +191,12 @@ public:
         {
             if (check_function ((*it).second))
             {
-                // cout << "erase value: " << (*it).first << endl;
+                // std::cout << "erase value: " << (*it).first << std::endl;
                 release_count++;
                 table.erase((*it).first);
                 history.erase(it++);
             } else {
-                // cout << "not erase value: " << (*it).first << endl;
+                // std::cout << "not erase value: " << (*it).first << std::endl;
                 it++;
             }
         }

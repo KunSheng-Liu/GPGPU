@@ -165,9 +165,9 @@ Scheduler_My::Workload_SM_Allocator ()
 #if (PRINT_SM_ALLCOATION_RESULT)
     for (auto app : mCPU->mAPPs) 
     {
-        cout << "App" << app->appID << ": ";
-        for (auto sm_id : app->SM_budget) cout << sm_id << ", ";
-        cout << endl;
+        std::cout << "App" << app->appID << ": ";
+        for (auto sm_id : app->SM_budget) std::cout << sm_id << ", ";
+        std::cout << std::endl;
     }
 #endif
 
@@ -184,7 +184,7 @@ Scheduler_My::Workload_SM_Allocator ()
             double num_of_model = (double) (app->waitingModels.front()->task.deadLine - total_gpu_cycle) / app->modelInfo.totalExecuteTime;
 
             int batch_limit = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
-            cout << "App " << app->appID << " has " << (int)(sm_ratio * num_of_model / BBR) << " batch limit" << endl;
+            std::cout << "App " << app->appID << " has " << (int)(sm_ratio * num_of_model / BBR) << " batch limit" << std::endl;
 
             for (int i = 0; i < batch_limit; i++)
             {
@@ -260,12 +260,11 @@ Scheduler_My::Rescue_SM_Allocator ()
     model->SM_budget = released_sm;
 
 #if (PRINT_SM_ALLCOATION_RESULT)
-    auto app = mCPU->mAPPs[app_id];
-    std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
+    std::cout << "APP: " << app_id << " Model: " << model->modelID << " get SM: ";
     for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
     std::cout << std::endl;
 #endif
-    app->runningModels.push_back(model);
+    mCPU->mAPPs[app_id]->runningModels.push_back(model);
     abandonedModels[app_id].pop_front();
 
     return true;
@@ -348,9 +347,9 @@ Scheduler_My::APP_Level_SM_Allocator ()
 #if (PRINT_SM_ALLCOATION_RESULT)
     for (auto app : mCPU->mAPPs) 
     {
-        cout << "App" << app->appID << ": ";
-        for (auto sm_id : app->SM_budget) cout << sm_id << ", ";
-        cout << endl;
+        std::cout << "App" << app->appID << ": ";
+        for (auto sm_id : app->SM_budget) std::cout << sm_id << ", ";
+        std::cout << std::endl;
     }
 #endif
 
@@ -390,7 +389,7 @@ Scheduler_My::Model_Level_SM_Allocator ()
             double num_of_model = (double) (app->waitingModels.front()->task.deadLine - total_gpu_cycle) / app->modelInfo.totalExecuteTime;
 
             int batch_limit = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
-            cout << "App " << app->appID << " has " << (int)(sm_ratio * num_of_model / BBR) << " batch limit" << endl;
+            std::cout << "App " << app->appID << " has " << (int)(sm_ratio * num_of_model / BBR) << " batch limit" << std::endl;
 
             for (int i = 0; i < batch_limit; i++)
             {

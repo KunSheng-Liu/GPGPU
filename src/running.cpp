@@ -100,9 +100,9 @@ int main(int argc, char** argv)
 void exe_thread(string cmd)
 {
     sem_wait(count_semaphore);
-        cout << "Exec cmd: " << cmd << endl;
+        std::cout << "Exec cmd: " << cmd << std::endl;
         int ret = system(cmd.c_str());
     sem_post(count_semaphore);
 
-    cout << "Finish: " << cmd << endl;
+    std::cout << "Finish: " << cmd << std::endl;
 }

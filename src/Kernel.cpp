@@ -100,6 +100,7 @@ Kernel::compileRequest (MMU* mmu)
 void
 Kernel::addRequest(Request* request)
 {
+    ASSERT(request, "Layer " + to_string(srcLayer->layerID) + " (" + srcLayer->layerType + ") get null request!");
     request->requst_id = requests.size();
     for (auto access : request->readPages ) kernelInfo.numOfRead  += access.second;
     for (auto access : request->writePages) kernelInfo.numOfWrite += access.second;
@@ -277,7 +278,7 @@ Kernel::printInfo(bool title)
  * \endcond
  * ================================================================================================
  */
-KernelGroup::KernelGroup(vector<pair<Kernel*, int>> kernels) : Kernel(kernels.front().first->appID, -1, nullptr, {}),  kernel_list(kernels)
+KernelGroup::KernelGroup(vector<pair<Kernel*, int>> kernels) : Kernel(kernels.front().first->appID, kernels.front().first->modelID, nullptr, {}),  kernel_list(kernels)
 {
     
 }

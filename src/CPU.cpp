@@ -66,7 +66,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::CaffeNet)
         {
             mAPPs.push_back(new Application ((char*)"CaffeNet"
-                , {1, 1, 112, 112}
+                , {1, 3, 112, 112}
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
@@ -77,7 +77,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::ResNet18)
         {
             mAPPs.push_back(new Application ((char*)"ResNet18"
-                , {1, 1, 112, 112}
+                , {1, 3, 112, 112}
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
@@ -88,7 +88,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::GoogleNet)
         {
             mAPPs.push_back(new Application ((char*)"GoogleNet"
-                , {1, 1, 112, 112}
+                , {1, 3, 112, 112}
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
@@ -99,7 +99,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
         else if (task.first == APPLICATION::VGG16)
         {
             mAPPs.push_back(new Application ((char*)"VGG16"
-                , {1, 1, 112, 112}
+                , {1, 3, 112, 112}
                 , get<0>(task.second)
                 , get<1>(task.second) * GPU_F / 1000
                 , get<2>(task.second) * GPU_F / 1000
@@ -243,8 +243,8 @@ CPU::Check_Finish_Kernel()
 
             /* Record the kernel information into file */
             ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                file << "PageRecord: [" << page_record.read_counter << ", " << page_record.write_counter << ", " << page_record.access_count << ", " << page_record.swap_count << "]" << endl;
-                file << "App " << (*model)->appID << " Model " << buff << endl;
+                file << "PageRecord: [" << page_record.read_counter << ", " << page_record.write_counter << ", " << page_record.access_count << ", " << page_record.swap_count << "]" << std::endl;
+                file << "App " << (*model)->appID << " Model " << buff << std::endl;
             file.close();
 
             /* Delete the model */
