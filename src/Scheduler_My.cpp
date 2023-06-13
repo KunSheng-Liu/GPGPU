@@ -384,12 +384,15 @@ Scheduler_My::Model_Level_SM_Allocator ()
         /* Launch new model to inference from waiting queue */
         if (!app->waitingModels.empty())
         {
+#if (ENABLE_DEADLINE)
             double BBR          = (double) app->modelInfo.ioMemCount / (app->modelInfo.ioMemCount + app->modelInfo.filterMemCount);
             double sm_ratio     = (double) available_sm.size() / GPU_SM_NUM;
             double num_of_model = (double) (app->waitingModels.front()->task.deadLine - total_gpu_cycle) / app->modelInfo.totalExecuteTime;
-
-            int batch_limit = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
-            std::cout << "App " << app->appID << " has " << (int)(sm_ratio * num_of_model / BBR) << " batch limit" << std::endl;
+            int batch_limit     = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
+#else
+            int batch_limit     = (double) app->waitingModels.size();
+#endif
+            std::cout << "App " << app->appID << " has " << batch_limit << " batch limit" << std::endl;
 
             for (int i = 0; i < batch_limit; i++)
             {

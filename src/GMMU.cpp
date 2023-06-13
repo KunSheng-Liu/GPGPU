@@ -75,7 +75,7 @@ GMMU::Access_Processing()
     log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
     if(!mMC->mc_to_gmmu_queue.empty()) 
     {
-        gmmu_to_sm_queue.splice(gmmu_to_sm_queue.end(), mMC->mc_to_gmmu_queue);
+        gmmu_to_warps_queue.splice(gmmu_to_warps_queue.end(), mMC->mc_to_gmmu_queue);
     }
     
 
@@ -83,12 +83,35 @@ GMMU::Access_Processing()
      * Return finished access to SM
      * *******************************************************************
      */
-    log_T("GMMU", "Return " + to_string(gmmu_to_sm_queue.size()) + " access");
-    while(!gmmu_to_sm_queue.empty())
+    log_T("GMMU", "Return " + to_string(gmmu_to_warps_queue.size()) + " access");
+    while(!gmmu_to_warps_queue.empty())
     {
-        auto access = gmmu_to_sm_queue.front();
-        mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_sm_queue.push_back(access);
-        gmmu_to_sm_queue.pop_front();
+        auto access = gmmu_to_warps_queue.front();
+        mGPU->mSMs[access->sm_id].mWarps[access->warp_id].gmmu_to_warp_queue.push_back(access);
+        gmmu_to_warps_queue.pop_front();
+    }
+
+
+    /* *******************************************************************
+     * Collect the accesses
+     * *******************************************************************
+     */
+    while(1)
+    {
+        bool empty = true;
+        for (int j = 0; j < GPU_MAX_WARP_PER_SM; j++)
+        {
+            for (int i = 0; i < GPU_SM_NUM; i++)
+            {
+                if (!mGPU->mSMs[i].mWarps[j].warp_to_gmmu_queue.empty())
+                {
+                    warps_to_gmmu_queue.push_back(mGPU->mSMs[i].mWarps[j].warp_to_gmmu_queue.front());
+                    mGPU->mSMs[i].mWarps[j].warp_to_gmmu_queue.pop_front();
+                    empty = false;
+                }
+            }
+        }
+        if (empty) break;
     }
 
 
@@ -96,20 +119,20 @@ GMMU::Access_Processing()
      * Handling the accesses
      * *******************************************************************
      */
-    log_T("GMMU", "Handle " + to_string(sm_to_gmmu_queue.size()) + " access");
-    while(!sm_to_gmmu_queue.empty())
+    log_T("GMMU", "Handle " + to_string(warps_to_gmmu_queue.size()) + " access");
+    while(!warps_to_gmmu_queue.empty())
     {
-        auto access = sm_to_gmmu_queue.front();
+        auto access = warps_to_gmmu_queue.front();
         auto TLB = getCGroup(access->app_id);
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
-        for (auto page_id : access->pageIDs) hit &= TLB->second.lookup(page_id);
+        for (auto page_id : access->pageIDs) hit &= TLB->lookup(page_id);
 
         /* Classify the access into correspond handling queue */
         hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
 
-        sm_to_gmmu_queue.pop_front();
+        warps_to_gmmu_queue.pop_front();
     }
 }
 
@@ -145,20 +168,22 @@ GMMU::Page_Fault_Handler()
         {
             for (auto fault_pair : page_fault_process_queue)
             {
-                ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->first, "Allocated memory is less than the model needed");
+                ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->size(), "Allocated memory is less than the model needed");
 
                 for (auto page_id : fault_pair.second)
                 {
                     /* Migration from DRAM to VRAM */
                     Page* page = mMC->refer(page_id);
                     ASSERT(page, "page ptr doesn't exist");
+                    
                     page->location = SPACE_VRAM;
                     page->record.swap_count++;
-                    page = getCGroup(fault_pair.first)->second.insert(page_id, page);
+                    page = getCGroup(fault_pair.first)->insert(page_id, page);
 
                     /* Eviction happen */
                     if (page)
                     {
+                        log ("Swap", "", Color::Cyan);
                         page->location = SPACE_DRAM;
                         page->record.swap_count++;
                     }
@@ -166,10 +191,10 @@ GMMU::Page_Fault_Handler()
             }
             page_fault_process_queue.clear();
             /* *******************************************************************
-            * Handle return
-            * *******************************************************************
-            */
-            sm_to_gmmu_queue.splice(sm_to_gmmu_queue.end(), page_fault_finish_queue);
+             * Handle return
+             * *******************************************************************
+             */
+            warps_to_gmmu_queue.splice(warps_to_gmmu_queue.end(), page_fault_finish_queue);
         }
     
         /* *******************************************************************
@@ -182,25 +207,67 @@ GMMU::Page_Fault_Handler()
             page_fault_process_queue = {};
 
             /* *******************************************************************
-            * Find the demanded pages
-            * *******************************************************************
-            */
-            int page_count;
+             * Find the demanded pages
+             * *******************************************************************
+             */
+            int page_count = 0;
             for (auto access : MSHRs)
             {
-                unordered_set<unsigned long long> sm_list;
-                for (auto sm_id : access->pageIDs) if (!getCGroup(access->app_id)->second.lookup(sm_id)) sm_list.insert(sm_id);
-
-                page_count = 0;
-                for (auto page_fault_set : page_fault_process_queue) page_count += page_fault_set.second.size();
-                if (page_count + sm_list.size() > PCIE_ACCESS_BOUND) break;
-
-                /* add the page access into queue */
-                page_fault_process_queue[access->app_id].insert(sm_list.begin(), sm_list.end());
-                page_fault_finish_queue.push_back(access);
+                unordered_set<unsigned long long> page_list = {};
+                for (auto page_id : access->pageIDs) if (!getCGroup(access->app_id)->lookup(page_id)) page_list.insert(page_id);
+                if (page_count + page_list.size() > PCIE_ACCESS_BOUND) break;
+                
+                if (page_fault_process_queue[access->app_id].size() + page_list.size() <= getCGroup(access->app_id)->size())
+                {
+                    /* add the page access into queue */
+                    page_count -= page_fault_process_queue[access->app_id].size();
+                    page_fault_process_queue[access->app_id].insert(page_list.begin(), page_list.end());
+                    page_fault_finish_queue.push_back(access);
+                    page_count += page_fault_process_queue[access->app_id].size();
+                }
             }
 
-            for (int i = 0; i < page_fault_finish_queue.size(); i++) MSHRs.pop_front();
+            MSHRs.remove_if([this](const auto& a){
+                return find(this->page_fault_finish_queue.begin(), this->page_fault_finish_queue.end(), a) != this->page_fault_finish_queue.end();
+            });
+            
+#if (PAGE_PREFETCH)
+            /* *******************************************************************
+             * Prefetch smaller gap first
+             * *******************************************************************
+             */
+            if (page_count < PCIE_ACCESS_BOUND)
+            {
+                list<pair<int, size_t>> cgroup_pairs = {}; // first: key, second: fillup_gap
+                for (auto CGroup : mCGroups) cgroup_pairs.emplace_back(make_pair(CGroup.first, CGroup.second.size() - CGroup.second.usage()));
+
+                cgroup_pairs.sort([](const auto& a, const auto& b){ return a.second > b.second; });
+                
+                for (auto pair : cgroup_pairs)
+                {
+                    int prefetch_limit = min((int)(PCIE_ACCESS_BOUND - page_count), (int)pair.second);
+                    
+                    unordered_set<unsigned long long> prefetch_list = {};
+                    for (auto page_id : page_fault_process_queue[pair.first])
+                    {
+                        auto page = mMC->mPages[page_id].nextPage;
+
+                        while (page) 
+                        {
+                            if (prefetch_list.size() == prefetch_limit) break;
+
+                            if (!mCGroups[pair.first].lookup(page->pageIndex)) prefetch_list.insert(page->pageIndex);
+                            page = page->nextPage;
+                        }
+                    }
+
+                    page_fault_process_queue[pair.first].insert(prefetch_list.begin(), prefetch_list.end());
+                    page_count += prefetch_list.size();
+
+                    if (page_count == PCIE_ACCESS_BOUND) break;
+                }
+            }
+#endif
 
 #if (ENABLE_PAGE_FAULT_PENALTY)
             wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
@@ -234,8 +301,8 @@ GMMU::Page_Fault_Handler()
 bool
 GMMU::terminateModel(int app_id, int model_id)
 {
-    sm_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
-    gmmu_to_sm_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    warps_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    gmmu_to_warps_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
 
     page_fault_finish_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
     page_fault_process_queue.erase(model_id);
@@ -264,11 +331,10 @@ GMMU::terminateModel(int app_id, int model_id)
 void
 GMMU::setCGroupSize (int app_id, unsigned capacity)
 {
-    mCGroups[app_id].second.resize(capacity);
-    mCGroups[app_id].first = capacity;
+    mCGroups[app_id].resize(capacity);
 
 #if (LOG_LEVEL >= VERBOSE)
-    std::cout << "setCGroupSize: [" << app_id << ", " << mCGroups[app_id].first << "]" << std::endl;
+    std::cout << "setCGroupSize: [" << app_id << ", " << mCGroups[app_id].size() << "]" << std::endl;
 #endif
     
 }
@@ -294,7 +360,7 @@ GMMU::freeCGroup (int app_id)
     auto it = mCGroups.find((command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id);
     if (it != mCGroups.end()) 
     {
-        int release_count = (*it).second.second.release( check );
+        int release_count = (*it).second.release( check );
         log_V("freeCGroup", "release " + to_string(release_count) + " pages from the CGroup " + to_string((*it).first));
     }
 }
@@ -310,7 +376,7 @@ GMMU::freeCGroup (int app_id)
  * \endcond
  * ================================================================================================
  */
-pair<int, LRU_TLB<unsigned long long, Page*>>*
+LRU_TLB<unsigned long long, Page*>*
 GMMU::getCGroup (int app_id)
 {
     return &mCGroups[(command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id];

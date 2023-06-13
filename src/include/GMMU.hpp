@@ -52,7 +52,7 @@ public:
 
     void setCGroupSize (int app_id, unsigned capacity);
     void freeCGroup (int app_id);
-    pair<int, LRU_TLB<unsigned long long, Page*>>* getCGroup (int model_id);
+    LRU_TLB<unsigned long long, Page*>* getCGroup (int model_id);
 
 private:
     void Access_Processing ();
@@ -69,8 +69,8 @@ private:
 
     list<MemoryAccess*> MSHRs;
 
-	list<MemoryAccess*> sm_to_gmmu_queue;
-	list<MemoryAccess*> gmmu_to_sm_queue;
+	list<MemoryAccess*> warps_to_gmmu_queue;
+	list<MemoryAccess*> gmmu_to_warps_queue;
     
     /* Page Fault handler */
 	unsigned long long wait_cycle = 0;
@@ -82,7 +82,7 @@ private:
      * \param cgroup        the cgroup, use LRU
      * *******************************************************************
      */
-	map<int, pair<int, LRU_TLB<unsigned long long, Page*>>> mCGroups;
+	map<int, LRU_TLB<unsigned long long, Page*>> mCGroups;
 
 friend SM;
 };

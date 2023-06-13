@@ -83,7 +83,7 @@ SM::cycle()
              * Handle gmmu to sm response
              * *******************************************************************
              */
-            for (auto access : warp->gmmu_to_sm_queue)
+            for (auto access : warp->gmmu_to_warp_queue)
             {
                 ASSERT(warp->mthreads.at(access->thread_id).state == Waiting, "Error thread id");
                 warp->record.return_access_counter++;
@@ -101,7 +101,7 @@ SM::cycle()
 
                 delete thread.access;
             }
-            warp->gmmu_to_sm_queue.clear();
+            warp->gmmu_to_warp_queue.clear();
 
 
 
@@ -202,7 +202,7 @@ SM::cycle()
                 warp->record.launch_access_counter++;
                 warp->record.access_page_counter += thread.access->pageIDs.size();
 
-                mGMMU->sm_to_gmmu_queue.push_back(thread.access);
+                warp->warp_to_gmmu_queue.push_back(thread.access);
                 thread.state = Waiting;
                 
 #if (PRINT_ACCESS_PATTERN)
@@ -305,7 +305,7 @@ SM::terminateKernel(Kernel* kernel)
                     delete thread.request;
                     delete thread.access;
                 }
-                warp->gmmu_to_sm_queue.clear();
+                warp->gmmu_to_warp_queue.clear();
                 warp->isBusy = false;
                 warp->isIdle = true;
 

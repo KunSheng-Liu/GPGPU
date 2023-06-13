@@ -82,7 +82,6 @@ class Request;
 #define PRINT_SM_ALLCOATION_RESULT          true
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
-#define PRINT_ACCESS_PATTERN                false
 #define PRINT_BLOCK_RECORD                  true
 #define PRINT_WARP_RECORD                   true
 
@@ -101,7 +100,7 @@ class Request;
  */ 
 #define SIMULATION_TIME                     10                      // unit (ms)
 
-#define ENABLE_DEADLINE                     true
+#define ENABLE_DEADLINE                     false
 #define DEADLINE_PERCENTAGE                 100
 
 #define THREAD_KERNEL_COMPILE               true
@@ -115,7 +114,7 @@ class Request;
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
     #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
-    #define VRAM_SPACE                      256   * pow(2, 20)      // unit (Byte)  256 MB
+    #define VRAM_SPACE                      1     * pow(2, 17)      // unit (Byte)   32 KB
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
@@ -137,8 +136,8 @@ class Request;
     #define DRAM_LEAKAGE_POWER	            70.8  * pow(0.1, 3)	    // unit (W)
 
     /* GPU */   
-    #define GPU_SM_NUM                      8 
-    #define GPU_MAX_WARP_PER_SM             64 
+    #define GPU_SM_NUM                      3 
+    #define GPU_MAX_WARP_PER_SM             32 
     #define GPU_MAX_WARP_PER_BLOCK          32 
     #define GPU_MAX_THREAD_PER_WARP         32 
     #define GPU_MAX_THREAD_PER_SM           GPU_MAX_THREAD_PER_WARP * GPU_MAX_THREAD_PER_WARP
@@ -170,6 +169,7 @@ class Request;
  */
 #define ENABLE_PAGE_FAULT_PENALTY           true
 #define COMPULSORY_MISS                     true                                                            // Initial the data in the DRAM ? (deprecated)
+#define PAGE_PREFETCH                       false
 #define PAGE_FAULT_PENALTY                  20 * pow(0.1, 6)                                                // unit (s)
 #define PAGE_FAULT_COMMUNICATION_CYCLE      (PAGE_FAULT_PENALTY) * (GMMU_F)                                 // unit (cycle)
 #define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))                 // unit (cycle)

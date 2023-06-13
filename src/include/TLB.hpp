@@ -46,6 +46,37 @@ public:
  */
 public:
     /** ==================================================================
+     * \name    size
+     * 
+     * \brief   get the storage size
+     * 
+     * \return  size of this TLB
+     * 
+     * \endcond
+     * ===================================================================
+     */
+    size_t size ()
+    {
+        return capacity;
+    }
+
+
+    /** ==================================================================
+     * \name    usage
+     * 
+     * \brief   get the storage usage
+     * 
+     * \return  size of this TLB usage
+     * 
+     * \endcond
+     * ===================================================================
+     */
+    size_t usage ()
+    {
+        return history.size();
+    }
+
+    /** ==================================================================
      * \name    resize
      * 
      * \brief   change TLB capacity
@@ -89,9 +120,7 @@ public:
     {
         auto it = table.find(key);
 
-        if (it == table.end()) {
-            return false;
-        }
+        if (it == table.end()) return false;
 
         history.splice(history.end(), history, it->second);
         value = it->second->second;

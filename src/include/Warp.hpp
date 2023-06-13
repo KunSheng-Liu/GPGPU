@@ -98,7 +98,8 @@ public:
     /* The thread queues that handle the access state machine */
     vector<AccessThread> mthreads;
     
-	list<MemoryAccess*> gmmu_to_sm_queue;
+	list<MemoryAccess*> warp_to_gmmu_queue;
+	list<MemoryAccess*> gmmu_to_warp_queue;
 
 friend GMMU;
 };
