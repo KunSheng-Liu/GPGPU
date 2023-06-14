@@ -56,21 +56,21 @@ Scheduler_BARM::Inference_Admission ()
     // int SM_count = 0;
     // for (auto app_pair : APP_list)
     // {
-    //     std::cout << GPU_SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
+    //     std::cout << system_resource.SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
     //     /* Avoid starvation, at least assign 1 SM to application */
-    //     if ((int)(GPU_SM_NUM * (app_pair.first / total_needed_memory) == 0))
+    //     if ((int)(system_resource.SM_NUM * (app_pair.first / total_needed_memory) == 0))
     //     {
     //         total_needed_memory -= app_pair.first;
     //         app_pair.second->SM_budget.push_back(SM_count++);
     //         continue;
     //     }
 
-    //     for (int i = 0; i < (int)(GPU_SM_NUM * (app_pair.first / total_needed_memory)); i++)
+    //     for (int i = 0; i < (int)(system_resource.SM_NUM * (app_pair.first / total_needed_memory)); i++)
     //     {
     //         app_pair.second->SM_budget.push_back(SM_count++);
     //     }
 
-    //     ASSERT(SM_count == GPU_SM_NUM);
+    //     ASSERT(SM_count == system_resource.SM_NUM);
     // }
 
 }

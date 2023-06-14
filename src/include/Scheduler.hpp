@@ -112,9 +112,7 @@ public:
  */
 class Scheduler_LazyB : public Scheduler
 {
-    #define LAZYB_MAX_CONCURRENCY           GPU_SM_NUM 
     #define LAZYB_MAX_BATCH_SIZE            64 
-    #define LAZYB_CYCLE_DEADLINE            GPU_F / 10
     
 public:
     Scheduler_LazyB (CPU* cpu) : Scheduler(cpu) {}

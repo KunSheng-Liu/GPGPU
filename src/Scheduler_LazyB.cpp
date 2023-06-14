@@ -45,7 +45,7 @@ Scheduler_LazyB::Inference_Admission ()
     for (auto app : mCPU->mAPPs) if(!app->finish) app_list.push_back(app);
     if (app_list.empty()) return false;
 
-    int sm_count = 0, sm_budget = GPU_SM_NUM;
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
     while (sm_budget != 0) 
     {
         for (auto app : app_list) 

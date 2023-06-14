@@ -101,7 +101,7 @@ GMMU::Access_Processing()
         bool empty = true;
         for (int j = 0; j < GPU_MAX_WARP_PER_SM; j++)
         {
-            for (int i = 0; i < GPU_SM_NUM; i++)
+            for (int i = 0; i < system_resource.SM_NUM; i++)
             {
                 if (!mGPU->mSMs[i].mWarps[j].warp_to_gmmu_queue.empty())
                 {

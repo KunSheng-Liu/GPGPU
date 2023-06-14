@@ -22,7 +22,7 @@
 GPU::GPU(MemoryController* mc) : mMC(mc), mGMMU(GMMU(this, mc))
 {
     /* Create SMs */
-    for (int i = 0; i < GPU_SM_NUM; i++)
+    for (int i = 0; i < system_resource.SM_NUM; i++)
     {
         mSMs.insert(make_pair(i, SM()));
         mSMs[i].setGMMU(&mGMMU);
@@ -132,7 +132,7 @@ GPU::Check_Finish_Kernel()
         if (kernel->requests.empty())
         {
             kernel->finish = true;
-            for (int i = 0; i < GPU_SM_NUM; i++) kernel->finish &= mSMs[i].checkKernelComplete(kernel);
+            for (int i = 0; i < system_resource.SM_NUM; i++) kernel->finish &= mSMs[i].checkKernelComplete(kernel);
             
             if (kernel->finish) 
             {

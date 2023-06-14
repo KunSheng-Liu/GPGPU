@@ -131,7 +131,7 @@ Scheduler_My::Workload_SM_Allocator ()
      * Allocate SM to application
      * *******************************************************************
      */
-    int sm_count = 0, sm_budget = GPU_SM_NUM;
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
 
     /* starvation avoidance */
     while (1)
@@ -156,11 +156,11 @@ Scheduler_My::Workload_SM_Allocator ()
         for (int i = 0; i < sm_num; i++) 
         {
             app.second->SM_budget.insert(sm_count++);
-            if (sm_count == GPU_SM_NUM) break;
+            if (sm_count == system_resource.SM_NUM) break;
         }
     }
     /* mend up the round to zero issue which remain one SM not allocated */
-    if (sm_count < GPU_SM_NUM) app_list.front().second->SM_budget.insert(sm_count++);
+    if (sm_count < system_resource.SM_NUM) app_list.front().second->SM_budget.insert(sm_count++);
 
 #if (PRINT_SM_ALLCOATION_RESULT)
     for (auto app : mCPU->mAPPs) 
@@ -180,7 +180,7 @@ Scheduler_My::Workload_SM_Allocator ()
         if (!app->waitingModels.empty())
         {
             double BBR          = (double) app->modelInfo.ioMemCount / app->modelInfo.filterMemCount;
-            double sm_ratio     = (double) app->SM_budget.size() / GPU_SM_NUM;
+            double sm_ratio     = (double) app->SM_budget.size() / system_resource.SM_NUM;
             double num_of_model = (double) (app->waitingModels.front()->task.deadLine - total_gpu_cycle) / app->modelInfo.totalExecuteTime;
 
             int batch_limit = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
@@ -238,7 +238,7 @@ Scheduler_My::Rescue_SM_Allocator ()
         {
             auto   model_info   = mCPU->mAPPs[models.first]->modelInfo;
             double BBR          = (double) model_info.ioMemCount / model_info.filterMemCount;
-            double sm_ratio     = (double) released_sm.size() / GPU_SM_NUM;
+            double sm_ratio     = (double) released_sm.size() / system_resource.SM_NUM;
             double num_of_model = (double) (models.second.front()->task.deadLine - total_gpu_cycle) / model_info.totalExecuteTime;
 
             int batch_size = min((int)floor(sm_ratio * num_of_model / BBR), (int)models.second.size());
@@ -313,7 +313,7 @@ Scheduler_My::APP_Level_SM_Allocator ()
      * Allocate SM to application
      * *******************************************************************
      */
-    int sm_count = 0, sm_budget = GPU_SM_NUM;
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
 
     /* starvation avoidance */
     while (1)
@@ -338,11 +338,11 @@ Scheduler_My::APP_Level_SM_Allocator ()
         for (int i = 0; i < sm_num; i++) 
         {
             app.second->SM_budget.insert(sm_count++);
-            if (sm_count == GPU_SM_NUM) break;
+            if (sm_count == system_resource.SM_NUM) break;
         }
     }
     /* mend up the round to zero issue which remain one SM not allocated */
-    if (sm_count < GPU_SM_NUM) app_list.front().second->SM_budget.insert(sm_count++);
+    if (sm_count < system_resource.SM_NUM) app_list.front().second->SM_budget.insert(sm_count++);
 
 #if (PRINT_SM_ALLCOATION_RESULT)
     for (auto app : mCPU->mAPPs) 
@@ -386,7 +386,7 @@ Scheduler_My::Model_Level_SM_Allocator ()
         {
 #if (ENABLE_DEADLINE)
             double BBR          = (double) app->modelInfo.ioMemCount / (app->modelInfo.ioMemCount + app->modelInfo.filterMemCount);
-            double sm_ratio     = (double) available_sm.size() / GPU_SM_NUM;
+            double sm_ratio     = (double) available_sm.size() / system_resource.SM_NUM;
             double num_of_model = (double) (app->waitingModels.front()->task.deadLine - total_gpu_cycle) / app->modelInfo.totalExecuteTime;
             int batch_limit     = min((int)floor(sm_ratio * num_of_model / BBR), (int)app->waitingModels.size());
 #else

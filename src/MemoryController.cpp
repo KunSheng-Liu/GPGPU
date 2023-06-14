@@ -133,7 +133,7 @@ MemoryController::memoryAllocate (int numOfByte)
         // ASSERT(!availablePageList.empty(), "Out of DRAM Space");
         if (availablePageList.empty()) 
         {
-            if (pageIndex << pageFrameOffset >= VRAM_SPACE) log_W("memoryAllocate", "Out of VRAM Space");
+            if (pageIndex << pageFrameOffset >= system_resource.VRAM_SPACE) log_W("memoryAllocate", "Out of VRAM Space");
             createPage();
         }
         usedPageList.push_back(availablePageList.front());

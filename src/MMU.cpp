@@ -19,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(DRAM_SPACE / PAGE_SIZE))
+MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(system_resource.DRAM_SPACE / PAGE_SIZE))
 {
 
 }

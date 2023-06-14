@@ -75,6 +75,14 @@ struct Command {
     Command() : SCHEDULER_MODE(Greedy), BATCH_MODE(DISABLE), MEM_MODE(None) {}
 };
 
+struct Resource {
+    unsigned	 	SM_NUM;
+    unsigned     	DRAM_SPACE;
+    unsigned   		VRAM_SPACE;
+
+    Resource() : SM_NUM(8), DRAM_SPACE(256 * 1024 * 4096), VRAM_SPACE(8 * 4096) {}
+};
+
 /* ************************************************************************************************
  * Global variable
  * ************************************************************************************************
@@ -87,6 +95,8 @@ extern pthread_mutex_t* ioMutex;
 
 /* Command */
 extern Command command;
+
+extern Resource	system_resource;
 
 extern std::string program_name;
 

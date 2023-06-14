@@ -36,7 +36,7 @@ Scheduler::Inference_Admission ()
      * *******************************************************************
      */
     unordered_set<int> available_sm;
-    for (int i = 0; i < GPU_SM_NUM; i++) available_sm.insert(i);
+    for (int i = 0; i < system_resource.SM_NUM; i++) available_sm.insert(i);
     
     for (auto app : mCPU->mAPPs)
     {
@@ -166,14 +166,14 @@ Scheduler::Memory_Allocator ()
 {  
     if (command.MEM_MODE == MEM_ALLOCATION::None)
     {
-        mCPU->mGPU->getGMMU()->setCGroupSize(-1, VRAM_SPACE / PAGE_SIZE);
+        mCPU->mGPU->getGMMU()->setCGroupSize(-1, system_resource.VRAM_SPACE / PAGE_SIZE);
         return true;
     }
     else if (command.MEM_MODE == MEM_ALLOCATION::Average)
     {
         map<int, int> memory_budget;
 
-        int size = VRAM_SPACE / PAGE_SIZE;
+        int size = system_resource.VRAM_SPACE / PAGE_SIZE;
 
         for (auto app : mCPU->mAPPs) memory_budget[app->appID] += floor(size / mCPU->mAPPs.size());
 
@@ -275,7 +275,7 @@ Scheduler_Greedy::Inference_Admission ()
 
     /*  Get avaiable SM list */
     unordered_set<int> available_sm = mCPU->mGPU->getIdleSMs();
-    if (available_sm.size() < GPU_SM_NUM) return false;
+    if (available_sm.size() < system_resource.SM_NUM) return false;
 
     /* *******************************************************************
      * Assign SM to each application according to its model needed pages

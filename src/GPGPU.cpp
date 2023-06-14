@@ -25,7 +25,7 @@ pthread_mutex_t* ioMutex = new pthread_mutex_t;
  * \endcond
  * ================================================================================================
  */
-GPGPU::GPGPU() : mMC(MemoryController(DRAM_SPACE + VRAM_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
+GPGPU::GPGPU() : mMC(MemoryController(system_resource.DRAM_SPACE + system_resource.VRAM_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
 {
     mGMMU = mGPU.getGMMU();
 

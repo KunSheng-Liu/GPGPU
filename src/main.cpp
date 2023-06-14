@@ -16,6 +16,9 @@
  * ************************************************************************************************
  */
 Command command;
+
+Resource system_resource;
+
 string program_name;
 
 /* ************************************************************************************************
@@ -48,6 +51,8 @@ int main (int argc, char** argv)
 
 void parser_cmd (int argc, char** argv) 
 {
+    string sm_num_name    = "8SM";
+    string vram_size_name = "8Pages";
     string scheduler_name = "Greedy";
     string batch_name     = "Disable";
     string mem_name       = "None";
@@ -64,10 +69,10 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "BARM")     command.SCHEDULER_MODE = SCHEDULER::BARM;
                 else if (option == "LazyB")    command.SCHEDULER_MODE = SCHEDULER::LazyB;
                 else if (option == "My")       command.SCHEDULER_MODE = SCHEDULER::My;
-                else ASSERT(false, "Wrong argument, try --help");
+                else ASSERT(false, "Wrong argument -S, try --help");
                 scheduler_name = option;
             } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+            catch(exception e) ASSERT(false, "Wrong argument -S, try --help");
         }
         // else if (flag == "-I" || flag == "--inference-method")
         // {
@@ -75,10 +80,10 @@ void parser_cmd (int argc, char** argv)
         //         string option = argv[i++];
         //         if (option == "Sequential")    command.INFERENCE_MODE = INFERENCE_TYPE::SEQUENTIAL;
         //         else if (option == "Parallel") command.INFERENCE_MODE = INFERENCE_TYPE::PARALLEL;
-        //         else ASSERT(false, "Wrong argument, try --help");
+        //         else ASSERT(false, "Wrong argument -I, try --help");
         //         inference_name = option;
         //     } 
-        //     catch(exception e) ASSERT(false, "Wrong argument, try --help");
+        //     catch(exception e) ASSERT(false, "Wrong argument -I, try --help");
             
         // }
         else if (flag == "-B" || flag == "--batch-inference") 
@@ -87,10 +92,10 @@ void parser_cmd (int argc, char** argv)
                 string option = argv[i++];
                 if (option == "Disable")       command.BATCH_MODE = BATCH_METHOD::DISABLE;
                 else if (option == "Max")      command.BATCH_MODE = BATCH_METHOD::MAX;
-                else ASSERT(false, "Wrong argument, try --help");
+                else ASSERT(false, "Wrong argument -B, try --help");
                 batch_name = option;
             } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+            catch(exception e) ASSERT(false, "Wrong argument -B, try --help");
         }
         else if (flag == "-M" || flag == "--mem-allocate") 
         {
@@ -100,10 +105,10 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "Average")  command.MEM_MODE = MEM_ALLOCATION::Average;
                 else if (option == "MEMA")     command.MEM_MODE = MEM_ALLOCATION::MEMA;
                 else if (option == "R_MEMA")   command.MEM_MODE = MEM_ALLOCATION::R_MEMA;
-                else ASSERT(false, "Wrong argument, try --help");
+                else ASSERT(false, "Wrong argument -M, try --help");
                 mem_name = option;
             } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+            catch(exception e) ASSERT(false, "Wrong argument -M, try --help");
         }
         else if (flag == "-T" || flag == "--test-set") 
         {
@@ -125,19 +130,50 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "Heavy")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::HEAVY,     task_config));
                 else if (option == "Test1")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST1,     task_config));
                 else if (option == "Test2")     command.TASK_LIST.emplace_back(make_pair(APPLICATION::TEST2,     task_config));
-                else ASSERT(false, "Wrong argument, try --help");
+                else ASSERT(false, "Wrong argument -T, try --help");
             } 
-            catch(exception e) ASSERT(false, "Wrong argument, try --help");
+            catch(exception e) ASSERT(false, "Wrong argument -T, try --help");
+            
+        }
+        else if (flag == "--sm-num") 
+        {
+            try{
+                unsigned sm_num = atoi(argv[i++]);
+                if (sm_num > 0) system_resource.SM_NUM = sm_num;
+                sm_num_name = to_string(sm_num) + "SM";
+            } 
+            catch(exception e) ASSERT(false, "Wrong argument --sm-num, try --help");
+            
+        }
+        else if (flag == "--vram-pages") 
+        {
+            try{
+                unsigned vram_page = atoi(argv[i++]);
+                if (vram_page > 0) system_resource.VRAM_SPACE = vram_page * 4096;
+                vram_size_name = to_string(vram_page) + "Pages";
+            } 
+            catch(exception e) ASSERT(false, "Wrong argument --vram-pages, try --help");
+            
+        }
+        else if (flag == "--dram-pages") 
+        {
+            try{
+                unsigned dram_page = atoi(argv[i++]);
+                if (dram_page > 0) system_resource.DRAM_SPACE = dram_page * 4096;
+                vram_size_name += "_" + to_string(dram_page) + "Pages";
+            } 
+            catch(exception e) ASSERT(false, "Wrong argument --dram-pages, try --help");
             
         }
         else if (flag == "-h" || flag == "--help") {
-            std::cout << "GPGPU: GPGPU [[-S | -I | -M | -T] [OPTION]]" << std::endl;
+            std::cout << "GPGPU: GPGPU [[--sm-num | --vram-pages | -S | -I | -M | -T] [OPTION]]" << std::endl;
 
             std::cout << "Detial:" << std::endl;
-            std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB" << std::endl;
-            std::cout << "\t-I, " << std::left << setw(20) << "--inference-method" << "Sequential | Parallel"            << std::endl;
-            std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                    << std::endl;
-            std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"   << std::endl;
+            std::cout << "\t  , "     << std::left << setw(20) << "--sm-num"           << "[n ∈ N+]" << std::endl;
+            std::cout << "\t  , "     << std::left << setw(20) << "--vram-pages"       << "[n ∈ N+]" << std::endl;
+            std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB | My" << std::endl;
+            std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                         << std::endl;
+            std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"        << std::endl;
             std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "LeNet | CaffeNet | ResNet18 | GoogleNet | VGG16 | Light | Heavy | Mix | All | Test1 | Test2"  << std::endl;
 
             std::cout << "Examples:" << std::endl;
@@ -152,5 +188,5 @@ void parser_cmd (int argc, char** argv)
         } else ASSERT(false, "Wrong argument, try --help");
     }
 
-    program_name = scheduler_name + "_" + batch_name + "_" + mem_name;
+    program_name = sm_num_name + "_" + vram_size_name + "_" + scheduler_name + "_" + batch_name + "_" + mem_name;
 }

@@ -80,7 +80,7 @@ class Request;
 #define LOG_OUT_PATH                        "./log/"
 #define PRINT_TIME_STEP                     false
 #define PRINT_SM_ALLCOATION_RESULT          true
-#define PRINT_MODEL_DETIAL                  false
+#define PRINT_MODEL_DETIAL                  true
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_BLOCK_RECORD                  true
 #define PRINT_WARP_RECORD                   true
@@ -113,8 +113,6 @@ class Request;
 #if (HARDWARE_ARCHITECTURE == AGX_XAVIER)
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
-    #define DRAM_SPACE                      32    * pow(2, 30)      // unit (Byte)   32 GB
-    #define VRAM_SPACE                      1     * pow(2, 17)      // unit (Byte)   32 KB
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
     #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
@@ -136,7 +134,6 @@ class Request;
     #define DRAM_LEAKAGE_POWER	            70.8  * pow(0.1, 3)	    // unit (W)
 
     /* GPU */   
-    #define GPU_SM_NUM                      3 
     #define GPU_MAX_WARP_PER_SM             32 
     #define GPU_MAX_WARP_PER_BLOCK          32 
     #define GPU_MAX_THREAD_PER_WARP         32 
