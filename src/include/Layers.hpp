@@ -154,17 +154,17 @@ private:
  */
 public:
     /* Layer data I/O */
-    virtual void setIFMap  (pair<int, vector<unsigned char>*> data);
-    virtual void setOFMap  (pair<int, vector<unsigned char>*> data);
-    virtual void setFilter (pair<int, vector<unsigned char>*> data);
+    virtual void setIFMap  (pair<int, vector<DATA_TYPE>*> data);
+    virtual void setOFMap  (pair<int, vector<DATA_TYPE>*> data);
+    virtual void setFilter (pair<int, vector<DATA_TYPE>*> data);
 
     int getMemoryUsage();
     vector<int> getIFMapSize  (void) const {return iFMapSize;}
     vector<int> getOFMapSize  (void) const {return oFMapSize;}
     vector<int> getFilterSize (void) const {return filterSize;}
-    pair<int, vector<unsigned char>*> getIFMap  (void) {return iFMap;}
-    pair<int, vector<unsigned char>*> getOFMap  (void) {return oFMap;}
-    pair<int, vector<unsigned char>*> getFilter (void) {return filter;}
+    pair<int, vector<DATA_TYPE>*> getIFMap  (void) {return iFMap;}
+    pair<int, vector<DATA_TYPE>*> getOFMap  (void) {return oFMap;}
+    pair<int, vector<DATA_TYPE>*> getFilter (void) {return filter;}
 
 
 /* ************************************************************************************************
@@ -191,9 +191,9 @@ protected:
     vector<int> filterSize;    // In order "FILTER_CHANNEL_I", "FILTER_CHANNEL_O", "height", and "width"
 
     /* The array of feature map and filter in byte format */
-    pair<int, vector<unsigned char>*> iFMap;       // Reference to input data
-    pair<int, vector<unsigned char>*> oFMap;       // Output data, create by instanced layer
-    pair<int, vector<unsigned char>*> filter;      // Reference to filter data
+    pair<int, vector<DATA_TYPE>*> iFMap;       // Reference to input data
+    pair<int, vector<DATA_TYPE>*> oFMap;       // Output data, create by instanced layer
+    pair<int, vector<DATA_TYPE>*> filter;      // Reference to filter data
 };
 
 

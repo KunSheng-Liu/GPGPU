@@ -170,7 +170,7 @@ LayerGroup::memoryAllocate(MMU* mmu)
 
     /* The memory sapce for merge layer */
     if (LOG_LEVEL >= VERBOSE) std::cout << "oFMap ";
-    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(unsigned char));
+    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(DATA_TYPE));
 }
 
 
@@ -219,7 +219,7 @@ LayerGroup::compileToKernel(int app_id, int model_id, vector<Kernel>& container,
  * ================================================================================================
  */
 void
-LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
+LayerGroup::setIFMap(pair<int, vector<DATA_TYPE>*> data)
 {
     if (iFMap.second) delete iFMap.second;
     iFMap  = data;
@@ -243,7 +243,7 @@ LayerGroup::setIFMap(pair<int, vector<unsigned char>*> data)
  * ================================================================================================
  */
 void
-LayerGroup::setOFMap(pair<int, vector<unsigned char>*> data)
+LayerGroup::setOFMap(pair<int, vector<DATA_TYPE>*> data)
 {
     if (oFMap.second) delete oFMap.second;
     oFMap  = data;
@@ -267,7 +267,7 @@ LayerGroup::setOFMap(pair<int, vector<unsigned char>*> data)
  * ================================================================================================
  */
 void
-LayerGroup::setFilter(pair<int, vector<unsigned char>*> data)
+LayerGroup::setFilter(pair<int, vector<DATA_TYPE>*> data)
 {
     ASSERT(false, "Cannot set filter to a layerGroup");
 }

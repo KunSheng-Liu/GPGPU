@@ -52,7 +52,7 @@ int main (int argc, char** argv)
 void parser_cmd (int argc, char** argv) 
 {
     string sm_num_name    = "8SM";
-    string vram_size_name = "8Pages";
+    string page_num_name =  "80Pages";
     string scheduler_name = "Greedy";
     string batch_name     = "Disable";
     string mem_name       = "None";
@@ -150,7 +150,7 @@ void parser_cmd (int argc, char** argv)
             try{
                 unsigned vram_page = atoi(argv[i++]);
                 if (vram_page > 0) system_resource.VRAM_SPACE = vram_page * 4096;
-                vram_size_name = to_string(vram_page) + "Pages";
+                page_num_name = to_string(vram_page) + "Pages";
             } 
             catch(exception e) ASSERT(false, "Wrong argument --vram-pages, try --help");
             
@@ -160,7 +160,7 @@ void parser_cmd (int argc, char** argv)
             try{
                 unsigned dram_page = atoi(argv[i++]);
                 if (dram_page > 0) system_resource.DRAM_SPACE = dram_page * 4096;
-                vram_size_name += "_" + to_string(dram_page) + "Pages";
+                page_num_name += "_" + to_string(dram_page) + "Pages";
             } 
             catch(exception e) ASSERT(false, "Wrong argument --dram-pages, try --help");
             
@@ -188,5 +188,5 @@ void parser_cmd (int argc, char** argv)
         } else ASSERT(false, "Wrong argument, try --help");
     }
 
-    program_name = sm_num_name + "_" + vram_size_name + "_" + scheduler_name + "_" + batch_name + "_" + mem_name;
+    program_name = sm_num_name + "_" + page_num_name + "_" + scheduler_name + "_" + batch_name + "_" + mem_name;
 }

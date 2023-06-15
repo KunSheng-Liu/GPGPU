@@ -14,6 +14,10 @@
  * Include Library
  * ************************************************************************************************
  */
+#include <list>
+#include <type_traits>
+#include <unordered_map>
+
 #include "App_config.h"
 #include "Log.h"
 

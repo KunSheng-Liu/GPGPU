@@ -80,7 +80,7 @@ struct Resource {
     unsigned     	DRAM_SPACE;
     unsigned   		VRAM_SPACE;
 
-    Resource() : SM_NUM(8), DRAM_SPACE(256 * 1024 * 4096), VRAM_SPACE(8 * 4096) {}
+    Resource() : SM_NUM(8), DRAM_SPACE(256 * 1024 * 4096), VRAM_SPACE(80 * 4096) {}
 };
 
 /* ************************************************************************************************

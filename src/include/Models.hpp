@@ -34,9 +34,9 @@
 struct Task{
     const int arrivalTime, deadLine;
     vector<int> inputSize;
-    vector<unsigned char> data;
+    vector<DATA_TYPE> data;
 
-    Task (int arrival_time, int dead_line, vector<int> input_size, vector<unsigned char> data) 
+    Task (int arrival_time, int dead_line, vector<int> input_size, vector<DATA_TYPE> data) 
         : arrivalTime(arrival_time), deadLine(dead_line), inputSize(input_size), data(data) {}
 };
 
@@ -117,8 +117,8 @@ public:
     
     vector<Kernel>& compileToKernel ();
 
-    pair<int, vector<unsigned char>*> getIFMap  (void) {return modelGraph->getIFMap();}
-    pair<int, vector<unsigned char>*> getOFMap  (void) {return modelGraph->getOFMap();}
+    pair<int, vector<DATA_TYPE>*> getIFMap  (void) {return modelGraph->getIFMap();}
+    pair<int, vector<DATA_TYPE>*> getOFMap  (void) {return modelGraph->getOFMap();}
     vector<int> getIFMapSize  (void) const  {return modelGraph->getIFMapSize();}
     vector<int> getOFMapSize  (void) const  {return modelGraph->getOFMapSize();}
 

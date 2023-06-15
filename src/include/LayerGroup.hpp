@@ -57,9 +57,9 @@ public:
  */
 public:
     void addLayer (Layer*);
-    void setIFMap  (pair<int, vector<unsigned char>*> data) override;
-    void setOFMap  (pair<int, vector<unsigned char>*> data) override;
-    void setFilter (pair<int, vector<unsigned char>*> data) override;
+    void setIFMap  (pair<int, vector<DATA_TYPE>*> data) override;
+    void setOFMap  (pair<int, vector<DATA_TYPE>*> data) override;
+    void setFilter (pair<int, vector<DATA_TYPE>*> data) override;
 
     void printInfo() override;
     void changeBatch (int new_batch_size) override;

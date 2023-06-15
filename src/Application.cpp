@@ -76,7 +76,7 @@ Application::cycle()
     {
         if (total_gpu_cycle >= arrivalTime)
         {
-            for (int i = 0; i < batchSize; i++) waitingModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<unsigned char>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
+            for (int i = 0; i < batchSize; i++) waitingModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<DATA_TYPE>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
             arrivalTime += period;
         }
     }

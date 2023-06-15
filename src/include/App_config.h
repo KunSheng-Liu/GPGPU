@@ -80,10 +80,10 @@ class Request;
 #define LOG_OUT_PATH                        "./log/"
 #define PRINT_TIME_STEP                     false
 #define PRINT_SM_ALLCOATION_RESULT          true
-#define PRINT_MODEL_DETIAL                  true
+#define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
-#define PRINT_BLOCK_RECORD                  true
-#define PRINT_WARP_RECORD                   true
+#define PRINT_BLOCK_RECORD                  false
+#define PRINT_WARP_RECORD                   false
 
 #define PRINT_LAZY_BATCHING                 true
 
@@ -92,19 +92,23 @@ class Request;
  * BenchMark
  * ************************************************************************************************
  */
+#define SIMULATION_TIME                     10                      // unit (ms)
+#define ENABLE_DEADLINE                     false
+#define DEADLINE_PERCENTAGE                 100                     // unit (ms)
+
 #define HARDWARE_ARCHITECTURE               AGX_XAVIER
 
 /* ************************************************************************************************
  * Software Configuration
  * ************************************************************************************************
  */ 
-#define SIMULATION_TIME                     10                      // unit (ms)
+#define DATA_TYPE                           unsigned char
 
-#define ENABLE_DEADLINE                     false
-#define DEADLINE_PERCENTAGE                 100
+#define ENABLE_PAGE_FAULT_PENALTY           true
+#define COMPULSORY_MISS                     true                                                            // Initial the data in the DRAM ? (deprecated)
+#define PAGE_PREFETCH                       false
 
-#define THREAD_KERNEL_COMPILE               true
-#define THREAD_NUM                          8
+#define ENABLE_THREAD_COMPILE               true
 
 /* ************************************************************************************************
  * Hardware Configuration
@@ -114,7 +118,6 @@ class Request;
     /* Architecture */
     #define PAGE_SIZE                       4096                    // unit (Byte)
     #define PRE_ALLOCATE_SIZE               256   * pow(2, 20)      // unit (Byte)  256 MB
-    #define PCIE_CHANNEL                    16
     #define PCIE_BANDWIDTH                  16    * pow(10, 9)      // unit (B/s)  16 GB/s
 
     /* Frequency */ 
@@ -164,9 +167,6 @@ class Request;
  * Page Fault Configuration
  * ************************************************************************************************
  */
-#define ENABLE_PAGE_FAULT_PENALTY           true
-#define COMPULSORY_MISS                     true                                                            // Initial the data in the DRAM ? (deprecated)
-#define PAGE_PREFETCH                       false
 #define PAGE_FAULT_PENALTY                  20 * pow(0.1, 6)                                                // unit (s)
 #define PAGE_FAULT_COMMUNICATION_CYCLE      (PAGE_FAULT_PENALTY) * (GMMU_F)                                 // unit (cycle)
 #define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))                 // unit (cycle)
