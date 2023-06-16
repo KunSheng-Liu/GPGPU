@@ -24,7 +24,8 @@ using namespace std;
  * Software Configuration
  * ************************************************************************************************
  */
-#define THREAD_NUM_LIMIT 4
+#define THREAD_NUM_LIMIT    4
+#define INPUT_FILE          "./taskset_list.txt"
 
 /* ************************************************************************************************
  * Function Declaration
@@ -55,8 +56,7 @@ int main(int argc, char** argv)
     vector<string> task_list;
     
     /* Load the file */
-    fstream file;   
-    file.open("./taskset_list.txt", ios::in); 
+    fstream file (INPUT_FILE, ios::in);
     if (!file.is_open()) {cout << "ERROR Can't open file\n"; abort();}
 
     /* Parser vaild command */
