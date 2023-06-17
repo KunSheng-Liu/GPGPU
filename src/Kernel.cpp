@@ -103,12 +103,6 @@ Kernel::addRequest(Request* request)
     ASSERT(request, "Layer " + to_string(srcLayer->layerID) + " (" + srcLayer->layerType + ") get null request!");
 
     /* *******************************************************************
-     * Compress the requests
-     * *******************************************************************
-     */
-    request = compressRequest (request);
-
-    /* *******************************************************************
      * Record
      * *******************************************************************
      */

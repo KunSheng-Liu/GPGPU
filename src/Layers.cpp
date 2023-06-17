@@ -579,7 +579,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
-                    threadArg->requestQueue->push(move(request));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
                 }
                 
             }
@@ -718,7 +718,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
-                    threadArg->requestQueue->push(move(request));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
                 }
                 
             }
@@ -854,7 +854,7 @@ Flatten::issueLayer(ThreadArg* threadArg)
                     request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
                     request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-                    threadArg->requestQueue->push(move(request));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
                 }
             }  
         }
@@ -991,7 +991,7 @@ ByPass::issueLayer(ThreadArg* threadArg)
                     request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
                     request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-                    threadArg->requestQueue->push(move(request));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
                 }
             }  
         }
@@ -1164,7 +1164,7 @@ Dense::issueLayer(ThreadArg* threadArg)
 
             request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-            threadArg->requestQueue->push(move(request));
+            threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
 
         }
     }

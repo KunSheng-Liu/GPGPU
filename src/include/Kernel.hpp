@@ -71,7 +71,7 @@ public:
     virtual void handleKernelCompletion ();
 
     void addRequest (Request* request);
-    Request* compressRequest (Request* request);
+    static Request* compressRequest (Request* request);
     
     Request* accessRequest ();
 
@@ -119,7 +119,6 @@ public:
     vector<Kernel*> dependencyKernels; 
 
 private:
-
     /* Number of kernel be created */
     static int kernelCount;
 };
