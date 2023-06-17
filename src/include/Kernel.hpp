@@ -71,6 +71,8 @@ public:
     virtual void handleKernelCompletion ();
 
     void addRequest (Request* request);
+    Request* compressRequest (Request* request);
+    
     Request* accessRequest ();
 
     PageRecord memoryRelease  (MMU* mmu);

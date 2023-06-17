@@ -101,6 +101,17 @@ void
 Kernel::addRequest(Request* request)
 {
     ASSERT(request, "Layer " + to_string(srcLayer->layerID) + " (" + srcLayer->layerType + ") get null request!");
+
+    /* *******************************************************************
+     * Compress the requests
+     * *******************************************************************
+     */
+    request = compressRequest (request);
+
+    /* *******************************************************************
+     * Record
+     * *******************************************************************
+     */
     request->requst_id = requests.size();
     for (auto access : request->readPages ) kernelInfo.numOfRead  += access.second;
     for (auto access : request->writePages) kernelInfo.numOfWrite += access.second;
@@ -108,6 +119,58 @@ Kernel::addRequest(Request* request)
     kernelInfo.numOfRequest++;
     
     requests.push(request);
+}
+
+
+/** ===============================================================================================
+ * \name    compressRequest
+ * 
+ * \brief   Compress the original access pattern to reduce system overhead
+ * 
+ * \param   request     The GPU command
+ * 
+ * \return  compressed request pointer
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+Request*
+Kernel::compressRequest(Request* originalRequest)
+{
+    Request* compressedRequest = new Request();
+
+    map<unsigned long long, int> access = {};
+
+    /* compress the read pages */
+    for (int i = 0; i < originalRequest->readPages.size();)
+    {
+        access[originalRequest->readPages[i].first]++;
+        if ((++i) % GPU_MAX_ACCESS_NUMBER == 0 || i == originalRequest->readPages.size())
+        {
+            for (auto page_pair : access) compressedRequest->readPages.emplace_back(make_pair(page_pair.first, page_pair.second));
+            access.clear();
+        } 
+    }
+
+    /* compress the write pages */
+    for (int i = 0; i < originalRequest->writePages.size();)
+    {
+        access[originalRequest->writePages[i].first]++;
+        if ((++i) % GPU_MAX_ACCESS_NUMBER == 0 || i == originalRequest->writePages.size())
+        {
+            for (auto page_pair : access) compressedRequest->writePages.emplace_back(make_pair(page_pair.first, page_pair.second));
+            access.clear();
+        } 
+    }
+
+    ASSERT(!compressedRequest->readPages.empty(), "read pages should not be empty");
+    ASSERT(!compressedRequest->writePages.empty(), "write pages should not be empty");
+    
+    /* passing the instruction number */
+    compressedRequest->numOfInstructions = originalRequest->numOfInstructions;
+
+    delete originalRequest;
+    return move(compressedRequest);
 }
 
 

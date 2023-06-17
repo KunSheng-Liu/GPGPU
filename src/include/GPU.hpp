@@ -37,8 +37,8 @@ class Request{
  * ************************************************************************************************
  */ 
 public:
-    Request (vector<pair<unsigned long long, int>> read_pages = {}, vector<pair<unsigned long long, int>> write_pages = {}) 
-        : numOfInstructions(0), readPages(read_pages), writePages(write_pages) {}
+    Request (vector<pair<unsigned long long, int>> read_pages = {}, vector<pair<unsigned long long, int>> write_pages = {}, int numOfInstructions = 0) 
+        : numOfInstructions(numOfInstructions), readPages(read_pages), writePages(write_pages) {}
 
 /* ************************************************************************************************
  * Functions

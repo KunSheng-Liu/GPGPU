@@ -130,12 +130,8 @@ MemoryController::memoryAllocate (int numOfByte)
     Page* prevPage;
     for (int i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
     {
-        // ASSERT(!availablePageList.empty(), "Out of DRAM Space");
-        if (availablePageList.empty()) 
-        {
-            if (pageIndex << pageFrameOffset >= system_resource.VRAM_SPACE) log_W("memoryAllocate", "Out of VRAM Space");
-            createPage();
-        }
+        if (availablePageList.empty()) createPage();
+
         usedPageList.push_back(availablePageList.front());
         availablePageList.pop_front();
         Page* tempPage = usedPageList.back();

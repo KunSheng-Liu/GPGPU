@@ -275,9 +275,11 @@ GMMU::Page_Fault_Handler()
             wait_cycle = 1;
 #endif
             log ("Demanded page number", to_string(page_count), Color::Cyan);
+#if (PRINT_DEMAND_PAGE_RECORD)
             ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
                 file << "Demanded page number: " << page_count << std::endl;
             file.close();
+#endif
         }
     }
     

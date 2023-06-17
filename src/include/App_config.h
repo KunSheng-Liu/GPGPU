@@ -82,6 +82,7 @@ class Request;
 #define PRINT_SM_ALLCOATION_RESULT          true
 #define PRINT_MODEL_DETIAL                  false
 #define PRINT_MEMORY_ALLOCATION             false
+#define PRINT_DEMAND_PAGE_RECORD            false
 #define PRINT_BLOCK_RECORD                  false
 #define PRINT_WARP_RECORD                   false
 
@@ -102,7 +103,7 @@ class Request;
  * Software Configuration
  * ************************************************************************************************
  */ 
-#define DATA_TYPE                           unsigned char
+#define DATA_TYPE                           __int128_t
 
 #define ENABLE_PAGE_FAULT_PENALTY           true
 #define COMPULSORY_MISS                     true                                                            // Initial the data in the DRAM ? (deprecated)

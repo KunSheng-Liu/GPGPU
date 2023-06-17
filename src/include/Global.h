@@ -76,11 +76,11 @@ struct Command {
 };
 
 struct Resource {
-    unsigned	 	SM_NUM;
-    unsigned     	DRAM_SPACE;
-    unsigned   		VRAM_SPACE;
+    unsigned long long	SM_NUM;
+    unsigned long long 	DRAM_SPACE;
+    unsigned long long 	VRAM_SPACE;
 
-    Resource() : SM_NUM(8), DRAM_SPACE(256 * 1024 * 4096), VRAM_SPACE(80 * 4096) {}
+    Resource() : SM_NUM(8), DRAM_SPACE((unsigned long long)1024 * 1024 * 4096), VRAM_SPACE(80 * 4096) {}
 };
 
 /* ************************************************************************************************
