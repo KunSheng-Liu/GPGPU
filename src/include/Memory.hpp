@@ -24,7 +24,7 @@
 typedef enum {
 	Read,
 	Write,
-}AccessType;
+} AccessType;
 
 struct MemoryAccess {
     int app_id;
@@ -40,6 +40,24 @@ struct MemoryAccess {
 
     MemoryAccess(int app_id, int model_id, int sm_id, int block_id, int warp_id, int thread_id, int request_id, AccessType type) 
             : app_id(app_id), model_id(model_id), sm_id(sm_id), block_id(block_id), warp_id(warp_id), thread_id(thread_id), request_id(request_id), type(type) {}
+};
+
+/* All avaliable memory type */
+typedef enum {
+    SPACE_NONE,
+    SPACE_VRAM,
+	SPACE_DRAM,
+    // ReRAM,
+    // NVME,
+    // HDD,
+    // ...
+} Memory_t;
+
+struct IO_Channel {
+    int waiting_cycle;
+    MemoryAccess* access;
+
+    IO_Channel() : waiting_cycle(0), access(nullptr) {}
 };
 
 /** ===============================================================================================
@@ -58,42 +76,87 @@ class Memory
  */ 
 public:
 
-    Memory(int size); // size in Byte
+    Memory(Memory_t memory_type = SPACE_NONE, unsigned long long storage_size = 0, int total_bandwidth = 128, int channel_bandwidth = 32);
 
    ~Memory();
+
+/* ************************************************************************************************
+ * Type Define
+ * ************************************************************************************************
+ */
+struct MemoryRecord {
+    unsigned long long idle_cycle = 0;
+    unsigned long long exec_cycle = 0;
+
+    unsigned long long numOfRead  = 0;
+    unsigned long long numOfWrite = 0;
+};
 
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
 public:
-    int dataWrite (int PA, int8_t data);
-    int8_t dataRead (int PA);
+    virtual void cycle ();
 
-
+    virtual bool Read  (int num_of_bytes, MemoryAccess* access);
+    virtual bool Write (int num_of_bytes, MemoryAccess* access);
 
 /* ************************************************************************************************
  * Parameter
  * ************************************************************************************************
  */
 public:
+    /* The index of memory. Each memory have a unique index */
+    const int memoryIndex;
+
+    /* The type of memory */
+    Memory_t memoryType;
 
     /* The storage size of memory */
-    const int storageSize; 	                // unit (KB)
+    const unsigned long long storageSize;          // unit (Byte)
+    const unsigned long long startPhysicalAddress; // unit (Byte)
+    const unsigned long long endPhysicalAddress;   // unit (Byte)
 
-    /* The throughput size  */
-    int dataWidth_I;
-    int dataWidth_O;
+    const unsigned totalBandwidth;
+    const unsigned channelBandwidth;
 
-    /* The clock speed */
-    int clockSpeed;
+private:
+    /* Number of memory be created */
+    static int memoryCount;
+    static unsigned long long storageCount;
+
+protected:
+    /* Recorder */
+    MemoryRecord recorder;
+
+    map<int, IO_Channel> IO_Channels;
+    list<int> idleChannelList;
 
     /* The actually storaged data */
-    unordered_map<int, unsigned char> data;    // first is PA, second is data
+    unordered_map<unsigned long long, unsigned int> storage;     // first is PA, second is data
+    
+    unordered_set<MemoryAccess*>  access_finish_queue;
 
-    /* Recorder */
-    int numOfRead;
-    int numOfWrite;
+friend MemoryController;
+};
+
+
+class DRAM : public Memory
+{
+public:
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
+public:
+    DRAM(unsigned long long storage_size);
+
+/* ************************************************************************************************
+ * Functions
+ * ************************************************************************************************
+ */
+public:
 
 };
 

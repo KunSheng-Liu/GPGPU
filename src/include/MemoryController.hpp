@@ -22,12 +22,6 @@
  * Type Define
  * ************************************************************************************************
  */
-typedef enum {
-    SPACE_NONE,
-    SPACE_VRAM,
-	SPACE_DRAM,
-}Page_Location;
-
 struct PageRecord {
     unsigned long long write_counter = 0;
 	unsigned long long read_counter = 0;
@@ -56,11 +50,11 @@ struct PageRecord {
 
 struct Page {
     const unsigned long long pageIndex;
-    Page_Location location;
+    Memory_t location;
     PageRecord record;
     Page* nextPage;
 
-    Page(unsigned long long page_index = 0, Page_Location location = SPACE_NONE, Page* next_page = nullptr) : pageIndex(page_index), location(location), nextPage(next_page) {}
+    Page(unsigned long long page_index = 0, Memory_t location = SPACE_NONE, Page* next_page = nullptr) : pageIndex(page_index), location(location), nextPage(next_page) {}
 };
 
 
@@ -81,12 +75,12 @@ class MemoryController
 public:
     MemoryController(unsigned long long storage_limit, int page_size);
    ~MemoryController();
+
 /* ************************************************************************************************
  * Functions
  * ************************************************************************************************
  */
 public:
-    
     void cycle ();
 
     Page* refer (unsigned long long page_id) {return &mPages[page_id];}
@@ -106,12 +100,13 @@ private:
  * ************************************************************************************************
  */
 private:
-    const unsigned long long storageLimit;
+    unsigned long long storageLimit;
     const unsigned pageFrameOffset;
 
     /* The pageIndex is start from 1, due to the zero page is always unusable in the system */
     unsigned long long pageIndex = 1;
 
+    map<int, Memory*> storages;
     map<unsigned long long , Page> mPages;
 
     list<Page*> availablePageList;

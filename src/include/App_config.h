@@ -130,7 +130,9 @@ class Request;
     /* CPU */   
     #define CPU_CONSTANT_POWER	            1526  * pow(0.1, 3)     // unit (W) (8 core, Frequence=1200000000)
 
-    /* DRAM */  
+    /* DRAM */ 
+    #define DRAM_CAHNNEL_BANDWIDTH          32
+    #define DRAM_TOTAL_BANDWIDTH            256
     #define DRAM_READ_LATENCY	            10    * pow(0.1, 10)	// unit (s) about 30GB/s
     #define DRAM_WRITE_LATENCY	            10    * pow(0.1, 10)	// unit (s) about 30GB/s
     #define DRAM_READ_ENENGY	            2.3   * pow(0.1, 9)	    // unit (J)

@@ -21,6 +21,12 @@
  */
 MemoryController::MemoryController(unsigned long long storage_limit, int page_size) : storageLimit(storage_limit), pageFrameOffset(log2(page_size))
 {
+    // if (system_resource.DRAM_SPACE) storages.insert(make_pair(Memory_t::SPACE_DRAM, new DRAM(system_resource.DRAM_SPACE)));
+    // if (system_resource.VRAM_SPACE) storages.insert(make_pair(Memory_t::SPACE_VRAM, new VRAM(system_resource.VRAM_SPACE)));
+
+    // storageLimit = 0;
+    // for (auto storage : storages) storageLimit += storage.second->storageSize;
+
     for (int i = 0; i < PRE_ALLOCATE_SIZE / PAGE_SIZE; i++)
     {
         createPage();
@@ -60,23 +66,17 @@ MemoryController::cycle()
 {
     log_I("MemoryController Cycle", to_string(total_gpu_cycle));
 
-    while (!gmmu_to_mc_queue.empty())
+    if (!gmmu_to_mc_queue.empty())
     {
         auto access = gmmu_to_mc_queue.front();
         auto type = access->type;
 
         for (auto page_id : access->pageIDs)
         {
-            Page& page = mPages[page_id];
-            if (page.location != SPACE_VRAM)
-            {
-                std::cout << page_id << std::endl;
-                ASSERT(page.location == SPACE_VRAM, "Memory access error: should in VRAM");
-
-            }
-
-            (type == Read) ? page.record.read_counter++ : page.record.write_counter++;
-            page.record.access_count++;
+            if (mPages[page_id].location != SPACE_VRAM) ASSERT(mPages[page_id].location == SPACE_VRAM, "Memory access error: should in VRAM");
+            
+            (type == Read) ? mPages[page_id].record.read_counter++ : mPages[page_id].record.write_counter++;
+            mPages[page_id].record.access_count++;
         }
 
         gmmu_to_mc_queue.pop_front();

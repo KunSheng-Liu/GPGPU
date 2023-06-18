@@ -166,6 +166,8 @@ GMMU::Page_Fault_Handler()
          */
         if (!page_fault_process_queue.empty())
         {
+            /* process migration */
+            list<int> thrashed_pages = {};
             for (auto fault_pair : page_fault_process_queue)
             {
                 ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->size(), "Allocated memory is less than the model needed");
@@ -183,12 +185,21 @@ GMMU::Page_Fault_Handler()
                     /* Eviction happen */
                     if (page)
                     {
-                        log_V("Swap", to_string(page->pageIndex));
                         page->location = SPACE_DRAM;
                         page->record.swap_count++;
+                        thrashed_pages.emplace_back(page->pageIndex);
                     }
                 }
             }
+
+            /* print out thrashed pages */
+            if(!thrashed_pages.empty())
+            {
+                string buff;
+                for (auto page_id : thrashed_pages) buff += to_string(page_id) + ", ";
+                log("Swap out " + to_string(thrashed_pages.size()) + " pages", buff, Color::Cyan);
+            }
+
             page_fault_process_queue.clear();
             /* *******************************************************************
              * Handle return

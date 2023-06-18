@@ -148,8 +148,8 @@ void parser_cmd (int argc, char** argv)
         else if (flag == "--vram-pages") 
         {
             try{
-                unsigned vram_page = atoi(argv[i++]);
-                if (vram_page > 0) system_resource.VRAM_SPACE = vram_page * 4096;
+                unsigned long long vram_page = atoi(argv[i++]);
+                if (vram_page > 0) system_resource.VRAM_SPACE = vram_page * PAGE_SIZE;
                 page_num_name = to_string(vram_page) + "Pages";
             } 
             catch(exception e) ASSERT(false, "Wrong argument --vram-pages, try --help");
@@ -158,8 +158,8 @@ void parser_cmd (int argc, char** argv)
         else if (flag == "--dram-pages") 
         {
             try{
-                unsigned dram_page = atoi(argv[i++]);
-                if (dram_page > 0) system_resource.DRAM_SPACE = dram_page * 4096;
+                unsigned long long dram_page = atoi(argv[i++]);
+                if (dram_page > 0) system_resource.DRAM_SPACE = dram_page * PAGE_SIZE;
                 page_num_name += "_" + to_string(dram_page) + "Pages";
             } 
             catch(exception e) ASSERT(false, "Wrong argument --dram-pages, try --help");

@@ -198,7 +198,8 @@ Scheduler::Memory_Allocator ()
  */
 void 
 Scheduler::missDeadlineHandler ()
-{  
+{
+#if (ENABLE_DEADLINE)
     for (auto app : mCPU->mAPPs)
     {
         list<Model*> missModels = {};
@@ -249,6 +250,7 @@ Scheduler::missDeadlineHandler ()
             delete model;
         }
     }
+#endif
 }
 
 
