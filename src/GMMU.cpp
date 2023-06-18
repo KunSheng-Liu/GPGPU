@@ -183,7 +183,7 @@ GMMU::Page_Fault_Handler()
                     /* Eviction happen */
                     if (page)
                     {
-                        log ("Swap", "", Color::Cyan);
+                        log_V("Swap", to_string(page->pageIndex));
                         page->location = SPACE_DRAM;
                         page->record.swap_count++;
                     }
@@ -268,18 +268,21 @@ GMMU::Page_Fault_Handler()
                 }
             }
 #endif
-
+            if (page_count)
+            {
 #if (ENABLE_PAGE_FAULT_PENALTY)
-            wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+                wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
 #else            
-            wait_cycle = 1;
+                wait_cycle = 1;
 #endif
-            log ("Demanded page number", to_string(page_count), Color::Cyan);
+
+                log ("Demanded page number", to_string(page_count), Color::Cyan);
 #if (PRINT_DEMAND_PAGE_RECORD)
-            ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                file << "Demanded page number: " << page_count << std::endl;
-            file.close();
+                ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+                    file << "Demanded page number: " << page_count << std::endl;
+                file.close();
 #endif
+            }
         }
     }
     
