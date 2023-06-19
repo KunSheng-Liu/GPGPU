@@ -1,0 +1,54 @@
+Finish kernelGroup [0, 22, 44, 66, 88, 110, 132, 154, ] (Conv2D): [2, 5436573]
+Finish kernelGroup [1, 23, 45, 67, 89, 111, 133, 155, ] (Conv2D): [5436575, 8241183]
+Finish kernelGroup [2, 24, 46, 68, 90, 112, 134, 156, ] (Pooling): [8241184, 9895854]
+Finish kernelGroup [3, 25, 47, 69, 91, 113, 135, 157, ] (Conv2D): [9895855, 11338767]
+Finish kernelGroup [4, 26, 48, 70, 92, 114, 136, 158, ] (Conv2D): [11338768, 12781680]
+Finish kernelGroup [5, 27, 49, 71, 93, 115, 137, 159, ] (Pooling): [12781681, 13386547]
+Finish kernelGroup [6, 28, 50, 72, 94, 116, 138, 160, ] (Conv2D): [13386549, 14065843]
+Finish kernelGroup [7, 29, 51, 73, 95, 117, 139, 161, ] (Conv2D): [14065845, 14745149]
+Finish kernelGroup [8, 30, 52, 74, 96, 118, 140, 162, ] (Conv2D): [14745150, 15424444]
+Finish kernelGroup [9, 31, 53, 75, 97, 119, 141, 163, ] (Pooling): [15424445, 15725172]
+Finish kernelGroup [10, 32, 54, 76, 98, 120, 142, 164, ] (Conv2D): [15725173, 16020680]
+Finish kernelGroup [11, 33, 55, 77, 99, 121, 143, 165, ] (Conv2D): [16020681, 16316188]
+Finish kernelGroup [12, 34, 56, 78, 100, 122, 144, 166, ] (Conv2D): [16316190, 16611697]
+Finish kernelGroup [13, 35, 57, 79, 101, 123, 145, 167, ] (Pooling): [16611698, 16732654]
+Finish kernelGroup [14, 36, 58, 80, 102, 124, 146, 168, ] (Conv2D): [16732655, 16828162]
+Finish kernelGroup [15, 37, 59, 81, 103, 125, 147, 169, ] (Conv2D): [16828163, 16923669]
+Finish kernelGroup [16, 38, 60, 82, 104, 126, 148, 170, ] (Conv2D): [16923670, 17019177]
+Finish kernelGroup [17, 39, 61, 83, 105, 127, 149, 171, ] (Pooling): [17019178, 17061799]
+Finish kernelGroup [18, 40, 62, 84, 106, 128, 150, 172, ] (Flatten): [17061801, 17364383]
+Finish kernelGroup [19, 41, 63, 85, 107, 129, 151, 173, ] (Dense): [17364384, 20328412]
+Finish kernelGroup [20, 42, 64, 86, 108, 130, 152, 174, ] (Dense): [20328413, 23292441]
+Finish kernelGroup [21, 43, 65, 87, 109, 131, 153, 175, ] (Dense): [23292442, 24006892]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       910388224      7688828928     3781608        150160280576   
+PageRecord: [43461352, 1024, 43462376, 10345]
+App 0 Model 0 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 1 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 2 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 3 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 4 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 5 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 6 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+22             3781608        61107840       0              7688828928     3781608        150160280576   
+PageRecord: [12582824, 1024, 12583848, 1132]
+App 0 Model 7 VGG16 with 1 batch size is finished: [1, -1, 1, 24006893]

@@ -2,7 +2,7 @@
  * Macro
  * ************************************************************************************************
  */
-#define str(x) #x
+// #define str(x) #x
 
 #define GET_FUNCTION( _1, _2, function, ... ) function 
 /* Exit when condition == false */

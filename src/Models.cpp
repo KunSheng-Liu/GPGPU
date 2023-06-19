@@ -134,23 +134,31 @@ Model::memoryRelease(MMU* mmu)
               << std::right << std::setw(3)  << task.inputSize[WIDTH] 
               << std::left  << std::setw(10) << ")" << std::endl;
 
-    std::cout << std::left << std::setw(15) << "Num Layer"; 
-    std::cout << std::left << std::setw(15) << "Request"; 
-    std::cout << std::left << std::setw(15) << "ioMem"; 
-    std::cout << std::left << std::setw(15) << "filterMem"; 
-    std::cout << std::left << std::setw(15) << "Read"; 
-    std::cout << std::left << std::setw(15) << "Write"; 
-    std::cout << std::left << std::setw(15) << "Cycle"; 
-    std::cout << std::endl;
+    stringstream buff;
+    buff << std::left << std::setw(15) << "Num Layer"
+         << std::left << std::setw(15) << "Request"
+         << std::left << std::setw(15) << "ioMem"
+         << std::left << std::setw(15) << "filterMem"
+         << std::left << std::setw(15) << "Read"
+         << std::left << std::setw(15) << "Write"
+         << std::left << std::setw(15) << "Cycle"
+         << std::endl;
     
-    std::cout << std::left << std::setw(15) << kernelContainer.size(); 
-    std::cout << std::left << std::setw(15) << info.numOfRequest; 
-    std::cout << std::left << std::setw(15) << info.ioMemCount; 
-    std::cout << std::left << std::setw(15) << info.filterMemCount; 
-    std::cout << std::left << std::setw(15) << info.numOfRead; 
-    std::cout << std::left << std::setw(15) << info.numOfWrite; 
-    std::cout << std::left << std::setw(15) << info.numOfCycle; 
-    std::cout << std::endl;
+    buff << std::left << std::setw(15) << kernelContainer.size()
+         << std::left << std::setw(15) << info.numOfRequest
+         << std::left << std::setw(15) << info.ioMemCount
+         << std::left << std::setw(15) << info.filterMemCount
+         << std::left << std::setw(15) << info.numOfRead
+         << std::left << std::setw(15) << info.numOfWrite
+         << std::left << std::setw(15) << info.numOfCycle
+         << std::endl;
+
+    std::cout << buff.str();
+
+    ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+        file << buff.str();
+    file.close();
+
 #endif
 
     for(auto& kernel : kernelContainer) 
@@ -296,84 +304,85 @@ Model::getModelInfo(const char* model_type)
     if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
         Info.numOfRequest   = 8494;
-        Info.ioMemCount     = 9518;
-        Info.filterMemCount = 62638;
+        Info.ioMemCount     = 152288;
+        Info.filterMemCount = 1002208;
         Info.numOfRead      = 941088;
         Info.numOfWrite     = 8494;
-        Info.numOfCycle     = 170688;
+        Info.numOfCycle     = 6785328;
         Info.inputSize      = {1, 32, 32};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 479379;
+        Info.totalExecuteTime = 377154;
         Info.layerExecuteTime = {
-            56530, 55802, 55840, 55806, 83334, 59727, 56516, 55814
+            94164, 28278, 28768, 28734, 28380, 97813, 41693, 29314
         };
 
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
         Info.numOfRequest   = 158824;
-        Info.ioMemCount     = 171368;
-        Info.filterMemCount = 30075936;
-        Info.numOfRead      = 451046656;
+        Info.ioMemCount     = 3143296;
+        Info.filterMemCount = 481214976;
+        Info.numOfRead      = 414969088;
         Info.numOfWrite     = 158824;
-        Info.numOfCycle     = 3094016;
+        Info.numOfCycle     = 90004668928;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 6083439;
+        Info.totalExecuteTime = 7613614;
         Info.layerExecuteTime = {
-            293484, 90747, 191013, 133107, 215017, 308223, 214664, 161354, 27902, 775009, 2933716, 739188
+            835903, 32360, 40503, 30670, 31350, 31350, 30317, 28582, 29288, 2905932, 2905932, 711412
         };
 
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
         Info.numOfRequest   = 828904;
-        Info.ioMemCount     = 649448;
-        Info.filterMemCount = 21992640;
-        Info.numOfRead      = 1050410496;
+        Info.ioMemCount     = 10792576;
+        Info.filterMemCount = 351882240;
+        Info.numOfRead      = 969416960;
         Info.numOfWrite     = 828904;
-        Info.numOfCycle     = 8384256;
+        Info.numOfCycle     = 1038660608;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 6083439;
+        Info.totalExecuteTime = 2787080;
         Info.layerExecuteTime = {
-            157843, 90189, 90457, 90456, 25, 90457, 90456, 25, 91516, 97921, 34067, 97922, 97921, 13, 109571, 
-            162413, 53116, 162413, 162413, 7, 240080, 452461, 212131, 452462, 452461, 7, 1494450, 226377
+            799705, 44094, 47977, 47977, 161897, 47977, 47978, 161897, 39526, 37408, 35996, 37408, 37408, 
+            94292, 33006, 32300, 31947, 32300, 32300, 48484, 30896, 30896, 30543, 30896, 30896, 41050, 28582, 711411
         };
 
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
         Info.numOfRequest   = 3781608;
-        Info.ioMemCount     = 3794152;
-        Info.filterMemCount = 56899264;
-        Info.numOfRead      = 7931585792;
+        Info.ioMemCount     = 61107840;
+        Info.filterMemCount = 910388224;
+        Info.numOfRead      = 7688828928;
         Info.numOfWrite     = 3781608;
-        Info.numOfCycle     = 35397120;
+        Info.numOfCycle     = 150160280576;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 15634243;
+        Info.totalExecuteTime = 10603117;
         Info.layerExecuteTime = {
-            875676, 209785, 74301, 151180, 157586, 70055, 126374, 205839, 205839, 82806, 303281, 488122, 488122, 
-            258090, 454227, 454227, 454227, 256325, 84040, 2933716, 2933716, 739188
+            2371430, 287388, 220597, 193872, 193872, 77588, 96565, 96566, 96566, 48684, 61702, 61703, 61702, 
+            37408, 36349, 36349, 36349, 29739, 35387, 2905932, 2905932, 711412
         };
 
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
         Info.numOfRequest   = 1198778;
-        Info.ioMemCount     = 1254762;
-        Info.filterMemCount = 44561920;
-        Info.numOfRead      = 2045716128;
+        Info.ioMemCount     = 20477600;
+        Info.filterMemCount = 712990720;
+        Info.numOfRead      = 1881242784;
         Info.numOfWrite     = 1198778;
-        Info.numOfCycle     = 9824148;
+        Info.numOfCycle     = 1039974260;
         Info.inputSize      = {3, 112, 112};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 5209661;
+        Info.totalExecuteTime = 5302597;
         Info.layerExecuteTime = {
-            157843, 90189, 60079, 105368, 169833, 57585, 28961, 99033, 94719, 56149, 117258, 84454, 7, 88443, 56153, 
-            7, 172740, 30026, 110734, 105335, 56149, 128189, 89783, 7, 96967, 56863, 7, 1122077, 64328, 28608, 147429, 
-            99308, 7, 183210, 84807, 7, 134531, 55804, 7, 174500, 28255, 155907, 131027, 27902, 247194, 86590, 7, 135971, 
-            55804, 7, 173088, 28255, 162261, 109571, 28255, 247194, 86590, 7, 135971, 55804, 7, 144487, 28255, 156966, 
-            137379, 28255, 256019, 87665, 7, 135971, 55804, 7, 151902, 28961, 204674, 151470, 7, 258307, 91901, 7, 164070, 
-            57224, 7, 1394219, 73903, 27902, 269896, 150764, 27902, 388402, 64350, 7, 194066, 56871, 7, 249279, 28255, 
-            262908, 195602, 7, 416991, 68616, 7, 194066, 56871, 7, 3044330, 226377
+            799705, 44094, 61391, 80370, 43575, 36536, 48891, 33972, 37408, 95792, 28151, 28417, 28417, 29923, 
+            34512, 38395, 40585, 95792, 35996, 41457, 117874, 28405, 28747, 30159, 31947, 36536, 48891, 36549, 
+            32347, 43643, 29417, 31541, 44955, 27981, 28313, 27960, 28910, 30322, 33147, 31841, 41019, 29670, 
+            31794, 46267, 28022, 28334, 27981, 28911, 30323, 33147, 31335, 38395, 29923, 32300, 48891, 28022, 
+            28334, 27981, 28911, 30323, 33147, 31082, 37083, 29701, 32806, 51868, 28064, 28334, 27981, 28911, 
+            30323, 33146, 33359, 48891, 30429, 33313, 54493, 28064, 28417, 28417, 29923, 31335, 38395, 32548, 
+            29573, 34515, 28725, 29904, 36258, 27940, 28293, 27940, 28560, 28912, 31031, 30234, 38001, 28890, 
+            30235, 38000, 27960, 28293, 27940, 28559, 28912, 31030, 28582, 711412
         };
 
     }

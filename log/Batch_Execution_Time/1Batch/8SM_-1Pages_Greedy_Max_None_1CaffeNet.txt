@@ -1,0 +1,16 @@
+Finish kernel [0] (Conv2D): [2, 835905]
+Finish kernel [1] (Pooling): [835906, 868266]
+Finish kernel [2] (Conv2D): [868267, 908770]
+Finish kernel [3] (Pooling): [908771, 939441]
+Finish kernel [4] (Conv2D): [939442, 970792]
+Finish kernel [5] (Conv2D): [970793, 1002143]
+Finish kernel [6] (Conv2D): [1002145, 1032462]
+Finish kernel [7] (Pooling): [1032463, 1061045]
+Finish kernel [8] (Flatten): [1061046, 1090334]
+Finish kernel [9] (Dense): [1090336, 3996268]
+Finish kernel [10] (Dense): [3996269, 6902201]
+Finish kernel [11] (Dense): [6902202, 7613614]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        481214976      414969088      158824         90004668928    
+PageRecord: [851824, 8192, 860016, 9621]
+App 0 Model 0 CaffeNet with 1 batch size is finished: [1, -1, 1, 7613615]

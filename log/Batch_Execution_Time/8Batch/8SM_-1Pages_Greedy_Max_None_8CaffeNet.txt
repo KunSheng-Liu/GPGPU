@@ -1,0 +1,44 @@
+Finish kernelGroup [0, 12, 24, 36, 48, 60, 72, 84, ] (Conv2D): [2, 2002367]
+Finish kernelGroup [1, 13, 25, 37, 49, 61, 73, 85, ] (Pooling): [2002369, 2068789]
+Finish kernelGroup [2, 14, 26, 38, 50, 62, 74, 86, ] (Conv2D): [2068791, 2194706]
+Finish kernelGroup [3, 15, 27, 39, 51, 63, 75, 87, ] (Pooling): [2194707, 2264309]
+Finish kernelGroup [4, 16, 28, 40, 52, 64, 76, 88, ] (Conv2D): [2264310, 2319822]
+Finish kernelGroup [5, 17, 29, 41, 53, 65, 77, 89, ] (Conv2D): [2319823, 2375335]
+Finish kernelGroup [6, 18, 30, 42, 54, 66, 78, 90, ] (Conv2D): [2375336, 2422585]
+Finish kernelGroup [7, 19, 31, 43, 55, 67, 79, 91, ] (Pooling): [2422587, 2455954]
+Finish kernelGroup [8, 20, 32, 44, 56, 68, 80, 92, ] (Flatten): [2455955, 2497441]
+Finish kernelGroup [9, 21, 33, 45, 57, 69, 81, 93, ] (Dense): [2497443, 5461469]
+Finish kernelGroup [10, 22, 34, 46, 58, 70, 82, 94, ] (Dense): [5461470, 8425496]
+Finish kernelGroup [11, 23, 35, 47, 59, 71, 83, 95, ] (Dense): [8425498, 9139948]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        481214976      414969088      158824         90004668928    
+PageRecord: [1718408, 1024, 1719432, 9499]
+App 0 Model 0 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 1 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 2 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 3 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 4 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 5 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 6 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+12             158824         3143296        0              414969088      158824         90004668928    
+PageRecord: [246344, 1024, 247368, 295]
+App 0 Model 7 CaffeNet with 1 batch size is finished: [1, -1, 1, 9139949]

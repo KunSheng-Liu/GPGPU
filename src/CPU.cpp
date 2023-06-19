@@ -234,7 +234,7 @@ CPU::Check_Finish_Kernel()
                 continue;
             }
              
-            string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished [" + to_string((*model)->task.arrivalTime) + ", " + to_string((*model)->task.deadLine) + ", " + to_string((*model)->startTime) + ", " + to_string(total_gpu_cycle) + "]";
+            string buff = to_string((*model)->modelID) + " " + (*model)->getModelName() + " with " + to_string((*model)->getBatchSize()) + " batch size is finished: [" + to_string((*model)->task.arrivalTime) + ", " + to_string((*model)->task.deadLine) + ", " + to_string((*model)->startTime) + ", " + to_string(total_gpu_cycle) + "]";
             log_W("Model", buff);
             
             /* Release the used memory */

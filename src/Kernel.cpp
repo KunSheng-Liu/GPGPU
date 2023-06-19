@@ -221,14 +221,15 @@ Kernel::handleKernelCompletion()
 {
     finish = true;
     running = false;
-    log_W("Kernel", to_string(kernelID) + " (" + srcLayer->layerType + ") is finished [" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
+    string buff = "[" + to_string(kernelID) + "] (" + srcLayer->layerType + "): [" + to_string(startCycle) + ", " + to_string(endCycle) + "]";
+    log_W("Finish kernel", buff);
 
     /* *******************************************************************
      * Record the kernel information into file
      * *******************************************************************
      */
     ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-    file << "Finish kernel" << std::right << setw(4) << kernelID << ": [" << startCycle << ", " << endCycle << "]" << std::endl;
+    file << "Finish kernel " << buff << std::endl;
 #if (PRINT_BLOCK_RECORD)
     for (auto& b_record : block_record)
     {
@@ -434,17 +435,17 @@ KernelGroup::handleKernelCompletion()
     }
     buff += "] (";
     buff += kernel_list.front().first->srcLayer->layerType;
-    buff += ") is finished ";
+    buff += "): [" + to_string(startCycle) + ", " + to_string(endCycle) + "]";
 
-    log_W("kernelGroup", buff + "[" + to_string(startCycle) + ", " + to_string(endCycle) + "]");
-
+    log_W("Finish kernelGroup", buff);
+    
     /* *******************************************************************
      * Record the kernel information into file
      * *******************************************************************
      */
-#if (PRINT_BLOCK_RECORD)
     ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-    file << buff << ": [" << startCycle << ", " << endCycle << "]" << std::endl;
+    file << "Finish kernelGroup " << buff << std::endl;
+#if (PRINT_BLOCK_RECORD)
     for (auto& b_record : block_record)
     {
         file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
@@ -467,8 +468,8 @@ KernelGroup::handleKernelCompletion()
         }
     #endif
     }
-    file.close();
 #endif
+    file.close();
 
     delete recorder;
     delete SM_List;
