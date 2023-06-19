@@ -91,7 +91,7 @@ SM::cycle()
                 auto& thread = warp->mthreads.at(access->thread_id);
 
                 /* Is the access finish? */
-                if (thread.writeIndex == thread.request->writePages.size()) 
+                if (thread.writeIndex != thread.request->writePages.size()) 
                     thread.state = Busy;
                 else 
                 {
