@@ -227,9 +227,9 @@ Kernel::handleKernelCompletion()
      * Record the kernel information into file
      * *******************************************************************
      */
-#if (PRINT_BLOCK_RECORD)
     ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
     file << "Finish kernel" << std::right << setw(4) << kernelID << ": [" << startCycle << ", " << endCycle << "]" << std::endl;
+#if (PRINT_BLOCK_RECORD)
     for (auto& b_record : block_record)
     {
         file << "Finish block" << std::right << setw(5) << b_record.block_id << ": [" 
@@ -252,8 +252,8 @@ Kernel::handleKernelCompletion()
         }
     #endif
     }
-    file.close();
 #endif
+    file.close();
 }
 
 

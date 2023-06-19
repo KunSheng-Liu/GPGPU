@@ -52,7 +52,7 @@ int main (int argc, char** argv)
 void parser_cmd (int argc, char** argv) 
 {
     string sm_num_name    = "8SM";
-    string page_num_name =  "80Pages";
+    string page_num_name =  "-1Pages";
     string scheduler_name = "Greedy";
     string batch_name     = "Disable";
     string mem_name       = "None";

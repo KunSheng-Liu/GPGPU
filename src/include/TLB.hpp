@@ -120,7 +120,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    virtual bool lookup (Key key, Value& value) 
+    bool lookup (Key key, Value& value) 
     {
         auto it = table.find(key);
 
@@ -216,7 +216,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    int release (bool (*check_function) (const Value&)) 
+    virtual int release (bool (*check_function) (const Value&)) 
     {
         int release_count = 0;
         for (auto it = history.begin(); it != history.end();)
