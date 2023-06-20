@@ -73,7 +73,7 @@ MemoryController::cycle()
 
         for (auto page_id : access->pageIDs)
         {
-            if (mPages[page_id].location != SPACE_VRAM) ASSERT(mPages[page_id].location == SPACE_VRAM, "Memory access error: should in VRAM");
+            ASSERT(mPages[page_id].location == SPACE_VRAM, "Memory access error: should in VRAM");
             
             (type == Read) ? mPages[page_id].record.read_counter++ : mPages[page_id].record.write_counter++;
             mPages[page_id].record.access_count++;

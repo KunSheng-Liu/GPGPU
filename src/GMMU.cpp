@@ -127,7 +127,8 @@ GMMU::Access_Processing()
 
         /* Check whether the page of current access is in the memory */
         bool hit = true;
-        for (auto page_id : access->pageIDs) hit &= TLB->lookup(page_id);
+        Page* dummy_page;
+        for (auto page_id : access->pageIDs) hit &= TLB->lookup(page_id, dummy_page);
 
         /* Classify the access into correspond handling queue */
         hit ? mMC->gmmu_to_mc_queue.push_back(access) : MSHRs.push_back(access);
@@ -167,6 +168,7 @@ GMMU::Page_Fault_Handler()
         if (!page_fault_process_queue.empty())
         {
             /* process migration */
+            list<int> accessed_pages = {};
             list<int> thrashed_pages = {};
             for (auto fault_pair : page_fault_process_queue)
             {
@@ -177,6 +179,7 @@ GMMU::Page_Fault_Handler()
                     /* Migration from DRAM to VRAM */
                     Page* page = mMC->refer(page_id);
                     ASSERT(page, "page ptr doesn't exist");
+                    accessed_pages.emplace_back(page->pageIndex);
                     
                     page->location = SPACE_VRAM;
                     page->record.swap_count++;
@@ -191,7 +194,14 @@ GMMU::Page_Fault_Handler()
                     }
                 }
             }
-
+#if (PRINT_DEMAND_PAGE_RECORD)
+            /* print out accessed pages */
+            if(!accessed_pages.empty())
+            {
+                string buff;
+                for (auto page_id : accessed_pages) buff += to_string(page_id) + ", ";
+                log("Swap in " + to_string(accessed_pages.size()) + " pages", buff, Color::Cyan);
+            }
             /* print out thrashed pages */
             if(!thrashed_pages.empty())
             {
@@ -199,7 +209,7 @@ GMMU::Page_Fault_Handler()
                 for (auto page_id : thrashed_pages) buff += to_string(page_id) + ", ";
                 log("Swap out " + to_string(thrashed_pages.size()) + " pages", buff, Color::Cyan);
             }
-
+#endif
             page_fault_process_queue.clear();
             /* *******************************************************************
              * Handle return
