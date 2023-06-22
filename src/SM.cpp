@@ -76,7 +76,7 @@ SM::cycle()
             bool sync = true;
             for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
             
-            warp->isBusy = !(sync && block->runningKernel->requests.empty());
+            warp->isBusy = !(sync && block->requests.empty());
             if (!warp->isBusy) continue;
 
             /* *******************************************************************
@@ -113,9 +113,10 @@ SM::cycle()
             {
                 for (auto& thread : warp->mthreads)
                 {
-                    if (!block->runningKernel->requests.empty())
+                    if (!block->requests.empty())
                     {
-                        thread.request = block->runningKernel->accessRequest();
+                        thread.request = block->requests.front();
+                        block->requests.pop();
                         log_V("Executing request", to_string(thread.request->requst_id));
                         thread.readIndex = 0;
                         thread.state = Busy;
@@ -236,7 +237,7 @@ SM::cycle()
  * ================================================================================================
  */
 bool
-SM::bindKernel(Kernel* kernel)
+SM::bindKernel(Kernel* kernel, int num_of_request)
 {
     if (resource.remaining_blocks == 0 || resource.remaining_warps == 0) return false;
 
@@ -266,6 +267,12 @@ SM::bindKernel(Kernel* kernel)
             }
             if (b->warps.size() == GPU_MAX_WARP_PER_BLOCK) break;
         }
+
+        for (int i = 0; i < num_of_request; i++)
+        {
+            if (!kernel->requests.empty()) b->requests.push(move(kernel->accessRequest()));
+        }
+        
         
 #if (PRINT_SM_ALLCOATION_RESULT)
         std::cout << "Launch kernel:" << kernel->kernelID << " to SM: " << smID << " with warps: " << b->warps.size() << std::endl;

@@ -70,7 +70,7 @@ struct SMRecord {
 public:
     void cycle ();
 
-    bool bindKernel(Kernel* kernel);
+    bool bindKernel(Kernel* kernel, int num_of_request);
     bool terminateKernel (Kernel* kernel);
     void checkBlockFinish();
 

@@ -70,6 +70,8 @@ public:
 
 	Kernel* runningKernel = nullptr;
 
+    queue<Request*> requests;
+
 private:
     /* Number of block be created */
     static int blockCount;

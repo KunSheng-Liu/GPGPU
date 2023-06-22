@@ -98,10 +98,16 @@ GPU::Runtime_Block_Scheduling()
     {
         ASSERT(kernel, "Receive null kernel ptr");
 
-        bool success = false;
-        for (auto sm_id : *kernel->SM_List) success |= mSMs[sm_id].bindKernel(kernel);
+        int division_count = 0;
+        for (auto sm_id : *kernel->SM_List) division_count += ceil(mSMs[sm_id].getResourceInfo().remaining_warps / GPU_MAX_WARP_PER_BLOCK);
 
-        success ? runningKernels.push_back(kernel) : remainingQueue.push_back(kernel);
+        int num_of_request = ceil((float)kernel->requests.size() / division_count);
+        for (auto sm_id : *kernel->SM_List)
+        {
+            mSMs[sm_id].bindKernel(kernel, num_of_request);
+        }
+        ASSERT(kernel->requests.empty(), "error");
+        division_count ? runningKernels.push_back(kernel) : remainingQueue.push_back(kernel);
     }
     
     commandQueue = remainingQueue;
@@ -127,16 +133,13 @@ GPU::Check_Finish_Kernel()
     log_T("GPU", "Check_Finish_Kernel");
     for (auto kernel : runningKernels)
     {
-        if (kernel->requests.empty())
+        kernel->finish = true;
+        for (auto sm_id : *kernel->SM_List) kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
+        
+        if (kernel->finish) 
         {
-            kernel->finish = true;
-            for (int i = 0; i < system_resource.SM_NUM; i++) kernel->finish &= mSMs[i].checkKernelComplete(kernel);
-            
-            if (kernel->finish) 
-            {
-                kernel->endCycle = total_gpu_cycle;
-                finishedKernels.push_back(kernel);
-            }
+            kernel->endCycle = total_gpu_cycle;
+            finishedKernels.push_back(kernel);
         }
     }
 
