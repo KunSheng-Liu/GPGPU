@@ -93,20 +93,18 @@ GPU::Runtime_Block_Scheduling()
     log_T("GPU", "Runtime_Block_Scheduling");
 
     /* Iterate all kernels inside the command Queue */
-    queue<Kernel*> remainingKernels;
-    while(!commandQueue.empty())
+    list<Kernel*>  remainingQueue = {};
+    for (auto kernel : commandQueue)
     {
-        Kernel* kernel = commandQueue.front();
         ASSERT(kernel, "Receive null kernel ptr");
 
         bool success = false;
         for (auto sm_id : *kernel->SM_List) success |= mSMs[sm_id].bindKernel(kernel);
 
-        success ? runningKernels.push_back(kernel) : remainingKernels.push(kernel);
-
-        commandQueue.pop();
+        success ? runningKernels.push_back(kernel) : remainingQueue.push_back(kernel);
     }
-    commandQueue = remainingKernels;
+    
+    commandQueue = remainingQueue;
 
 #if (LOG_LEVEL >= VERBOSE)
     for (auto kernel: runningKernels) log_V("running kernel id", to_string(kernel->kernelID));
@@ -127,7 +125,7 @@ void
 GPU::Check_Finish_Kernel()
 {  
     log_T("GPU", "Check_Finish_Kernel");
-    for (Kernel* kernel : runningKernels)
+    for (auto kernel : runningKernels)
     {
         if (kernel->requests.empty())
         {
@@ -164,7 +162,7 @@ GPU::launchKernel(Kernel* kernel)
 {
     if (!kernel->requests.size()) return false;
 
-    commandQueue.push(kernel);
+    commandQueue.push_back(kernel);
 
     log_V("launchKernel", "kernel: " + to_string(kernel->kernelID) + " launch success");
 
@@ -206,17 +204,7 @@ GPU::terminateModel (int app_id, int model_id)
     runningKernels.remove_if([](Kernel* k){return !k->running;});
 
     /* Release commandQueue */
-    queue<Kernel*> remainingKernels;
-    while(!commandQueue.empty())
-    {
-        Kernel* kernel = commandQueue.front();
-        ASSERT(kernel, "Termiate kernel error");
-
-        if (kernel->modelID == model_id) continue;
-
-        commandQueue.pop();
-    }
-    commandQueue = remainingKernels;
+    commandQueue.remove_if([model_id](Kernel* k){return !k->modelID == model_id;});
 
     return true;
 }

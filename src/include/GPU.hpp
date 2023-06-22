@@ -104,8 +104,9 @@ private:
 public:
     bool canIssueKernel;
 
-    queue<Kernel*> commandQueue = {};
-    list<Kernel*> finishedKernels = {};
+    list<Kernel*>  commandQueue = {};
+    list<Kernel*>  runningKernels = {};
+    list<Kernel*>  finishedKernels = {};
 
 private:
     GMMU mGMMU;
@@ -113,8 +114,6 @@ private:
     MemoryController* mMC;
 
     map<int, SM> mSMs;
-
-    list<Kernel*> runningKernels = {};
 
 friend GMMU;
 };

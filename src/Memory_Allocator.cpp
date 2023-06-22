@@ -44,7 +44,7 @@ Memory_Allocator_API::Average (CPU* mCPU)
 
     for (int i = 0; i < size % mCPU->mAPPs.size(); i++) memory_budget[mCPU->mAPPs[i]->appID]++;
     
-    for (auto app : mCPU->mAPPs) mCPU->mGPU->getGMMU()->setCGroupSize(app->appID, memory_budget[app->appID]);
+    for (auto memory_pair : memory_budget) mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, memory_pair.second);
     
     return true;
 }

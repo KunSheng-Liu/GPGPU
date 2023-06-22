@@ -86,7 +86,31 @@ Inference_Admission_API::BARM (CPU* mCPU)
  */
 bool 
 Memory_Allocator_API::MEMA (CPU* mCPU)
-{  
+{
+    map<int, unsigned long long> memory_record;
+    for (auto app : mCPU->mAPPs) memory_record.insert({app->appID, 0});
+
+    for (auto kernel : mCPU->mGPU->runningKernels) memory_record[kernel->appID] += ceil(kernel->getKernelInfo().numOfMemory / PAGE_SIZE);
+    for (auto kernel : mCPU->mGPU->commandQueue)   memory_record[kernel->appID] += ceil(kernel->getKernelInfo().numOfMemory / PAGE_SIZE);
+
+    vector<pair<int, unsigned long long>> memory_budget = vector<pair<int, unsigned long long>> (memory_record.begin(), memory_record.end());
+    sort(memory_budget.begin(), memory_budget.end(), [](auto& a, auto& b){ return a.second > b.second; });
+
+    int count = 0;
+    unsigned long long remaining_pages = system_resource.VRAM_SPACE / PAGE_SIZE;
+    for (auto memory_pair : memory_budget)
+    {
+        if (memory_pair.second == 0) continue;
+
+        else if (remaining_pages > memory_pair.second)
+        {
+            mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, memory_pair.second);
+            remaining_pages -= memory_pair.second;
+            count++;
+        }
+        else mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, floor(remaining_pages / (memory_budget.size() - count)));
+    }
+    
     return true;
 }
 

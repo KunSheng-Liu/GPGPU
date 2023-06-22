@@ -113,7 +113,7 @@ public:
 
     list<Kernel*> findReadyKernels ();
     list<Kernel*> getRunningKernels ();
-    vector<bool> getKernelStatus ();
+    vector<bool>  getKernelStatus ();
     
     vector<Kernel>& compileToKernel ();
 

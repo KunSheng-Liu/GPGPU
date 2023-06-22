@@ -25,7 +25,7 @@
  * Type Define
  * ************************************************************************************************
  */
-struct ComputingResource {
+struct SM_Resource {
     int remaining_blocks  = GPU_MAX_BLOCK_PER_SM;
     int remaining_warps   = GPU_MAX_WARP_PER_SM;
     int remaining_threads = GPU_MAX_THREAD_PER_SM;
@@ -80,7 +80,7 @@ public:
 
     void setGMMU (GMMU* gmmu) {mGMMU = gmmu;}
     
-    ComputingResource getResourceInfo() const {return resource;}
+    SM_Resource getResourceInfo() const {return resource;}
 
 private:
     void recycleResource(Block* block);
@@ -102,7 +102,7 @@ private:
 
     map<int, Warp> mWarps;
 
-    ComputingResource resource;
+    SM_Resource resource;
 
     list<Block*> runningBlocks;
 
