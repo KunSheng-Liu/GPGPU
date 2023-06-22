@@ -19,33 +19,8 @@
  * \endcond
  * ================================================================================================
  */
-CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
+CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mScheduler(new Scheduler(this))
 {
-    /* *******************************************************************
-     * Register the callback functions
-     * *******************************************************************
-     */
-    if (command.SCHEDULER_MODE == SCHEDULER::LazyB)
-    {
-        mScheduler = new Scheduler_LazyB ( this );
-    } 
-    
-    else if (command.SCHEDULER_MODE == SCHEDULER::My) {
-        mScheduler = new Scheduler_My ( this );
-    }
-
-    else if (command.SCHEDULER_MODE == SCHEDULER::Greedy) {
-        mScheduler = new Scheduler_Greedy ( this );
-    }
-
-    else if (command.SCHEDULER_MODE == SCHEDULER::Baseline) {
-        mScheduler = new Scheduler_Baseline ( this );
-    }
-
-    else if (command.SCHEDULER_MODE == SCHEDULER::BARM) {
-        mScheduler = new Scheduler_BARM ( this );
-    }
-
     /* *******************************************************************
      * Create applications
      * *******************************************************************
@@ -182,11 +157,7 @@ CPU::cycle()
 
     if (Check_Finish_Kernel() || mGPU->isIdle())
     {
-        mScheduler->Inference_Admission();
-    
-        mScheduler->Kernel_Scheduler();
-
-        mScheduler->Memory_Allocator();
+        mScheduler->Sched();
     }
 
     /* check new task */

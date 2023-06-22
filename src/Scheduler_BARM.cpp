@@ -1,15 +1,15 @@
 /**
- * \name    Approach_BARM.cpp
+ * \name    Scheduler_BARM.cpp
  * 
  * \brief   Implement the callback function for related work \b BARM used in CPU.hpp.
  * 
- * \date    May 25, 2023
+ * \date    Jun 22, 2023
  */
 #include "include/Scheduler.hpp"
 
 
 /** ===============================================================================================
- * \name    BARM_Inference_Admission
+ * \name    Inference_Admission_API::BARM
  * 
  * \brief   Use BARM::SMD scheme to allocate SM
  * 
@@ -17,7 +17,7 @@
  * ================================================================================================
  */
 bool 
-Scheduler_BARM::Inference_Admission ()
+Inference_Admission_API::BARM (CPU* mCPU)
 {  
     log_T("CPU", "Inference_Admission: BARM");
 
@@ -73,4 +73,34 @@ Scheduler_BARM::Inference_Admission ()
     //     ASSERT(SM_count == system_resource.SM_NUM);
     // }
 
+}
+
+
+/** ===============================================================================================
+ * \name    MEMA
+ * 
+ * \brief   Use BARM::MEMA scheme to allocate memory
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool 
+Memory_Allocator_API::MEMA (CPU* mCPU)
+{  
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    R_MEMA
+ * 
+ * \brief   Use BARM::R_MEMA scheme to allocate memory
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool 
+Memory_Allocator_API::R_MEMA (CPU* mCPU)
+{  
+    return true;
 }

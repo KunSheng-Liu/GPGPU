@@ -14,13 +14,15 @@
 #include "CPU.hpp"
 #include "Kernel.hpp"
 
-
+class Inference_Admission_API;
+class Kernel_Scheduler_API;
+class Memory_Allocator_API;
 
 /** ===============================================================================================
- * \name    Scheduler | Scheduler_Baseline
+ * \name    Scheduler
  * 
- * \brief   The base class of NN scheduler. You can add new schedule policy by inheritance this class 
- *          and override the virtual function to fit the desire.
+ * \brief   The base class of NN scheduler. You can add new schedule policy by adding them into 
+ *          Inference_Admission_API | Kernel_Scheduler_API | Memory_Allocator_API
  * 
  * \note    * This defualt scheduler didn't block SM to any application, just build tasks into model
  *          and launch all ready kernels to GPU's commandQueue. Which leads the kernel contension
@@ -33,120 +35,64 @@
  */
 class Scheduler
 {
+/* ************************************************************************************************
+ * Class Constructor
+ * ************************************************************************************************
+ */ 
 public:
-    Scheduler (CPU* cpu) : mCPU(cpu) {}
-
-public:
-    virtual bool Inference_Admission ();
-    virtual bool Kernel_Scheduler    ();
-    virtual bool Memory_Allocator    ();
-
-protected:
-    void missDeadlineHandler ();
-
-protected:
-    CPU* mCPU;
-};
-typedef Scheduler Scheduler_Baseline;
-
-
-
-/** ===============================================================================================
- * \name    Scheduler_Greedy
- * 
- * \brief   A greedly NN inference scheduler that inherits the \b "Scheduler" class. 
- * 
- * \note    * This scheduler blocks SM to an application, no model can be build until the running 
- *          model is totally finished.
- * 
- * \endcond
- * ================================================================================================
- */
-class Scheduler_Greedy : public Scheduler
-{
-public:
-    Scheduler_Greedy (CPU* cpu) : Scheduler(cpu) {}
-
-public:
-    bool Inference_Admission () override;
-};
-
-
-
-/** ===============================================================================================
- * \name    Scheduler_BARM
- * 
- * \brief   Related work NN inference scheduler \b "BARM" that inherits the \b "Scheduler" class. 
- * 
- * \endcond
- * ================================================================================================
- */
-class Scheduler_BARM : public Scheduler
-{
-public:
-    Scheduler_BARM (CPU* cpu) : Scheduler(cpu) {}
-
-public:
-    bool Inference_Admission () override;
-};
-
-
-
-
-/** ===============================================================================================
- * \name    Scheduler_LazyB
- * 
- * \brief   Related work NN inference scheduler \b "Lazy_Batching" that inherits the \b "Scheduler" class. 
- * 
- * \details As a cloud server, the tasks is launched form the edge devices. Therefore try to maximize 
- *          the batch size of the task in kernel level.
- * 
- * \note    Use resnet model
- * \note    In this scenario, no memory limitation to the system.
- * \note    This approach use ResNet model
- * \note    Max batch size is constrained as 64
- * \note    The memory access overhead is set as 100 cycle
- * 
- * \endcond
- * ================================================================================================
- */
-class Scheduler_LazyB : public Scheduler
-{
-    #define LAZYB_MAX_BATCH_SIZE            64 
-    
-public:
-    Scheduler_LazyB (CPU* cpu) : Scheduler(cpu) {}
-
-public:
-    bool Inference_Admission () override;
-    bool Kernel_Scheduler    () override;
-
-};
-
+    Scheduler (CPU* cpu);
 
 /* ************************************************************************************************
- * My
+ * Functions
  * ************************************************************************************************
  */
-class Scheduler_My : public Scheduler
-{
 public:
-    Scheduler_My (CPU* cpu) : Scheduler(cpu) {}
-
-public:
-    bool Inference_Admission () override;
-    bool Kernel_Scheduler    () override;
-
-protected:
-    bool Workload_SM_Allocator ();
-    bool Rescue_SM_Allocator   ();
-    
-    bool APP_Level_SM_Allocator ();
-    bool Model_Level_SM_Allocator ();
+    void Sched ();
 
 private:
-    map<int, list<Model*>> abandonedModels = {};
+    void missDeadlineHandler ();
 
+/* ************************************************************************************************
+ * CallBack Functions
+ * ************************************************************************************************
+ */
+private:
+    bool (*Inference_Admission) (CPU* mCPU);
+    bool (*Kernel_Scheduler)    (CPU* mCPU);
+    bool (*Memory_Allocator)    (CPU* mCPU);
+
+/* ************************************************************************************************
+ * Parameter
+ * ************************************************************************************************
+ */
+private:
+    CPU* mCPU;
+};
+
+class Inference_Admission_API
+{
+public:
+    static bool Baseline (CPU* mCPU);
+    static bool Greedy   (CPU* mCPU);
+    static bool BARM     (CPU* mCPU);
+    static bool LazyB    (CPU* mCPU);
+    static bool My       (CPU* mCPU);
+};
+
+class Kernel_Scheduler_API
+{
+public:
+    static bool Baseline (CPU* mCPU);
+    static bool LazyB    (CPU* mCPU);
+};
+
+class Memory_Allocator_API
+{
+public:
+    static bool None    (CPU* mCPU);
+    static bool Average (CPU* mCPU);
+    static bool MEMA    (CPU* mCPU);
+    static bool R_MEMA  (CPU* mCPU);
 };
 
 #endif

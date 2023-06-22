@@ -1,23 +1,25 @@
 /**
- * \name    Approach_LazyB.cpp
+ * \name    Scheduler_LazyB
  * 
- * \brief   Implement the function of related work \b Lazy_Batching used in CPU.hpp.
+ * \brief   Related work NN inference scheduler \b "Lazy_Batching". 
  * 
- * \details As a cloud server, the tasks is launched form the edge devices. Therefore try to maximize the batch size of the task 
- *          in kernel level.
+ * \details As a cloud server, the tasks is launched form the edge devices. Therefore try to maximize 
+ *          the batch size of the task in kernel level.
  * 
+ * \note    Use resnet model
  * \note    In this scenario, no memory limitation to the system.
  * \note    This approach use ResNet model
  * \note    Max batch size is constrained as 64
  * \note    The memory access overhead is set as 100 cycle
  * 
- * \date    May 25, 2023
+ * \date    Jun 22, 2023
  */
 #include "include/Scheduler.hpp"
 
+#define LAZYB_MAX_BATCH_SIZE    64
 
 /** ===============================================================================================
- * \name    LazyB_Inference_Admission
+ * \name    Inference_Admission_API::LazyB
  * 
  * \brief   Launch the tasks that can be merge into the model without violate the deadline.
  * 
@@ -27,15 +29,9 @@
  * ================================================================================================
  */
 bool 
-Scheduler_LazyB::Inference_Admission ()
+Inference_Admission_API::LazyB (CPU* mCPU)
 {  
     log_T("CPU", "Inference_Admission: LazyB");
-
-    /* *******************************************************************
-     * Check the models haven't miss deadline, if so, terminate model
-     * *******************************************************************
-     */
-    missDeadlineHandler ();
 
     /* *******************************************************************
      * Allocate SM to application
@@ -94,7 +90,7 @@ Scheduler_LazyB::Inference_Admission ()
 
 
 /** ===============================================================================================
- * \name    LazyB_Kernel_Scheduler
+ * \name    Kernel_Scheduler_API::LazyB
  * 
  * \brief   Launch the smallest ready kernel of all the models, if multiple model has smallest ready 
  *          kernels merge the models.
@@ -103,7 +99,7 @@ Scheduler_LazyB::Inference_Admission ()
  * ================================================================================================
  */
 bool 
-Scheduler_LazyB::Kernel_Scheduler ()
+Kernel_Scheduler_API::LazyB (CPU* mCPU)
 {  
     log_T("CPU", "Kernel_Scheduler: LazyB");
 
