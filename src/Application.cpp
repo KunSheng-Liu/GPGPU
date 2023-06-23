@@ -70,8 +70,9 @@ void
 Application::cycle()
 {
     /* Launch task into queue */
+#if (LOG_LEVEL >= TRACE)
     log_T("Application Cycle", modelInfo.modelName);
-
+#endif
     if (arrivalTime < endTime)
     {
         if (total_gpu_cycle >= arrivalTime)

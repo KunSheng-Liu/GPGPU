@@ -67,12 +67,16 @@ GMMU::cycle()
 void
 GMMU::Access_Processing()
 {
+#if (LOG_LEVEL >= TRACE)
     log_T("GMMU", "Access_Processing");
+#endif
     /* *******************************************************************
      * Receive the responce of Memory Controllor
      * *******************************************************************
      */
+#if (LOG_LEVEL >= TRACE)
     log_T("MC", "Retrun " + to_string(mMC->mc_to_gmmu_queue.size()) + " access");
+#endif
     if(!mMC->mc_to_gmmu_queue.empty()) 
     {
         gmmu_to_warps_queue.splice(gmmu_to_warps_queue.end(), mMC->mc_to_gmmu_queue);
@@ -83,7 +87,9 @@ GMMU::Access_Processing()
      * Return finished access to SM
      * *******************************************************************
      */
+#if (LOG_LEVEL >= TRACE)
     log_T("GMMU", "Return " + to_string(gmmu_to_warps_queue.size()) + " access");
+#endif
     while(!gmmu_to_warps_queue.empty())
     {
         auto access = gmmu_to_warps_queue.front();
@@ -119,7 +125,9 @@ GMMU::Access_Processing()
      * Handling the accesses
      * *******************************************************************
      */
+#if (LOG_LEVEL >= TRACE)
     log_T("GMMU", "Handle " + to_string(warps_to_gmmu_queue.size()) + " access");
+#endif
     while(!warps_to_gmmu_queue.empty())
     {
         auto access = warps_to_gmmu_queue.front();
@@ -149,15 +157,18 @@ GMMU::Access_Processing()
 void
 GMMU::Page_Fault_Handler()
 {
+#if (LOG_LEVEL >= TRACE)
     log_T("GMMU", "Page_Fault_Handler");
-
+#endif
     /* *******************************************************************
      * Waiting for communication to the CPU and migration overhead
      * *******************************************************************
      */
-    if (wait_cycle > 0)
+    if (wait_cycle-- > 0)
     {
-        log_V("Page_Fault_Handler cycle", to_string(wait_cycle--));
+#if (LOG_LEVEL >= VERBOSE)
+        log_V("Page_Fault_Handler cycle", to_string(wait_cycle));
+#endif
     } 
     else {
         /* *******************************************************************

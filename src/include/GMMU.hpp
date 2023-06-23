@@ -73,7 +73,7 @@ private:
 	list<MemoryAccess*> gmmu_to_warps_queue;
     
     /* Page Fault handler */
-	unsigned long long wait_cycle = 0;
+	long long wait_cycle = 0;
     list<MemoryAccess*> page_fault_finish_queue;
     map<int, unordered_set<unsigned long long>> page_fault_process_queue;
 

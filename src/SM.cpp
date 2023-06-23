@@ -59,25 +59,19 @@ SM::~SM()
  */
 void
 SM::cycle()
-{    
+{
+#if (LOG_LEVEL >= TRACE)
     log_T("SM " + to_string(smID) + " Cycle", to_string(total_gpu_cycle));
-
+#endif
     /* Computing */
     for (auto block : runningBlocks)
     {
+#if (LOG_LEVEL >= VERBOSE)
         log_V("SM", to_string(smID) + " Execute block: " + to_string(block->blockID));
-
+#endif
         for (auto warp : block->warps)
         {
             if (!warp->isBusy) continue;
-            /* *******************************************************************
-             * Handle the warp status
-             * *******************************************************************
-             */
-            bool sync = true;
-            for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
-            
-            warp->isBusy = !(sync && block->requests.empty());
 
             /* *******************************************************************
              * Handle gmmu to sm response
@@ -91,12 +85,16 @@ SM::cycle()
                 auto& thread = warp->mthreads.at(access->thread_id);
 
                 /* Is the access finish? */
-                if (thread.writeIndex != thread.request->writePages.size()) 
-                    thread.state = Busy;
-                else 
+                if (!thread.request->writePages.back().second) 
                 {
+                    warp->idleCount++;
                     thread.state = Idle;
                     delete thread.request;
+                }
+                else 
+                {
+                    thread.state = Busy;
+                    warp->busyThreads.emplace_back(access->thread_id);
                 }
 
                 delete thread.access;
@@ -104,39 +102,51 @@ SM::cycle()
             warp->gmmu_to_warp_queue.clear();
 
 
-
             /* *******************************************************************
              * Bind request to idel threads by following the SIMT policy
              * *******************************************************************
              */
-            if (sync) 
+            if (warp->idleCount == GPU_MAX_THREAD_PER_WARP) 
             {
-                for (auto& thread : warp->mthreads)
+                if (block->requests.empty())
+                {
+                    warp->isBusy = false;
+                    continue;
+                }
+
+                for (int thread_id = 0; thread_id < GPU_MAX_THREAD_PER_WARP; thread_id++)
                 {
                     if (!block->requests.empty())
                     {
+                        warp->idleCount--;
+
+                        auto& thread = warp->mthreads.at(thread_id);
                         thread.request = block->requests.front();
                         block->requests.pop();
-                        log_V("Executing request", to_string(thread.request->requst_id));
-                        thread.readIndex = 0;
+                        
                         thread.state = Busy;
-                    } else {
-                        break;
-                    }
+                        thread.readIndex  = 0;
+                        thread.writeIndex = 0;
+                        warp->busyThreads.emplace_back(thread_id);
+#if (LOG_LEVEL >= VERBOSE)
+                        log_V("Executing request", to_string(thread.request->requst_id));
+#endif
+                    } 
+                    else break;
                 }
             }
             
-
 
             /* *******************************************************************
              * Launch the access
              * *******************************************************************
              */
-            for (int i = 0; i < GPU_MAX_THREAD_PER_WARP; i++)
+            list<int> busyThreads;
+            for (auto thread_id : warp->busyThreads)
             {
-                if (warp->mthreads.at(i).state != Busy) continue;
+                if (warp->mthreads.at(thread_id).state != Busy) continue;
 
-                auto& thread = warp->mthreads.at(i);
+                auto& thread = warp->mthreads.at(thread_id);
                 
                 /* ******************************
                  * Handle the read addresses
@@ -144,20 +154,19 @@ SM::cycle()
                  */
                 if (thread.readIndex != thread.request->readPages.size()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Read);
+                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread_id, thread.request->requst_id, AccessType::Read);
                     
-                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.readIndex != thread.request->readPages.size();)
+                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.request->readPages.back().second;)
                     {
                         auto& page_pair = thread.request->readPages.at(thread.readIndex);
 
                         int count = min(page_pair.second, i);
-                        thread.access->pageIDs.push_back(page_pair.first);
-                        page_pair.second -= count;
+                        thread.access->pageIDs.emplace_back(page_pair.first);
 
-                        (page_pair.second == 0) && (++thread.readIndex);
+                        ((page_pair.second -= count) == 0) && (++thread.readIndex);
                         i -= count;
                     }
-                    ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
+                    ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER, "Read access overflow");
                 }
 
                 /* ******************************
@@ -165,6 +174,7 @@ SM::cycle()
                  * ******************************
                  */
                 else if (thread.request->numOfInstructions-- > 0) {
+                    busyThreads.push_back(thread_id);
                     continue;
                 }
 
@@ -174,20 +184,19 @@ SM::cycle()
                  */
                 else if (thread.writeIndex != thread.request->writePages.size()) 
                 {
-                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, i, thread.request->requst_id, AccessType::Write);
+                    thread.access = new MemoryAccess(block->runningKernel->appID, block->runningKernel->modelID, smID, block->blockID, warp->warpID, thread_id, thread.request->requst_id, AccessType::Write);
                     
-                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.writeIndex != thread.request->writePages.size();)
+                    for (int i = GPU_MAX_ACCESS_NUMBER; i > 0 && thread.request->writePages.back().second;)
                     {
                         auto& page_pair = thread.request->writePages.at(thread.writeIndex);
 
                         int count = min(page_pair.second, i);
-                        thread.access->pageIDs.push_back(page_pair.first);
-                        page_pair.second -= count;
+                        thread.access->pageIDs.emplace_back(page_pair.first);
 
-                        (page_pair.second == 0) && (++thread.writeIndex);
+                        ((page_pair.second -= count) == 0) && (++thread.writeIndex);
                         i -= count;
                     }
-                    ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER);
+                    ASSERT(thread.access->pageIDs.size() <= GPU_MAX_ACCESS_NUMBER, "Write access overflow");
                 } 
 
                 /* ******************************
@@ -196,6 +205,7 @@ SM::cycle()
                  */
                 else ASSERT(false, "Busy thread should not be idle");
 
+                thread.state = Waiting;
                 /* ******************************
                  * push access to gmmu
                  * ******************************
@@ -204,7 +214,6 @@ SM::cycle()
                 warp->record.access_page_counter += thread.access->pageIDs.size();
 
                 warp->warp_to_gmmu_queue.push_back(thread.access);
-                thread.state = Waiting;
                 
 #if (PRINT_ACCESS_PATTERN)
                 std::cout << "New access page: ";
@@ -214,10 +223,13 @@ SM::cycle()
                 }
                 std::cout << std::endl;
 #endif
-            } 
+            }
+            warp->busyThreads = busyThreads;
+#if (LOG_LEVEL >= VERBOSE)
             log_V("Warp ID", to_string(warp->warpID));
             log_V("Total Access", to_string(warp->record.launch_access_counter));
             log_V("Total Access Pages", to_string(warp->record.access_page_counter));
+#endif
         }
     }
 

@@ -97,6 +97,9 @@ public:
 
     /* The thread queues that handle the access state machine */
     vector<AccessThread> mthreads;
+
+    int idleCount = GPU_MAX_THREAD_PER_WARP;
+    list<int> busyThreads;
     
 	list<MemoryAccess*> warp_to_gmmu_queue;
 	list<MemoryAccess*> gmmu_to_warp_queue;

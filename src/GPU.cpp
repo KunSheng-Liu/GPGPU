@@ -89,9 +89,10 @@ GPU::cycle()
  */
 void
 GPU::Runtime_Block_Scheduling()
-{  
+{
+#if (LOG_LEVEL >= TRACE)
     log_T("GPU", "Runtime_Block_Scheduling");
-
+#endif
     /* Iterate all kernels inside the command Queue */
     list<Kernel*>  remainingQueue = {};
     for (auto kernel : commandQueue)
@@ -131,8 +132,10 @@ GPU::Runtime_Block_Scheduling()
  */
 void
 GPU::Check_Finish_Kernel()
-{  
+{
+#if (LOG_LEVEL >= TRACE)
     log_T("GPU", "Check_Finish_Kernel");
+#endif
     for (auto kernel : runningKernels)
     {
         kernel->finish = true;

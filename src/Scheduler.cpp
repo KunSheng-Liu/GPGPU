@@ -74,11 +74,11 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
 void 
 Scheduler::Sched ()
 {
-        Inference_Admission (mCPU);
-    
-        Kernel_Scheduler    (mCPU);
+    Inference_Admission (mCPU);
 
-        Memory_Allocator    (mCPU);
+    Kernel_Scheduler    (mCPU);
+
+    Memory_Allocator    (mCPU);
 }
 
 
