@@ -133,13 +133,15 @@ Kernel::compressRequest(Request* originalRequest)
 {
     Request* compressedRequest = new Request();
 
+    int access_time = ceil((float) sizeof(DATA_TYPE) / 8);
+    int max_access_num = GPU_MAX_ACCESS_NUMBER / access_time;
     map<unsigned long long, int> access = {};
 
     /* compress the read pages */
     for (int i = 0; i < originalRequest->readPages.size();)
     {
-        access[originalRequest->readPages[i].first]++;
-        if ((++i) % GPU_MAX_ACCESS_NUMBER == 0 || i == originalRequest->readPages.size())
+        access[originalRequest->readPages.at(i).first] += access_time;
+        if ((++i) % max_access_num == 0 || i == originalRequest->readPages.size())
         {
             for (auto page_pair : access) compressedRequest->readPages.emplace_back(make_pair(page_pair.first, page_pair.second));
             access.clear();
@@ -149,8 +151,8 @@ Kernel::compressRequest(Request* originalRequest)
     /* compress the write pages */
     for (int i = 0; i < originalRequest->writePages.size();)
     {
-        access[originalRequest->writePages[i].first]++;
-        if ((++i) % GPU_MAX_ACCESS_NUMBER == 0 || i == originalRequest->writePages.size())
+        access[originalRequest->writePages.at(i).first] += access_time;
+        if ((++i) % max_access_num == 0 || i == originalRequest->writePages.size())
         {
             for (auto page_pair : access) compressedRequest->writePages.emplace_back(make_pair(page_pair.first, page_pair.second));
             access.clear();

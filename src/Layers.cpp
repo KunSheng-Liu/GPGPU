@@ -574,7 +574,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     index = floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) * data_byte / PAGE_SIZE);
                     ASSERT(index < oFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
 
-                    request->writePages.emplace_back(make_pair(oFMapPages[floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) * data_byte / PAGE_SIZE)], data_byte));
+                    request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
@@ -713,7 +713,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     index = floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) * data_byte / PAGE_SIZE);
                     ASSERT(index < oFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
 
-                    request->writePages.emplace_back(make_pair(oFMapPages[index], data_byte));
+                    request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
