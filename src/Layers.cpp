@@ -229,13 +229,13 @@ Layer::compileToKernel(int app_id, int model_id, vector<Kernel>& container, vect
  * \endcond
  * ================================================================================================
  */
-int
+unsigned long long
 Layer::getMemoryUsage()
 {
-    int usage = 0;
-    if(iFMap.second)  usage += ceil(iFMap.second->size()  * sizeof(DATA_TYPE));
-    if(oFMap.second)  usage += ceil(oFMap.second->size()  * sizeof(DATA_TYPE));
-    if(filter.second) usage += ceil(filter.second->size() * sizeof(DATA_TYPE));
+    unsigned long long  usage = 0;
+    if(iFMap.second)  usage += iFMap.second->size()  * sizeof(DATA_TYPE);
+    if(oFMap.second)  usage += oFMap.second->size()  * sizeof(DATA_TYPE);
+    if(filter.second) usage += filter.second->size() * sizeof(DATA_TYPE);
 
     return usage;
 }

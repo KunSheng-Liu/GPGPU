@@ -158,7 +158,7 @@ public:
     virtual void setOFMap  (pair<int, vector<DATA_TYPE>*> data);
     virtual void setFilter (pair<int, vector<DATA_TYPE>*> data);
 
-    int getMemoryUsage();
+    unsigned long long getMemoryUsage();
     vector<int> getIFMapSize  (void) const {return iFMapSize;}
     vector<int> getOFMapSize  (void) const {return oFMapSize;}
     vector<int> getFilterSize (void) const {return filterSize;}

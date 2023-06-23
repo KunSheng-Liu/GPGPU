@@ -69,6 +69,7 @@ SM::cycle()
 
         for (auto warp : block->warps)
         {
+            if (!warp->isBusy) continue;
             /* *******************************************************************
              * Handle the warp status
              * *******************************************************************
@@ -77,7 +78,6 @@ SM::cycle()
             for (auto& thread : warp->mthreads) sync &= (thread.state == Idle);
             
             warp->isBusy = !(sync && block->requests.empty());
-            if (!warp->isBusy) continue;
 
             /* *******************************************************************
              * Handle gmmu to sm response
@@ -256,6 +256,7 @@ SM::bindKernel(Kernel* kernel, int num_of_request)
             if(warp.second.isIdle)
             {
                 warp.second.isIdle = false;
+                warp.second.isBusy = true;
                 warp.second.record = {};
                 warp.second.record.warp_id = warp.second.warpID;
                 warp.second.record.start_cycle = total_gpu_cycle;
