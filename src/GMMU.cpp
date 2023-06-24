@@ -164,160 +164,150 @@ GMMU::Page_Fault_Handler()
      * Waiting for communication to the CPU and migration overhead
      * *******************************************************************
      */
-    if (wait_cycle-- > 0)
+    if (wait_cycle > 0)
     {
+        wait_cycle--;
 #if (LOG_LEVEL >= VERBOSE)
         log_V("Page_Fault_Handler cycle", to_string(wait_cycle));
 #endif
-    } 
-    else {
-        /* *******************************************************************
-         * Perform page movement after finish delay of communication and 
-         * migration
-         * *******************************************************************
-         */
-        if (!page_fault_process_queue.empty())
+    }
+
+    /* *******************************************************************
+     * Perform page movement after finish delay of communication and 
+     * migration
+     * *******************************************************************
+     */
+    else if (!page_fault_process_queue.empty())
+    {
+        auto access_pair = page_fault_process_queue.back();
+
+        /* Migration from DRAM to VRAM */
+        unsigned long long page_id = access_pair.first;
+        Page* page = mMC->refer(page_id);
+        page->location = SPACE_VRAM;
+        page->record.swap_count++;
+
+        for (auto access : access_pair.second)
         {
-            /* process migration */
-            list<int> accessed_pages = {};
-            list<int> thrashed_pages = {};
-            for (auto fault_pair : page_fault_process_queue)
-            {
-                ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->size(), "Allocated memory is less than the model needed");
+            Page* evict_page = getCGroup(access->app_id)->insert(page_id, page);
 
-                for (auto page_id : fault_pair.second)
-                {
-                    /* Migration from DRAM to VRAM */
-                    Page* page = mMC->refer(page_id);
-                    ASSERT(page, "page ptr doesn't exist");
-                    accessed_pages.emplace_back(page->pageIndex);
-                    
-                    page->location = SPACE_VRAM;
-                    page->record.swap_count++;
-                    page = getCGroup(fault_pair.first)->insert(page_id, page);
+            /* Eviction happen */
+            if (evict_page)
+            {
+                evict_page->location = SPACE_DRAM;
+                evict_page->record.swap_count++;
+                wait_cycle = PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+            }
 
-                    /* Eviction happen */
-                    if (page)
-                    {
-                        page->location = SPACE_DRAM;
-                        page->record.swap_count++;
-                        thrashed_pages.emplace_back(page->pageIndex);
-                    }
-                }
-            }
-#if (PRINT_DEMAND_PAGE_RECORD)
-            /* print out accessed pages */
-            if(!accessed_pages.empty())
+            if (--access_count[access] == 0)
             {
-                string buff;
-                for (auto page_id : accessed_pages) buff += to_string(page_id) + ", ";
-                log("Swap in " + to_string(accessed_pages.size()) + " pages", buff, Color::Cyan);
+                warps_to_gmmu_queue.push_back(access);
+                access_count.erase(access_count.find(access));
             }
-            /* print out thrashed pages */
-            if(!thrashed_pages.empty())
-            {
-                string buff;
-                for (auto page_id : thrashed_pages) buff += to_string(page_id) + ", ";
-                log("Swap out " + to_string(thrashed_pages.size()) + " pages", buff, Color::Cyan);
-            }
-#endif
-            page_fault_process_queue.clear();
-            /* *******************************************************************
-             * Handle return
-             * *******************************************************************
-             */
-            warps_to_gmmu_queue.splice(warps_to_gmmu_queue.end(), page_fault_finish_queue);
         }
-    
-        /* *******************************************************************
-         * Launch the access inside the MSHRs to handling queue, not remove the
-         * access from the MSHRs until processing over.
-         * *******************************************************************
-         */
-        if (!MSHRs.empty())
-        {
-            page_fault_process_queue = {};
 
-            /* *******************************************************************
-             * Find the demanded pages
-             * *******************************************************************
-             */
-            int page_count = 0;
-            for (auto access : MSHRs)
-            {
-                unordered_set<unsigned long long> page_list = {};
-                for (auto page_id : access->pageIDs) if (!getCGroup(access->app_id)->lookup(page_id)) page_list.insert(page_id);
-                if (page_count + page_list.size() > PCIE_ACCESS_BOUND) break;
-                
-                if (page_fault_process_queue[access->app_id].size() + page_list.size() <= getCGroup(access->app_id)->size())
-                {
-                    /* add the page access into queue */
-                    page_count -= page_fault_process_queue[access->app_id].size();
-                    page_fault_process_queue[access->app_id].insert(page_list.begin(), page_list.end());
-                    page_fault_finish_queue.push_back(access);
-                    page_count += page_fault_process_queue[access->app_id].size();
-                }
-            }
+        page_fault_process_queue.pop_back();
 
-            MSHRs.remove_if([this](const auto& a){
-                return find(this->page_fault_finish_queue.begin(), this->page_fault_finish_queue.end(), a) != this->page_fault_finish_queue.end();
-            });
-            
-#if (PAGE_PREFETCH)
-            /* *******************************************************************
-             * Prefetch smaller gap first
-             * *******************************************************************
-             */
-            if (page_count < PCIE_ACCESS_BOUND)
-            {
-                list<pair<int, size_t>> cgroup_pairs = {}; // first: key, second: fillup_gap
-                for (auto CGroup : mCGroups) cgroup_pairs.emplace_back(make_pair(CGroup.first, CGroup.second.size() - CGroup.second.usage()));
-
-                cgroup_pairs.sort([](const auto& a, const auto& b){ return a.second > b.second; });
-                
-                for (auto pair : cgroup_pairs)
-                {
-                    int prefetch_limit = min((int)(PCIE_ACCESS_BOUND - page_count), (int)pair.second);
-                    
-                    unordered_set<unsigned long long> prefetch_list = {};
-                    for (auto page_id : page_fault_process_queue[pair.first])
-                    {
-                        auto page = mMC->mPages[page_id].nextPage;
-
-                        while (page) 
-                        {
-                            if (prefetch_list.size() == prefetch_limit) break;
-
-                            if (!mCGroups[pair.first].lookup(page->pageIndex)) prefetch_list.insert(page->pageIndex);
-                            page = page->nextPage;
-                        }
-                    }
-
-                    page_fault_process_queue[pair.first].insert(prefetch_list.begin(), prefetch_list.end());
-                    page_count += prefetch_list.size();
-
-                    if (page_count == PCIE_ACCESS_BOUND) break;
-                }
-            }
-#endif
-            if (page_count)
-            {
 #if (ENABLE_PAGE_FAULT_PENALTY)
-                wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + page_count * PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+        wait_cycle += PAGE_FAULT_MIGRATION_UNIT_CYCLE;
 #else            
-                wait_cycle = 1;
+        wait_cycle = 1;
 #endif
-
-                log ("Demanded page number", to_string(page_count), Color::Cyan);
-#if (PRINT_DEMAND_PAGE_RECORD)
-                ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
-                    file << "Demanded page number: " << page_count << std::endl;
-                file.close();
-#endif
-            }
-        }
     }
     
+    /* *******************************************************************
+     * Launch the access inside the MSHRs to handling queue, not remove the
+     * access from the MSHRs until processing over.
+     * *******************************************************************
+     */
+    else if (!MSHRs.empty())
+    {
+        map<int, unordered_set<int>> access_record;
+        unordered_map<unsigned long long, list<MemoryAccess*>> page_fault_record;
+        /* *******************************************************************
+         * Find the demanded pages
+         * *******************************************************************
+         */
+        list<MemoryAccess*> remaining_MSHRs = {};
+        for (auto access : MSHRs)
+        {
+            list<unsigned long long> page_list = {};
+            for (auto page_id : access->pageIDs) if (!getCGroup(access->app_id)->lookup(page_id)) page_list.push_back(page_id);
+            if (page_list.empty())
+            {
+                warps_to_gmmu_queue.push_back(access);
+                continue;
+            }
+
+            int new_page = 0;
+            for (auto page_id : page_list) if (!access_record[access->app_id].count(page_id)) new_page++;
+            if (access_record[access->app_id].size() + new_page > getCGroup(access->app_id)->size() || page_fault_record.size() + new_page > PCIE_ACCESS_BOUND)
+            {
+                remaining_MSHRs.push_back(access);
+                continue;
+            }
+
+            /* add the page access into queue */
+            access_record[access->app_id].insert(page_list.begin(), page_list.end());
+            for (auto page_id : page_list) page_fault_record[page_id].push_back(access);
+            access_count[access] += page_list.size();
+        }
+
+        MSHRs = remaining_MSHRs;
+        page_fault_process_queue = list<pair<unsigned long long, list<MemoryAccess*>>>(page_fault_record.begin(), page_fault_record.end());
+        
+#if (PAGE_PREFETCH)
+        /* *******************************************************************
+         * Prefetch smaller gap first
+         * *******************************************************************
+         */
+        if (page_count < PCIE_ACCESS_BOUND)
+        {
+            list<pair<int, size_t>> cgroup_pairs = {}; // first: key, second: fillup_gap
+            for (auto CGroup : mCGroups) cgroup_pairs.emplace_back(make_pair(CGroup.first, CGroup.second.size() - CGroup.second.usage()));
+
+            cgroup_pairs.sort([](const auto& a, const auto& b){ return a.second > b.second; });
+            
+            for (auto pair : cgroup_pairs)
+            {
+                int prefetch_limit = min((int)(PCIE_ACCESS_BOUND - page_count), (int)pair.second);
+                
+                unordered_set<unsigned long long> prefetch_list = {};
+                for (auto page_id : page_fault_process_queue[pair.first])
+                {
+                    auto page = mMC->mPages[page_id].nextPage;
+
+                    while (page) 
+                    {
+                        if (prefetch_list.size() == prefetch_limit) break;
+
+                        if (!mCGroups[pair.first].lookup(page->pageIndex)) prefetch_list.insert(page->pageIndex);
+                        page = page->nextPage;
+                    }
+                }
+
+                page_fault_process_queue[pair.first].insert(prefetch_list.begin(), prefetch_list.end());
+                page_count += prefetch_list.size();
+
+                if (page_count == PCIE_ACCESS_BOUND) break;
+            }
+        }
+#endif
+
+#if (ENABLE_PAGE_FAULT_PENALTY)
+        wait_cycle = PAGE_FAULT_COMMUNICATION_CYCLE + PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+#else            
+        wait_cycle = 1;
+#endif
+
+        log ("Demanded page number", to_string(page_fault_process_queue.size()), Color::Cyan);
+#if (PRINT_DEMAND_PAGE_RECORD)
+        ofstream file (LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+            file << "Demanded page number: " << page_fault_process_queue.size() << std::endl;
+        file.close();
+#endif
+            
+    }
 }
 
 
@@ -341,8 +331,11 @@ GMMU::terminateModel(int app_id, int model_id)
     warps_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
     gmmu_to_warps_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
 
-    page_fault_finish_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
-    page_fault_process_queue.erase(model_id);
+    for (auto page_pair : page_fault_process_queue)
+    {
+        page_pair.second.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
+    }
+    page_fault_process_queue.remove_if([](auto& pair){return pair.second.empty();});
     if (page_fault_process_queue.empty()) wait_cycle = 0;
 
     mMC->mc_to_gmmu_queue.remove_if([model_id](MemoryAccess* access){return access->model_id == model_id;});
