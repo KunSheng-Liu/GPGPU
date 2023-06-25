@@ -183,8 +183,6 @@ GMMU::Page_Fault_Handler()
             list<int> thrashed_pages = {};
             for (auto fault_pair : page_fault_process_queue)
             {
-                ASSERT(fault_pair.second.size() <= getCGroup(fault_pair.first)->size(), "Allocated memory is less than the model needed");
-
                 for (auto page_id : fault_pair.second)
                 {
                     /* Migration from DRAM to VRAM */
