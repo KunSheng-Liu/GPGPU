@@ -50,7 +50,7 @@ public:
 
     bool terminateModel (int app_id, int model_id);
 
-    void setCGroupSize (int app_id, unsigned capacity);
+    void setCGroupSize (int app_id, unsigned long long capacity);
     void freeCGroup (int app_id);
     LRU_TLB<unsigned long long, Page*>* getCGroup (int model_id);
 

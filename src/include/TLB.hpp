@@ -92,7 +92,7 @@ public:
      * \endcond
      * ===================================================================
      */
-    bool resize (unsigned new_capacity)
+    bool resize (unsigned long long new_capacity)
     {
         ASSERT(new_capacity > 0, "invaild capacity: " + to_string(new_capacity));
 
@@ -241,7 +241,7 @@ public:
  * ************************************************************************************************
  */
 private:
-    unsigned capacity;
+    unsigned long long capacity;
     std::list<std::pair<Key, Value>> history;
     unordered_map<Key, typename std::list<std::pair<Key, Value>>::iterator> table;
 };
