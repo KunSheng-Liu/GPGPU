@@ -366,14 +366,11 @@ GMMU::terminateModel(int app_id, int model_id)
  * ================================================================================================
  */
 void
-GMMU::setCGroupSize (int app_id, unsigned capacity)
+GMMU::setCGroupSize (int app_id, unsigned long long capacity)
 {
     mCGroups[app_id].resize(capacity);
 
-#if (LOG_LEVEL >= VERBOSE)
-    std::cout << "setCGroupSize: [" << app_id << ", " << mCGroups[app_id].size() << "]" << std::endl;
-#endif
-    
+    log("setCGroupSize", "[" + to_string(app_id) + ", " + to_string(mCGroups[app_id].size()) + "]", Color::Cyan);
 }
 
 

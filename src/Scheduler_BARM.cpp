@@ -88,28 +88,37 @@ bool
 Memory_Allocator_API::MEMA (CPU* mCPU)
 {
     map<int, unsigned long long> memory_record;
-    for (auto app : mCPU->mAPPs) memory_record.insert({app->appID, 0});
 
     for (auto kernel : mCPU->mGPU->runningKernels) memory_record[kernel->appID] += ceil(kernel->getKernelInfo().numOfMemory / PAGE_SIZE);
     for (auto kernel : mCPU->mGPU->commandQueue)   memory_record[kernel->appID] += ceil(kernel->getKernelInfo().numOfMemory / PAGE_SIZE);
 
     vector<pair<int, unsigned long long>> memory_budget = vector<pair<int, unsigned long long>> (memory_record.begin(), memory_record.end());
-    sort(memory_budget.begin(), memory_budget.end(), [](auto& a, auto& b){ return a.second > b.second; });
+    sort(memory_budget.begin(), memory_budget.end(), [](auto& a, auto& b){ return a.second < b.second; });
 
-    int count = 0;
+    int app_num = memory_budget.size();
     unsigned long long remaining_pages = system_resource.VRAM_SPACE / PAGE_SIZE;
-    for (auto memory_pair : memory_budget)
+    for (auto& memory_pair : memory_budget)
     {
-        if (memory_pair.second == 0) continue;
+        if (remaining_pages < memory_pair.second) memory_pair.second = floor(remaining_pages / app_num);
 
-        else if (remaining_pages > memory_pair.second)
-        {
-            mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, memory_pair.second);
-            remaining_pages -= memory_pair.second;
-            count++;
-        }
-        else mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, floor(remaining_pages / (memory_budget.size() - count)));
+        remaining_pages -= memory_pair.second;
+        app_num--;
     }
+
+    unsigned long long extra_memory = floor(remaining_pages / memory_budget.size());
+    for (auto& memory_pair : memory_budget)
+    {
+        memory_pair.second += extra_memory;
+        remaining_pages    -= extra_memory;
+    }
+
+    for (auto& memory_pair : memory_budget)
+    {
+        if (remaining_pages-- == 0) break;
+        memory_pair.second++;
+    }
+
+    for (auto& memory_pair : memory_budget) mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, memory_pair.second);
     
     return true;
 }
