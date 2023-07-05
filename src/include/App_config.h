@@ -95,7 +95,6 @@ class Request;
  */
 #define SIMULATION_TIME                     10                      // unit (ms)
 #define ENABLE_DEADLINE                     false
-#define HARD_DEADLINE                       false
 #define DEADLINE_PERCENTAGE                 100                     // unit (ms)
 
 #define HARDWARE_ARCHITECTURE               AGX_XAVIER
@@ -174,7 +173,8 @@ class Request;
 #define PAGE_FAULT_PENALTY                  20 * pow(0.1, 6)                                                // unit (s)
 #define PAGE_FAULT_COMMUNICATION_CYCLE      (PAGE_FAULT_PENALTY) * (GMMU_F)                                 // unit (cycle)
 #define PAGE_FAULT_MIGRATION_UNIT_CYCLE     ceil((PAGE_SIZE) / (PCIE_BANDWIDTH) * (GMMU_F))                 // unit (cycle)
-#define PCIE_ACCESS_BOUND                   floor((PAGE_FAULT_PENALTY) / ((PAGE_SIZE) / (PCIE_BANDWIDTH)))  // unit (pages)
+#define MSHR_STACK_SIZE                     1024                                                            // unit (pages)
+#define PCIE_ACCESS_BOUND                   80                                                              // unit (pages), ~= PAGE_FAULT_PENALTY / (PAGE_SIZE / PCIE_BANDWIDTH)
 
 /* ************************************************************************************************
  * Other Flags

@@ -241,7 +241,7 @@ GMMU::Page_Fault_Handler()
 
             int new_page = 0;
             for (auto page_id : page_list) if (!access_record[access->app_id].count(page_id)) new_page++;
-            if (access_record[access->app_id].size() + new_page > getCGroup(access->app_id)->size() || page_fault_record.size() + new_page > PCIE_ACCESS_BOUND)
+            if (access_record[access->app_id].size() + new_page > getCGroup(access->app_id)->size() || page_fault_record.size() + new_page > MSHR_STACK_SIZE)
             {
                 remaining_MSHRs.push_back(access);
                 continue;
