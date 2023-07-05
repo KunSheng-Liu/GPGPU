@@ -79,8 +79,9 @@ struct Resource {
     unsigned long long	SM_NUM;
     unsigned long long 	DRAM_SPACE;
     unsigned long long 	VRAM_SPACE;
+	unsigned long long 	DEADLINE_CYCLE;
 
-    Resource() : SM_NUM(8), DRAM_SPACE((unsigned long long) 32 * 1024 * 1024 * 1024), VRAM_SPACE(-1) {}
+    Resource() : SM_NUM(8), DRAM_SPACE((unsigned long long) 32 * 1024 * 1024 * 1024), VRAM_SPACE(-1), DEADLINE_CYCLE(-1) {}
 };
 
 /* ************************************************************************************************

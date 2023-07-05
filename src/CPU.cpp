@@ -117,9 +117,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
      * *******************************************************************
      */
 #if (ENABLE_DEADLINE)
-    unsigned long long deadline = 0;
-    for (auto app : mAPPs) deadline += app->batchSize * app->modelInfo.totalExecuteTime;
-    for (auto app : mAPPs) app->setDeadline(deadline * DEADLINE_PERCENTAGE / 100);
+    // unsigned long long deadline = 0;
+    // for (auto app : mAPPs) deadline += app->batchSize * app->modelInfo.totalExecuteTime;
+    // for (auto app : mAPPs) app->setDeadline(deadline * DEADLINE_PERCENTAGE / 100);
+    for (auto app : mAPPs) app->setDeadline(system_resource.DEADLINE_CYCLE);
 #else
     for (auto app : mAPPs) app->setDeadline(-1);
 #endif

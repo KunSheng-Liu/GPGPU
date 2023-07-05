@@ -93,7 +93,7 @@ Scheduler::Sched ()
 void 
 Scheduler::missDeadlineHandler ()
 {
-#if (ENABLE_DEADLINE)
+#if (HARD_DEADLINE)
     for (auto app : mCPU->mAPPs)
     {
         list<Model*> missModels = {};

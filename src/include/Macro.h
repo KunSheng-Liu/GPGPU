@@ -11,11 +11,18 @@
 
 /* Assert function with print message */
 #define ASSERT_1( condition ) { if (!(condition)) exit (1); }
-#define ASSERT_2( condition, ... ) {                                           \
+#define ASSERT_2( condition, ... )                                             \
+{                                                                              \
     if (!(condition)) {                                                        \
         std::cout << __FILE__  << ": " << __LINE__ << ": " <<  __func__        \
                   << ": " << __VA_ARGS__ << std::endl;                         \
-    exit (1);} }
+        ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);    \
+            file  << __FILE__  << ": " << __LINE__ << ": " <<  __func__        \
+                  << ": " << __VA_ARGS__ << std::endl;                         \
+        file.close();                                                          \
+    exit (1);                                                                  \
+    }                                                                          \
+}
 
 /* ************************************************************************************************
  * Math

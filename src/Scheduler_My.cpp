@@ -68,14 +68,14 @@ bool APP_Level_SM_Allocator (CPU* mCPU)
      * Record needed informations
      * *******************************************************************
      */
-    int total_workload = 0;
-    list<pair<int, Application*>> app_list;
+    unsigned long long total_workload = 0;
+    list<pair<unsigned long long, Application*>> app_list;
     for (auto app : mCPU->mAPPs) 
     {
         int model_count = app->runningModels.size() + app->waitingModels.size();
         if (model_count)
         {
-            float workload = app->modelInfo.numOfRequest * model_count * app->modelInfo.ioMemCount / app->modelInfo.filterMemCount;
+            long long workload = app->modelInfo.numOfRequest * model_count;
             total_workload += workload;
             app_list.emplace_back(make_pair(workload, app));
         }

@@ -135,6 +135,15 @@ void parser_cmd (int argc, char** argv)
             catch(exception e) ASSERT(false, "Wrong argument -T, try --help");
             
         }
+        else if (flag == "-D" || flag == "--deadline") 
+        {
+            try{
+                unsigned long long deadline_cycle = atoll(argv[i++]);
+                system_resource.DEADLINE_CYCLE = deadline_cycle;
+            } 
+            catch(exception e) ASSERT(false, "Wrong argument --D, try --help");
+            
+        }
         else if (flag == "--sm-num") 
         {
             try{
@@ -169,16 +178,17 @@ void parser_cmd (int argc, char** argv)
             std::cout << "GPGPU: GPGPU [[--sm-num | --vram-pages | -S | -I | -M | -T] [OPTION]]" << std::endl;
 
             std::cout << "Detial:" << std::endl;
-            std::cout << "\t  , "     << std::left << setw(20) << "--sm-num"           << "[n ∈ N+]" << std::endl;
-            std::cout << "\t  , "     << std::left << setw(20) << "--vram-pages"       << "[n ∈ N+]" << std::endl;
+            std::cout << "\t  , " << std::left << setw(20) << "--sm-num"           << "[n ∈ N+]" << std::endl;
+            std::cout << "\t  , " << std::left << setw(20) << "--vram-pages"       << "[n ∈ N+]" << std::endl;
+            std::cout << "\t-D, " << std::left << setw(20) << "--deadline"         << "[n ∈ N+]"        << std::endl;
             std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB | My" << std::endl;
             std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                         << std::endl;
             std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"        << std::endl;
-            std::cout << "\t-T, " << std::left << setw(20) << "--test-set"         << "LeNet | CaffeNet | ResNet18 | GoogleNet | VGG16 | Light | Heavy | Mix | All | Test1 | Test2"  << std::endl;
+            std::cout << "\t-T, " << std::left << setw(20) << "--task-set"         << "LeNet | CaffeNet | ResNet18 | GoogleNet | VGG16 | Light | Heavy | Mix | All | Test1 | Test2"  << std::endl;
 
             std::cout << "Examples:" << std::endl;
-            std::cout << "\t./GPGPU" << std::endl;
-            std::cout << "\t./GPGPU -I Sequential -T ResNet18 3 0 -1 100 -T VGG16 1 0 10 100 -T GoogleNet 2 0 2 10 " << std::endl;
+            std::cout << "\t./GPGPU -D 1377000000" << std::endl;
+            std::cout << "\t./GPGPU -S Greedy -T ResNet18 3 0 -1 -T VGG16 1 0 10 -T GoogleNet 2 0 2 " << std::endl;
             std::cout << "\t./GPGPU -sm-dispatch Baseline -M Average" << std::endl;
 
             std::cout << "Default:" << std::endl;

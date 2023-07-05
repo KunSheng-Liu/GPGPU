@@ -95,6 +95,7 @@ class Request;
  */
 #define SIMULATION_TIME                     10                      // unit (ms)
 #define ENABLE_DEADLINE                     false
+#define HARD_DEADLINE                       false
 #define DEADLINE_PERCENTAGE                 100                     // unit (ms)
 
 #define HARDWARE_ARCHITECTURE               AGX_XAVIER
