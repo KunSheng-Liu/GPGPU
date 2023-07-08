@@ -21,6 +21,7 @@
 #include "Application.hpp"
 #include "MemoryController.hpp"
 #include "MMU.hpp"
+#include "GPU.hpp"
 #include "Models.hpp"
 #include "Scheduler.hpp"
 

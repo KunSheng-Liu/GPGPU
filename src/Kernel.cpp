@@ -112,7 +112,7 @@ Kernel::addRequest(Request* request)
     kernelInfo.numOfCycle += request->numOfInstructions;
     kernelInfo.numOfRequest++;
     
-    requests.push(request);
+    requests.push(move(request));
 }
 
 

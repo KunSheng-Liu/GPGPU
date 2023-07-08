@@ -33,8 +33,10 @@ Layer::Layer(int layer_id, char* layer_type, vector<int> input_size, vector<int>
         : layerType(layer_type), iFMapSize(input_size), filterSize(filter_size), activationType(activation_type)
         , iFMap({}), filter({}), oFMapSize({}), oFMap({}), layerID(layer_id)
 {
-    if (!iFMapSize.empty())  iFMap  = make_pair(++vaCount, new vector<DATA_TYPE> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
-    if (!filterSize.empty()) filter = make_pair(++vaCount, new vector<DATA_TYPE> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
+    // if (!iFMapSize.empty())  iFMap  = make_pair(++vaCount, new vector<DATA_TYPE> (iFMapSize[BATCH]  * iFMapSize[CHANNEL]  * iFMapSize[HEIGHT]  * iFMapSize[WIDTH]));
+    // if (!filterSize.empty()) filter = make_pair(++vaCount, new vector<DATA_TYPE> (filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH]));
+    if (!iFMapSize.empty())  iFMap  = make_pair(++vaCount, new vector<DATA_TYPE> (0));
+    if (!filterSize.empty()) filter = make_pair(++vaCount, new vector<DATA_TYPE> (0));
 }
 
 
@@ -166,8 +168,8 @@ Layer::changeBatch(int new_batch_size)
 {
     iFMapSize[BATCH] = new_batch_size;
     oFMapSize[BATCH] = new_batch_size;
-    if (iFMap.second != nullptr)  iFMap.second->resize(iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]);
-    if (oFMap.second != nullptr)  oFMap.second->resize(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]);
+    // if (iFMap.second != nullptr)  iFMap.second->resize(iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]);
+    // if (oFMap.second != nullptr)  oFMap.second->resize(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]);
 }
 
 
@@ -186,11 +188,11 @@ Layer::memoryAllocate(MMU* mmu)
 {
     log_V("memoryAllocate", "ID: " + to_string(layerID) + "  " + layerType);
     if (PRINT_MEMORY_ALLOCATION) log("iFMap",  "", Color::Cyan);
-    if(iFMap.second)  mmu->memoryAllocate(iFMap.first,  iFMap.second->size()  * sizeof(DATA_TYPE));
+    if(iFMap.second)  mmu->memoryAllocate(iFMap.first,  iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]  * sizeof(DATA_TYPE));
     if (PRINT_MEMORY_ALLOCATION) log("oFMap",  "", Color::Cyan);
-    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMap.second->size()  * sizeof(DATA_TYPE));
+    if(oFMap.second)  mmu->memoryAllocate(oFMap.first,  oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]  * sizeof(DATA_TYPE));
     if (PRINT_MEMORY_ALLOCATION) log("filter", "", Color::Cyan);
-    if(filter.second) mmu->memoryAllocate(filter.first, filter.second->size() * sizeof(DATA_TYPE));
+    if(filter.second) mmu->memoryAllocate(filter.first, filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH] * sizeof(DATA_TYPE));
 
 }
 
@@ -233,9 +235,9 @@ unsigned long long
 Layer::getMemoryUsage()
 {
     unsigned long long  usage = 0;
-    if(iFMap.second)  usage += iFMap.second->size()  * sizeof(DATA_TYPE);
-    if(oFMap.second)  usage += oFMap.second->size()  * sizeof(DATA_TYPE);
-    if(filter.second) usage += filter.second->size() * sizeof(DATA_TYPE);
+    if(iFMap.second)  usage += iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]  * sizeof(DATA_TYPE);
+    if(oFMap.second)  usage += oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]  * sizeof(DATA_TYPE);
+    if(filter.second) usage += filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH] * sizeof(DATA_TYPE);
 
     return usage;
 }
@@ -579,7 +581,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
-                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(move(request))));
                 }
                 
             }
@@ -718,7 +720,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     /* for the activation exectuion */
                     if (strcmp(activationType, "None") != 0) request->numOfInstructions++;  // for the activation exectuion
 
-                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(move(request))));
                 }
                 
             }
@@ -854,7 +856,7 @@ Flatten::issueLayer(ThreadArg* threadArg)
                     request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
                     request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(move(request))));
                 }
             }  
         }
@@ -991,7 +993,7 @@ ByPass::issueLayer(ThreadArg* threadArg)
                     request->readPages.emplace_back(make_pair(iFMapPages[index], 1));
                     request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-                    threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
+                    threadArg->requestQueue->push(move(Kernel::compressRequest(move(request))));
                 }
             }  
         }
@@ -1164,7 +1166,7 @@ Dense::issueLayer(ThreadArg* threadArg)
 
             request->writePages.emplace_back(make_pair(oFMapPages[index], 1));
 
-            threadArg->requestQueue->push(move(Kernel::compressRequest(request)));
+            threadArg->requestQueue->push(move(Kernel::compressRequest(move(request))));
 
         }
     }
