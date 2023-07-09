@@ -84,6 +84,7 @@ class Kernel_Scheduler_API
 public:
     static bool Baseline (CPU* mCPU);
     static bool LazyB    (CPU* mCPU);
+    static bool My       (CPU* mCPU);
 };
 
 class Memory_Allocator_API

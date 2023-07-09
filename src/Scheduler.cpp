@@ -44,7 +44,7 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
 
     else if (command.SCHEDULER_MODE == SCHEDULER::LazyB)  Kernel_Scheduler = Kernel_Scheduler_API::LazyB;
 
-    else if (command.SCHEDULER_MODE == SCHEDULER::My)     Kernel_Scheduler = Kernel_Scheduler_API::Baseline;
+    else if (command.SCHEDULER_MODE == SCHEDULER::My)     Kernel_Scheduler = Kernel_Scheduler_API::My;
 
 
     /* *******************************************************************
