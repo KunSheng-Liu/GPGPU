@@ -235,9 +235,9 @@ unsigned long long
 Layer::getMemoryUsage()
 {
     unsigned long long  usage = 0;
-    if(iFMap.second)  usage += iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH]  * sizeof(DATA_TYPE);
-    if(oFMap.second)  usage += oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]  * sizeof(DATA_TYPE);
-    if(filter.second) usage += filterSize[BATCH] * filterSize[CHANNEL] * filterSize[HEIGHT] * filterSize[WIDTH] * sizeof(DATA_TYPE);
+    if(iFMap.second)  usage += getIFMapMemory();
+    if(oFMap.second)  usage += getOFMapMemory();
+    if(filter.second) usage += getFilterMemory();
 
     return usage;
 }

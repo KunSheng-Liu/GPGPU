@@ -335,6 +335,8 @@ Kernel::printInfo(bool title)
  * 
  * \brief   The container for merge multiple kernels
  * 
+ * \param   kernels  the kernel_pair list, {kernel pointer, batch size}
+ * 
  * \endcond
  * ================================================================================================
  */
@@ -387,6 +389,8 @@ KernelGroup::compileRequest (MMU* mmu)
         kernel.first->startCycle = total_gpu_cycle;
         kernel.first->running    = true;
     }
+    /* reclaim shared memory */
+    kernelInfo.numOfMemory -= (kernel_list.size() - 1) * kernel_list.front().first->srcLayer->getFilterMemory();
 
     /* *******************************************************************
      * Concat the requests of each kernel
