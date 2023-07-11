@@ -19,7 +19,7 @@
  * \endcond
  * ================================================================================================
  */
-MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(system_resource.DRAM_SPACE / PAGE_SIZE))
+MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, unsigned long long>>(system_resource.DRAM_SPACE / PAGE_SIZE))
 {
 
 }
@@ -37,10 +37,10 @@ MMU::MMU(MemoryController* mc): mMC(mc), mTLB(TLB<int, pair<Page*, int>>(system_
  * \endcond
  * ================================================================================================
  */
-int 
+unsigned long long 
 MMU::lookup (int va)
 {
-    pair<Page*, int> dummy;
+    pair<Page*, unsigned long long> dummy;
     if (mTLB.lookup(va, dummy)) return dummy.second;
     
     return 0;
@@ -59,7 +59,7 @@ MMU::lookup (int va)
  * ================================================================================================
  */
 bool 
-MMU::memoryAllocate (int va, int numOfByte)
+MMU::memoryAllocate (int va, unsigned long long numOfByte)
 {
     ASSERT(numOfByte > 0, "Try to allocate zero space");
     
@@ -95,7 +95,7 @@ MMU::memoryAllocate (int va, int numOfByte)
 void 
 MMU::memoryRelease (int va)
 {
-    pair<Page*, int> pa_pair;
+    pair<Page*, unsigned long long> pa_pair;
     if (!mTLB.lookup(va, pa_pair)) return;
 
     mMC->memoryRelease(pa_pair.first);
@@ -121,7 +121,7 @@ MMU::addressTranslate (int va)
     /* lookup wheather VA has been cached */
     log_V("addressTranslate", to_string(va));
 
-    pair<Page*, int> pa_pair;
+    pair<Page*, unsigned long long> pa_pair;
     ASSERT(mTLB.lookup(va, pa_pair), "The virtual address haven't been allocated");
 
     vector<unsigned long long> pa_list;
@@ -154,7 +154,7 @@ MMU::addressTranslate (int va)
 PageRecord 
 MMU::getPageSummary (int va)
 {
-    pair<Page*, int> pa_pair;
+    pair<Page*, unsigned long long> pa_pair;
     if (!mTLB.lookup(va, pa_pair)) return {};
 
     /* Perform release */

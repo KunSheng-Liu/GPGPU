@@ -231,8 +231,10 @@ GMMU::Page_Fault_Handler()
         list<MemoryAccess*> remaining_MSHRs = {};
         for (auto access : MSHRs)
         {
+            int app_id = (command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : access->app_id;
+
             list<unsigned long long> page_list = {};
-            for (auto page_id : access->pageIDs) if (!getCGroup(access->app_id)->lookup(page_id)) page_list.push_back(page_id);
+            for (auto page_id : access->pageIDs) if (!getCGroup(app_id)->lookup(page_id)) page_list.push_back(page_id);
             if (page_list.empty())
             {
                 warps_to_gmmu_queue.push_back(access);
@@ -240,15 +242,15 @@ GMMU::Page_Fault_Handler()
             }
 
             int new_page = 0;
-            for (auto page_id : page_list) if (!access_record[access->app_id].count(page_id)) new_page++;
-            if (access_record[access->app_id].size() + new_page > getCGroup(access->app_id)->size() || page_fault_record.size() + new_page > MSHR_STACK_SIZE)
+            for (auto page_id : page_list) if (!access_record[app_id].count(page_id)) new_page++;
+            if (access_record[app_id].size() + new_page > getCGroup(app_id)->size() || page_fault_record.size() + new_page > MSHR_STACK_SIZE)
             {
                 remaining_MSHRs.push_back(access);
                 continue;
             }
 
             /* add the page access into queue */
-            access_record[access->app_id].insert(page_list.begin(), page_list.end());
+            access_record[app_id].insert(page_list.begin(), page_list.end());
             for (auto page_id : page_list) page_fault_record[page_id].push_back(access);
             access_count[access] += page_list.size();
         }

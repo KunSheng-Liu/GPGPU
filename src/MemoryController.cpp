@@ -27,7 +27,7 @@ MemoryController::MemoryController(unsigned long long storage_limit, int page_si
     // storageLimit = 0;
     // for (auto storage : storages) storageLimit += storage.second->storageSize;
 
-    for (int i = 0; i < PRE_ALLOCATE_SIZE / PAGE_SIZE; i++)
+    for (unsigned long long i = 0; i < PRE_ALLOCATE_SIZE / PAGE_SIZE; i++)
     {
         createPage();
     }
@@ -122,13 +122,13 @@ MemoryController::createPage()
  * ================================================================================================
  */
 Page*
-MemoryController::memoryAllocate (int numOfByte)
+MemoryController::memoryAllocate (unsigned long long numOfByte)
 {
     ASSERT(numOfByte != 0, "Try to allocate memory to empty data");
 
     Page* headPage;
     Page* prevPage;
-    for (int i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
+    for (unsigned long long i = 0; i < ceil((double)numOfByte / PAGE_SIZE); i++)
     {
         if (availablePageList.empty()) createPage();
 

@@ -44,8 +44,8 @@ public:
  * ************************************************************************************************
  */
 public:
-    int  lookup (int va);
-    bool memoryAllocate (int va, int numOfByte);
+    unsigned long long lookup (int va);
+    bool memoryAllocate (int va, unsigned long long numOfByte);
     void memoryRelease  (int va);
     vector<unsigned long long> addressTranslate (int va);
 
@@ -57,7 +57,7 @@ public:
  */
 private:
     MemoryController* mMC;
-    TLB<int, pair<Page*, int>> mTLB;
+    TLB<int, pair<Page*, unsigned long long>> mTLB;
 };
 
 #endif

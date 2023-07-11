@@ -85,7 +85,7 @@ public:
 
     Page* refer (unsigned long long page_id) {return &mPages[page_id];}
 
-    Page* memoryAllocate (int numByte);
+    Page* memoryAllocate (unsigned long long numByte);
 
     void memoryRelease (Page* page);
 
@@ -106,7 +106,6 @@ private:
     /* The pageIndex is start from 1, due to the zero page is always unusable in the system */
     unsigned long long pageIndex = 1;
 
-    map<int, Memory*> storages;
     map<unsigned long long , Page> mPages;
 
     list<Page*> availablePageList;
