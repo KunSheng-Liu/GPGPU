@@ -196,7 +196,9 @@ GMMU::Page_Fault_Handler()
             {
                 evict_page->location = SPACE_DRAM;
                 evict_page->record.swap_count++;
+#if (ENABLE_PAGE_FAULT_PENALTY)
                 wait_cycle = PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+#endif
             }
 
             if (--access_count[access] == 0)
@@ -209,7 +211,7 @@ GMMU::Page_Fault_Handler()
         page_fault_process_queue.pop_back();
 
 #if (ENABLE_PAGE_FAULT_PENALTY)
-        wait_cycle += PAGE_FAULT_MIGRATION_UNIT_CYCLE;
+        if (!page_fault_process_queue.empty()) wait_cycle += PAGE_FAULT_MIGRATION_UNIT_CYCLE;
 #else            
         wait_cycle = 1;
 #endif
@@ -222,7 +224,7 @@ GMMU::Page_Fault_Handler()
      */
     else if (!MSHRs.empty())
     {
-        map<int, unordered_set<int>> access_record;
+        map<int, unordered_set<unsigned long long>> access_record;
         unordered_map<unsigned long long, list<MemoryAccess*>> page_fault_record;
         /* *******************************************************************
          * Find the demanded pages

@@ -99,18 +99,21 @@ GPU::Runtime_Block_Scheduling()
     {
         ASSERT(kernel, "Receive null kernel ptr");
 
-        int division_count = 0;
-        for (auto sm_id : *kernel->SM_List) division_count += ceil((float)mSMs[sm_id].getResourceInfo().remaining_warps / GPU_MAX_WARP_PER_BLOCK);
+        bool sm_ready = true;
+        for (auto sm_id : *kernel->SM_List) sm_ready &= mSMs[sm_id].isIdel();
 
-        if (division_count)
+        if (sm_ready)
         {
+            int division_count = kernel->SM_List->size() * GPU_MAX_WARP_PER_SM / GPU_MAX_WARP_PER_BLOCK;
+
             int num_of_request = ceil((float)kernel->requests.size() / division_count);
             for (auto sm_id : *kernel->SM_List) mSMs[sm_id].bindKernel(kernel, num_of_request);
             
             ASSERT(kernel->requests.empty(), "error");
+            
+            runningKernels.push_back(kernel);
         }
-        
-        division_count ? runningKernels.push_back(kernel) : remainingQueue.push_back(kernel);
+        else remainingQueue.push_back(kernel);
     }
     
     commandQueue = remainingQueue;
