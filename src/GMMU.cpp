@@ -179,7 +179,7 @@ GMMU::Page_Fault_Handler()
      */
     else if (!page_fault_process_queue.empty())
     {
-        auto access_pair = page_fault_process_queue.back();
+        auto access_pair = page_fault_process_queue.front();
 
         /* Migration from DRAM to VRAM */
         unsigned long long page_id = access_pair.first;
@@ -208,7 +208,7 @@ GMMU::Page_Fault_Handler()
             }
         }
 
-        page_fault_process_queue.pop_back();
+        page_fault_process_queue.pop_front();
 
 #if (ENABLE_PAGE_FAULT_PENALTY)
         if (!page_fault_process_queue.empty()) wait_cycle += PAGE_FAULT_MIGRATION_UNIT_CYCLE;
