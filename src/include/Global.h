@@ -23,7 +23,7 @@
 typedef enum {
 	Greedy, Baseline,
 	BARM, LazyB,
-	My
+	My, SALBI
 }SCHEDULER;
 
 typedef enum {
@@ -33,6 +33,7 @@ typedef enum {
 typedef enum {
     None, Average,
 	MEMA, R_MEMA,
+	Other
 }MEM_ALLOCATION;
 
 typedef enum {

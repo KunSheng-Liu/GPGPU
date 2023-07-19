@@ -319,8 +319,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
         Info.numOfRequest   = 158824;
-        Info.ioMemCount     = 3143296;
-        Info.filterMemCount = 481214976;
+        Info.ioMemCount     = 2979840;
+        Info.filterMemCount = 80134656;
         Info.numOfRead      = 414969088;
         Info.numOfWrite     = 158824;
         Info.numOfCycle     = 90004668928;
@@ -334,8 +334,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "ResNet18") == 0) {
         Info.numOfLayers    = 28;
         Info.numOfRequest   = 828904;
-        Info.ioMemCount     = 10792576;
-        Info.filterMemCount = 351882240;
+        Info.ioMemCount     = 10760192;
+        Info.filterMemCount = 201280512;
         Info.numOfRead      = 969416960;
         Info.numOfWrite     = 828904;
         Info.numOfCycle     = 1038660608;
@@ -350,8 +350,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "VGG16") == 0) {
         Info.numOfLayers    = 22;
         Info.numOfRequest   = 3781608;
-        Info.ioMemCount     = 61107840;
-        Info.filterMemCount = 910388224;
+        Info.ioMemCount     = 60887040;
+        Info.filterMemCount = 274426880;
         Info.numOfRead      = 7688828928;
         Info.numOfWrite     = 3781608;
         Info.numOfCycle     = 150160280576;
@@ -459,9 +459,9 @@ Model::LeNet(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 120));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  84));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  10));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 120));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  84));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  10));
 
     numOfLayer = 8;
     
@@ -516,9 +516,9 @@ Model::CaffeNet(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 12;
     
@@ -577,9 +577,9 @@ Model::ResNet18(vector<int> input_size)
     modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), true));
     modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
-    int filter_size = modelGraph->getOFMapSize()[WIDTH];
-    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    // int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    // modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 28;
 
@@ -658,9 +658,9 @@ Model::VGG16(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 22;
     
@@ -746,10 +746,10 @@ Model::GoogleNet(vector<int> input_size)
     modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
     modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 384, 192, 384, 48, 128, 128));
 
-    int filter_size = modelGraph->getOFMapSize()[WIDTH];
-    modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
+    // int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    // modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
    
-    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 108;
     

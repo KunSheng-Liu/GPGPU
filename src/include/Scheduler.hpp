@@ -47,7 +47,7 @@ public:
  * ************************************************************************************************
  */
 public:
-    void Sched ();
+    virtual void Sched ();
 
 private:
     void missDeadlineHandler ();
@@ -77,6 +77,7 @@ public:
     static bool BARM     (CPU* mCPU);
     static bool LazyB    (CPU* mCPU);
     static bool My       (CPU* mCPU);
+    static bool WA_SMD   (CPU* mCPU);
 };
 
 class Kernel_Scheduler_API
@@ -85,6 +86,7 @@ public:
     static bool Baseline (CPU* mCPU);
     static bool LazyB    (CPU* mCPU);
     static bool My       (CPU* mCPU);
+    static bool SALBI    (CPU* mCPU);
 };
 
 class Memory_Allocator_API
@@ -94,6 +96,45 @@ public:
     static bool Average (CPU* mCPU);
     static bool MEMA    (CPU* mCPU);
     static bool R_MEMA  (CPU* mCPU);
+    static bool SALBI   (CPU* mCPU);
 };
+
+
+// /** ===============================================================================================
+//  * \name    Scheduler_SALBI
+//  * 
+//  * \brief   ...
+//  * 
+//  * \endcond
+//  * ================================================================================================
+//  */
+// class Scheduler_SALBI : public Scheduler
+// {
+// /* ************************************************************************************************
+//  * Class Constructor
+//  * ************************************************************************************************
+//  */ 
+// public:
+//     Scheduler_SALBI (CPU* cpu);
+
+// /* ************************************************************************************************
+//  * Functions
+//  * ************************************************************************************************
+//  */
+// public:
+//     virtual void Sched ();
+
+// private:
+//     bool WA_SMD   ();
+//     bool SALBI    ();
+
+// /* ************************************************************************************************
+//  * Parameter
+//  * ************************************************************************************************
+//  */
+// private:
+//     CPU* mCPU;
+
+// };
 
 #endif

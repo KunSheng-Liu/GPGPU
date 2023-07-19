@@ -94,7 +94,7 @@ public:
      */
     bool resize (unsigned long long new_capacity)
     {
-        ASSERT(new_capacity > 0, "invaild capacity: " + to_string(new_capacity));
+        // ASSERT(new_capacity > 0, "invaild capacity: " + to_string(new_capacity));
 
         while (table.size() > new_capacity) {
             auto evict_key = history.front().first;

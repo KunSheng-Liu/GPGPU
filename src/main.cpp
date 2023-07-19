@@ -69,6 +69,7 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "BARM")     command.SCHEDULER_MODE = SCHEDULER::BARM;
                 else if (option == "LazyB")    command.SCHEDULER_MODE = SCHEDULER::LazyB;
                 else if (option == "My")       command.SCHEDULER_MODE = SCHEDULER::My;
+                else if (option == "SALBI")    command.SCHEDULER_MODE = SCHEDULER::SALBI;
                 else ASSERT(false, "Wrong argument -S, try --help");
                 scheduler_name = option;
             } 
@@ -105,6 +106,7 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "Average")  command.MEM_MODE = MEM_ALLOCATION::Average;
                 else if (option == "MEMA")     command.MEM_MODE = MEM_ALLOCATION::MEMA;
                 else if (option == "R_MEMA")   command.MEM_MODE = MEM_ALLOCATION::R_MEMA;
+                else if (option == "Other")    command.MEM_MODE = MEM_ALLOCATION::Other;
                 else ASSERT(false, "Wrong argument -M, try --help");
                 mem_name = option;
             } 
@@ -181,7 +183,7 @@ void parser_cmd (int argc, char** argv)
             std::cout << "\t  , " << std::left << setw(20) << "--sm-num"           << "[n ∈ N+]" << std::endl;
             std::cout << "\t  , " << std::left << setw(20) << "--vram-pages"       << "[n ∈ N+]" << std::endl;
             std::cout << "\t-D, " << std::left << setw(20) << "--deadline"         << "[n ∈ N+]"        << std::endl;
-            std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB | My" << std::endl;
+            std::cout << "\t-S, " << std::left << setw(20) << "--scheduler"        << "Greedy | Baseline | BARM | LazyB | My | SALBI" << std::endl;
             std::cout << "\t-B, " << std::left << setw(20) << "--batch-inference"  << "Disable | Max"                         << std::endl;
             std::cout << "\t-M, " << std::left << setw(20) << "--mem-allocate"     << "None | Average | MEMA | R_MEMA"        << std::endl;
             std::cout << "\t-T, " << std::left << setw(20) << "--task-set"         << "LeNet | CaffeNet | ResNet18 | GoogleNet | VGG16 | Light | Heavy | Mix | All | Test1 | Test2"  << std::endl;

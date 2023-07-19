@@ -32,6 +32,8 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
 
     else if (command.SCHEDULER_MODE == SCHEDULER::My)     Inference_Admission = Inference_Admission_API::My;
 
+    else if (command.SCHEDULER_MODE == SCHEDULER::SALBI)  Inference_Admission = Inference_Admission_API::WA_SMD;
+
     /* *******************************************************************
      * Set Kernel_Scheduler callback
      * *******************************************************************
@@ -46,6 +48,8 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
 
     else if (command.SCHEDULER_MODE == SCHEDULER::My)     Kernel_Scheduler = Kernel_Scheduler_API::My;
 
+    else if (command.SCHEDULER_MODE == SCHEDULER::SALBI)  Kernel_Scheduler = Kernel_Scheduler_API::SALBI;
+
 
     /* *******************************************************************
      * Set Memory_Allocator callback
@@ -58,6 +62,8 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
     else if (command.MEM_MODE == MEM_ALLOCATION::MEMA)    Memory_Allocator = Memory_Allocator_API::MEMA;
     
     else if (command.MEM_MODE == MEM_ALLOCATION::R_MEMA)  Memory_Allocator = Memory_Allocator_API::R_MEMA;
+    
+    else if (command.MEM_MODE == MEM_ALLOCATION::Other)   Memory_Allocator = Memory_Allocator_API::SALBI;
 
     else ASSERT(false, "Set up Memory_Allocator callback error");
 }
@@ -74,7 +80,7 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
 void 
 Scheduler::Sched ()
 {
-    Inference_Admission (mCPU);
+    if (Inference_Admission (mCPU))
 
     Kernel_Scheduler    (mCPU);
 

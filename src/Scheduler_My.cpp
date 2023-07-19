@@ -334,3 +334,221 @@ Kernel_Scheduler_API::My (CPU* mCPU)
     
     return true;
 }
+
+
+/** ===============================================================================================
+ * \name    Inference_Admission_API::WA_SMD
+ * 
+ * \brief   ...
+ * 
+ * \note    cannot terminate model when it's kernel is already running due to the sharing filter
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool 
+Inference_Admission_API::WA_SMD (CPU* mCPU)
+{
+    /* *******************************************************************
+     * Reset all SM allocation
+     * *******************************************************************
+     */
+    for (auto app : mCPU->mAPPs)
+    {
+        app->runningModels.splice(app->runningModels.end(), app->waitingModels);
+        app->SM_budget = {};
+    }
+
+    /* *******************************************************************
+     * Record needed informations
+     * *******************************************************************
+     */
+    unsigned long long total_workload = 0;
+    list<pair<int, unsigned long long>> workload_list;
+    for (auto app : mCPU->mAPPs)
+    {
+        if (!app->runningModels.empty())
+        {
+            unsigned long long NP = app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount;
+            double BBR = (double)app->modelInfo.filterMemCount / (double)app->modelInfo.ioMemCount;
+            unsigned long long workload = NP * BBR;
+            workload_list.emplace_back(make_pair(app->appID, workload));
+            total_workload += workload;
+        }
+    }
+    if (workload_list.empty()) return false;
+
+    /* sort the applications in non-decreasing workload order */
+    workload_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
+
+    /* allocation by workload ratio */
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
+
+    for (auto app_pair : workload_list)
+    {
+        int sm_num = round((float) sm_budget * app_pair.second / total_workload);
+        
+        for (int i = 0; i < sm_num; i++) 
+        {
+            mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
+            if (sm_count == system_resource.SM_NUM) break;
+        }
+    }
+    /* mend up the round to zero issue which remain one SM not allocated */
+    if (sm_count < system_resource.SM_NUM) mCPU->mAPPs.front()->SM_budget.insert(sm_count++);
+
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    Kernel_Scheduler_API::SALBI
+ * 
+ * \brief   ...
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+Kernel_Scheduler_API::SALBI (CPU* mCPU)
+{
+    log_T("CPU", "Kernel_Scheduler: SALBI");
+
+    ASSERT(mCPU->mGPU->commandQueue.empty(), "command queue should be empty");
+
+    unsigned long long memory_budget = system_resource.VRAM_SPACE;
+
+    /* Record memory usage */
+    map<int, unsigned long long> NP_list;
+    for (auto kernel : mCPU->mGPU->runningKernels) NP_list[kernel->appID] += kernel->getKernelInfo().numOfMemory;
+
+    /* Record allocated memory */
+    map<int, unsigned long long> NPA_list;
+    for (auto app_pair : NP_list) NPA_list[app_pair.first] += mCPU->mGPU->getGMMU()->getCGroup(app_pair.first)->size() * PAGE_SIZE;
+
+    /* Calculate remaining memory */
+    for (auto app_pair : NPA_list) memory_budget -= app_pair.second;
+
+    map<int, list<Kernel*>> ready_kerenls;
+    for (auto app : mCPU->mAPPs)
+    {
+        /* Application has layer executing */
+        if (NP_list.find(app->appID) != NP_list.end()) continue;
+
+        /* Collect the ready kernels */
+        for (auto model : app->runningModels) ready_kerenls[app->appID].emplace_back(model->findReadyKernels().front());
+        if (ready_kerenls[app->appID].empty()) continue;
+
+        /* Sort in non-decreasing order */
+        ready_kerenls[app->appID].sort([](Kernel*& a, Kernel*& b){ return a->srcLayer->layerID < b->srcLayer->layerID; });
+
+        /* Pop out the kernels with non smallest layerID */
+        auto kernel = ready_kerenls[app->appID].front();
+        ready_kerenls[app->appID].remove_if([kernel](Kernel*& k){ return k->srcLayer->layerID > kernel->srcLayer->layerID; });
+
+        /* Record memory usage */
+        NP_list[app->appID] += kernel->srcLayer->getFilterMemory();
+        NP_list[app->appID] += (kernel->srcLayer->getIFMapMemory() + kernel->srcLayer->getOFMapMemory()) * ready_kerenls[app->appID].size();
+    }
+
+    /* Calculates page fault ratio */
+    vector<pair<int, double>> PFR_list;
+    for (auto app : mCPU->mAPPs) PFR_list.emplace_back(make_pair(app->appID, (NP_list[app->appID] - NPA_list[app->appID]) / app->SM_budget.size()));
+    
+    /* Pre-allocates memory */
+    sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
+
+    /* Allocate memory */
+    for (auto app_pair : PFR_list)
+    {
+        if (NPA_list[app_pair.first])
+        {
+            unsigned long long NP_diff = NP_list[app_pair.first] - NPA_list[app_pair.first];
+
+            unsigned long long new_allocate = (NP_diff <= memory_budget) ? NP_diff : memory_budget;
+
+            NPA_list[app_pair.first] += new_allocate;
+            
+            memory_budget -= new_allocate;
+        }
+        else if (NP_list[app_pair.first] <= memory_budget)
+        {
+            NPA_list[app_pair.first] = NP_list[app_pair.first];
+
+            memory_budget -= NPA_list[app_pair.first];
+        }
+        else if (ready_kerenls[app_pair.first].front()->srcLayer->getMemoryUsage() <= memory_budget)
+        {
+            auto layer = ready_kerenls[app_pair.first].front()->srcLayer;
+
+            int batch_limit = floor((memory_budget - layer->getFilterMemory()) / (layer->getIFMapMemory() + layer->getOFMapMemory()));
+
+            NPA_list[app_pair.first] += layer->getFilterMemory();
+            NPA_list[app_pair.first] += batch_limit * (layer->getIFMapMemory() + layer->getOFMapMemory());
+
+            memory_budget -= NPA_list[app_pair.first];
+        }
+        else
+        {
+            NPA_list[app_pair.first] = memory_budget;
+
+            memory_budget = 0;
+        }
+    }
+
+    ASSERT(memory_budget == 0, "Allocation overflow");
+
+    /* Assign memory to application */
+    for (auto app_pair : NPA_list)
+    {
+        mCPU->mGPU->getGMMU()->setCGroupSize(app_pair.first, app_pair.second / PAGE_SIZE);
+    }
+
+    /* Launch Kernel */
+    for (auto app_pair : ready_kerenls)
+    {
+        if (NPA_list[app_pair.first] == 0) continue;
+
+        int batch_size = ceil((double)(NPA_list[app_pair.first] - app_pair.second.front()->srcLayer->getFilterMemory()) / (double)(app_pair.second.front()->srcLayer->getIFMapMemory() + app_pair.second.front()->srcLayer->getOFMapMemory()));
+
+        vector<pair<Kernel*, int>> sync_kernels;
+        for (auto k : app_pair.second)
+        {
+            if (sync_kernels.size() < batch_size)
+            {
+                sync_kernels.push_back(make_pair(k, 1));
+            }
+        }
+
+        Kernel* kernel = (sync_kernels.size() == 1) ? sync_kernels.front().first : new KernelGroup(sync_kernels);
+        kernel->SM_List = new unordered_set<int> (mCPU->mAPPs[app_pair.first]->SM_budget);
+
+        if (!kernel->SM_List->empty())
+        {
+            if (kernel->compileRequest(&mCPU->mMMU))
+            {
+                ASSERT(mCPU->mGPU->launchKernel(kernel), "Failed launch kernel");
+                kernel->startCycle = total_gpu_cycle;
+                kernel->running    = true;
+            } 
+            else log_I("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
+        }
+    }
+
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    None
+ * 
+ * \brief   All application share same memory space
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool 
+Memory_Allocator_API::SALBI (CPU* mCPU)
+{  
+    return true;
+}
