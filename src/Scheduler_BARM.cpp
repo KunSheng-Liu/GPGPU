@@ -21,58 +21,63 @@ Inference_Admission_API::BARM (CPU* mCPU)
 {  
     log_T("CPU", "Inference_Admission: BARM");
 
-    /*  Get avaiable SM list */
-    unordered_set<int> available_sm = mCPU->mGPU->getIdleSMs();
-    if (available_sm.empty()) return false;
-
-    ASSERT(false, "haven't implement SMD");
-
     /* *******************************************************************
      * Assign SM to each application according to its model needed pages
      * *******************************************************************
      */
     /* Record the total required memory base on the task number */
-    // float total_needed_memory = 0;
-    // vector<pair<float, Application*>> APP_list;
-    // for (auto app : mCPU->mAPPs)
-    // {
-    //     app->SM_budget = {};
+    unsigned long long NP_total = 0;
+    list<pair<int, unsigned long long>> NP_list;
+    for (auto app : mCPU->mAPPs)
+    {
+        unsigned long long NP = app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount;
 
-    //     if(app->tasks.size() == 0) continue;
+        NP_list.emplace_back(make_pair(app->appID, NP));
+        NP_total += NP;
+    }
+    if (NP_list.empty()) return false;
 
-    //     auto info = app->modelInfo;
+    /* Sort to non-decreacing order */
+    NP_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
 
-    //     total_needed_memory += (info.filterMemCount + info.filterMemCount) * app->tasks.size();  
+    /* Assign SM to each application */
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
+
+    for (auto app_pair : NP_list)
+    {
+        int sm_num = round((float) sm_budget * app_pair.second / NP_total);
         
-    //     APP_list.emplace_back(make_pair((info.filterMemCount + info.filterMemCount) * app->tasks.size(), app));     
-    // }
+        for (int i = 0; i < sm_num; i++) 
+        {
+            mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
+            if (sm_count == system_resource.SM_NUM) break;
+        }
+    }
+    /* mend up the round to zero issue which remain one SM not allocated */
+    if (sm_count < system_resource.SM_NUM) mCPU->mAPPs.front()->SM_budget.insert(sm_count++);
 
-    // /* Sort to non-decreacing order */
-    // sort(APP_list.begin(), APP_list.end(), [](const pair<float, Application*>& a, const pair<float, Application*>& b){
-    //     return a.first < b.first;
-    // });
+        /* *******************************************************************
+     * Assign SM to each application
+     * *******************************************************************
+     */
+    for (auto app : mCPU->mAPPs)
+    {
+        while(!app->waitingModels.empty())
+        {
+            auto model = app->waitingModels.front();
+            model->SM_budget = unordered_set<int> (app->SM_budget);
 
-    // /* Assign SM to each application */
-    // int SM_count = 0;
-    // for (auto app_pair : APP_list)
-    // {
-    //     std::cout << system_resource.SM_NUM * (app_pair.first / total_needed_memory) << std::endl;
-    //     /* Avoid starvation, at least assign 1 SM to application */
-    //     if ((int)(system_resource.SM_NUM * (app_pair.first / total_needed_memory) == 0))
-    //     {
-    //         total_needed_memory -= app_pair.first;
-    //         app_pair.second->SM_budget.push_back(SM_count++);
-    //         continue;
-    //     }
+#if (PRINT_SM_ALLCOATION_RESULT)
+            std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
+            for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
+            std::cout << std::endl;
+#endif
+            app->runningModels.push_back(model);
+            app->waitingModels.pop_front();
+        }
+    }
 
-    //     for (int i = 0; i < (int)(system_resource.SM_NUM * (app_pair.first / total_needed_memory)); i++)
-    //     {
-    //         app_pair.second->SM_budget.push_back(SM_count++);
-    //     }
-
-    //     ASSERT(SM_count == system_resource.SM_NUM);
-    // }
-
+    return true;
 }
 
 
