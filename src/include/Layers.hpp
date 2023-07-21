@@ -167,7 +167,7 @@ public:
     pair<int, vector<DATA_TYPE>*> getFilter (void) {return filter;}
     unsigned long long getIFMapMemory  (void) {return (iFMap.second)  ? iFMapSize[BATCH] * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] * sizeof(DATA_TYPE) : 0;}
     unsigned long long getOFMapMemory  (void) {return (oFMap.second)  ? oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] * sizeof(DATA_TYPE) : 0;}
-    unsigned long long getFilterMemory (void) {return (filter.second) ? filterSize[FILTER_CHANNEL_I] * filterSize[FILTER_CHANNEL_O] * filterSize[HEIGHT] * filterSize[WIDTH] * sizeof(DATA_TYPE) : 0;}
+    unsigned long long getFilterMemory (void) {return (filter.second) ? filterSize[FILTER_CHANNEL_O] * filterSize[FILTER_CHANNEL_I] * filterSize[HEIGHT] * filterSize[WIDTH] * sizeof(DATA_TYPE) : 0;}
 
 
 /* ************************************************************************************************

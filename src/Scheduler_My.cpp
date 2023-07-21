@@ -453,7 +453,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
     /* Calculates page fault ratio */
     vector<pair<int, double>> PFR_list;
-    for (auto app : mCPU->mAPPs) PFR_list.emplace_back(make_pair(app->appID, (NP_list[app->appID] - NPA_list[app->appID]) / app->SM_budget.size()));
+    for (auto app_pair : NP_list) PFR_list.emplace_back(make_pair(app_pair.first, (NP_list[app_pair.first] - NPA_list[app_pair.first]) / mCPU->mAPPs[app_pair.first]->SM_budget.size()));
     
     /* Pre-allocates memory */
     sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
@@ -495,8 +495,8 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
             memory_budget = 0;
         }
     }
+    ASSERT(memory_budget < system_resource.VRAM_SPACE, "Allocation overflow");
 
-    ASSERT(memory_budget == 0, "Allocation overflow");
 
     /* Assign memory to application */
     for (auto app_pair : NPA_list)
