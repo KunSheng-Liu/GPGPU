@@ -381,7 +381,10 @@ Inference_Admission_API::WA_SMD (CPU* mCPU)
     /* sort the applications in non-decreasing workload order */
     workload_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
 
-    /* allocation by workload ratio */
+    /* *******************************************************************
+     * Allocate SM to applications
+     * *******************************************************************
+     */
     int sm_count = 0, sm_budget = system_resource.SM_NUM;
 
     for (auto app_pair : workload_list)
@@ -418,6 +421,10 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
     unsigned long long memory_budget = system_resource.VRAM_SPACE;
 
+    /* *******************************************************************
+     * Collect informations of apps
+     * *******************************************************************
+     */
     /* Record memory usage */
     map<int, unsigned long long> NP_list;
     for (auto kernel : mCPU->mGPU->runningKernels) NP_list[kernel->appID] += kernel->getKernelInfo().numOfMemory;
@@ -429,6 +436,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
     /* Calculate remaining memory */
     for (auto app_pair : NPA_list) memory_budget -= app_pair.second;
 
+    /* Get the ready kernels of non-executing applications */
     map<int, list<Kernel*>> ready_kerenls;
     for (auto app : mCPU->mAPPs)
     {
@@ -455,12 +463,17 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
     vector<pair<int, double>> PFR_list;
     for (auto app_pair : NP_list) PFR_list.emplace_back(make_pair(app_pair.first, (NP_list[app_pair.first] - NPA_list[app_pair.first]) / mCPU->mAPPs[app_pair.first]->SM_budget.size()));
     
-    /* Pre-allocates memory */
+    /* Sort in non-decreasing order, the smaller PFR has higher allocation priority */
     sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
 
-    /* Allocate memory */
+
+    /* *******************************************************************
+     * Allocate memory to applications
+     * *******************************************************************
+     */
     for (auto app_pair : PFR_list)
     {
+        /* This layer of application is already executing with memory oversubscription */
         if (NPA_list[app_pair.first])
         {
             unsigned long long NP_diff = NP_list[app_pair.first] - NPA_list[app_pair.first];
@@ -471,40 +484,35 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
             
             memory_budget -= new_allocate;
         }
+        /* This layer of application is going to excute without memory oversubscription */
         else if (NP_list[app_pair.first] <= memory_budget)
         {
             NPA_list[app_pair.first] = NP_list[app_pair.first];
 
             memory_budget -= NPA_list[app_pair.first];
         }
-        else if (ready_kerenls[app_pair.first].front()->srcLayer->getMemoryUsage() <= memory_budget)
-        {
-            auto layer = ready_kerenls[app_pair.first].front()->srcLayer;
-
-            int batch_limit = floor((memory_budget - layer->getFilterMemory()) / (layer->getIFMapMemory() + layer->getOFMapMemory()));
-
-            NPA_list[app_pair.first] += layer->getFilterMemory();
-            NPA_list[app_pair.first] += batch_limit * (layer->getIFMapMemory() + layer->getOFMapMemory());
-
-            memory_budget -= NPA_list[app_pair.first];
-        }
+        /* This layer of application is going to excute with memory oversubscription */
         else
         {
-            NPA_list[app_pair.first] = memory_budget;
+            NPA_list[app_pair.first] += memory_budget;
 
-            memory_budget = 0;
+            memory_budget  = 0;
         }
     }
     ASSERT(memory_budget < system_resource.VRAM_SPACE, "Allocation overflow");
 
 
-    /* Assign memory to application */
+    /* Perform the GPU memory isolation setup for applications */
     for (auto app_pair : NPA_list)
     {
         mCPU->mGPU->getGMMU()->setCGroupSize(app_pair.first, app_pair.second / PAGE_SIZE);
     }
 
-    /* Launch Kernel */
+
+    /* *******************************************************************
+     * Batch inference the layer according to the allocated memory space
+     * *******************************************************************
+     */
     for (auto app_pair : ready_kerenls)
     {
         if (NPA_list[app_pair.first] == 0) continue;
