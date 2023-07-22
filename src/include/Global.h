@@ -33,7 +33,7 @@ typedef enum {
 typedef enum {
     None, Average,
 	MEMA, R_MEMA,
-	Other
+	BASLA
 }MEM_ALLOCATION;
 
 typedef enum {

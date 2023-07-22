@@ -63,7 +63,7 @@ Scheduler::Scheduler (CPU* cpu) : mCPU(cpu)
     
     else if (command.MEM_MODE == MEM_ALLOCATION::R_MEMA)  Memory_Allocator = Memory_Allocator_API::R_MEMA;
     
-    else if (command.MEM_MODE == MEM_ALLOCATION::Other)   Memory_Allocator = Memory_Allocator_API::SALBI;
+    else if (command.MEM_MODE == MEM_ALLOCATION::BASLA)   Memory_Allocator = Memory_Allocator_API::BASLA;
 
     else ASSERT(false, "Set up Memory_Allocator callback error");
 }

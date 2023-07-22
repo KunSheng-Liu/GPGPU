@@ -96,7 +96,7 @@ public:
     static bool Average (CPU* mCPU);
     static bool MEMA    (CPU* mCPU);
     static bool R_MEMA  (CPU* mCPU);
-    static bool SALBI   (CPU* mCPU);
+    static bool BASLA   (CPU* mCPU);
 };
 
 

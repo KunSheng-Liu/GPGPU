@@ -106,7 +106,7 @@ void parser_cmd (int argc, char** argv)
                 else if (option == "Average")  command.MEM_MODE = MEM_ALLOCATION::Average;
                 else if (option == "MEMA")     command.MEM_MODE = MEM_ALLOCATION::MEMA;
                 else if (option == "R_MEMA")   command.MEM_MODE = MEM_ALLOCATION::R_MEMA;
-                else if (option == "Other")    command.MEM_MODE = MEM_ALLOCATION::Other;
+                else if (option == "BASLA")    command.MEM_MODE = MEM_ALLOCATION::BASLA;
                 else ASSERT(false, "Wrong argument -M, try --help");
                 mem_name = option;
             } 

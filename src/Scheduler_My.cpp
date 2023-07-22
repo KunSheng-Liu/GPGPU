@@ -508,19 +508,44 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
         mCPU->mGPU->getGMMU()->setCGroupSize(app_pair.first, app_pair.second / PAGE_SIZE);
     }
 
+    /* *******************************************************************
+     * Record the blocking SM
+     * *******************************************************************
+     */
+    unordered_set<int> blocking_SMs;
+    for (auto app_pair : ready_kerenls)
+    {
+        if (NPA_list[app_pair.first] == 0)
+        {
+            blocking_SMs.insert(mCPU->mAPPs[app_pair.first]->SM_budget.begin(), mCPU->mAPPs[app_pair.first]->SM_budget.end());
+        }
+    }
+
+    PFR_list.clear();
+    for (auto app_pair : ready_kerenls)
+    {
+        if (NPA_list[app_pair.first])
+        {
+            double PFR = (double)(NP_list[app_pair.first] - NPA_list[app_pair.first] + 1) / (double)(mCPU->mAPPs[app_pair.first]->SM_budget.size());
+            PFR_list.emplace_back(make_pair(app_pair.first, PFR));
+        }
+    }
+    sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
 
     /* *******************************************************************
      * Batch inference the layer according to the allocated memory space
      * *******************************************************************
      */
-    for (auto app_pair : ready_kerenls)
+    for (auto app_pair : PFR_list)
     {
+        auto kernel_list = ready_kerenls[app_pair.first];
+
         if (NPA_list[app_pair.first] == 0) continue;
 
-        int batch_size = ceil((double)(NPA_list[app_pair.first] - app_pair.second.front()->srcLayer->getFilterMemory()) / (double)(app_pair.second.front()->srcLayer->getIFMapMemory() + app_pair.second.front()->srcLayer->getOFMapMemory()));
+        int batch_size = ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory()));
 
         vector<pair<Kernel*, int>> sync_kernels;
-        for (auto k : app_pair.second)
+        for (auto k : kernel_list)
         {
             if (sync_kernels.size() < batch_size)
             {
@@ -530,6 +555,15 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
         Kernel* kernel = (sync_kernels.size() == 1) ? sync_kernels.front().first : new KernelGroup(sync_kernels);
         kernel->SM_List = new unordered_set<int> (mCPU->mAPPs[app_pair.first]->SM_budget);
+        if (!blocking_SMs.empty())
+        {
+            log("BASIA", "app " + to_string(app_pair.first) + " lending " + to_string(blocking_SMs.size()) + " SMs", Color::Yellow);
+            std::cout << "From " << kernel->SM_List->size() << " to ";
+            kernel->SM_List->insert(blocking_SMs.begin(), blocking_SMs.end());
+            std::cout << kernel->SM_List->size() << std:: endl;
+            blocking_SMs.clear();
+        }
+        
 
         if (!kernel->SM_List->empty())
         {
@@ -556,7 +590,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
  * ================================================================================================
  */
 bool 
-Memory_Allocator_API::SALBI (CPU* mCPU)
+Memory_Allocator_API::BASLA (CPU* mCPU)
 {  
     return true;
 }
