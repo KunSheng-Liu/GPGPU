@@ -418,8 +418,6 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 {
     log_T("CPU", "Kernel_Scheduler: SALBI");
 
-    ASSERT(mCPU->mGPU->commandQueue.empty(), "command queue should be empty");
-
     unsigned long long memory_budget = system_resource.VRAM_SPACE;
 
     /* *******************************************************************
@@ -429,6 +427,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
     /* Record memory usage */
     map<int, unsigned long long> NP_list;
     for (auto kernel : mCPU->mGPU->runningKernels) NP_list[kernel->appID] += kernel->getKernelInfo().numOfMemory;
+    for (auto kernel : mCPU->mGPU->commandQueue)   NP_list[kernel->appID] += kernel->getKernelInfo().numOfMemory;
 
     /* Record allocated memory */
     map<int, unsigned long long> NPA_list;
@@ -538,6 +537,9 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
     for (auto app_pair : PFR_list)
     {
         if (ready_kerenls.find(app_pair.first) == ready_kerenls.end() ||  NPA_list[app_pair.first] == 0) continue;
+
+        auto available_sm = mCPU->mGPU->getIdleSMs();
+        for (auto sm_id : mCPU->mAPPs[app_pair.first]->SM_budget) if (!available_sm.count(sm_id)) continue;
 
         auto kernel_list = ready_kerenls[app_pair.first];
 
