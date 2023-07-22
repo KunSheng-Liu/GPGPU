@@ -370,7 +370,8 @@ Inference_Admission_API::WA_SMD (CPU* mCPU)
         if (!app->runningModels.empty())
         {
             unsigned long long NP = app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount;
-            double BBR = (double)app->modelInfo.filterMemCount / (double)app->modelInfo.ioMemCount;
+            double BBR = (double)app->modelInfo.filterMemCount / (double)(app->modelInfo.ioMemCount + app->modelInfo.filterMemCount);
+            // double BBR = 1;
             unsigned long long workload = NP * BBR;
             workload_list.emplace_back(make_pair(app->appID, workload));
             total_workload += workload;
@@ -389,7 +390,7 @@ Inference_Admission_API::WA_SMD (CPU* mCPU)
 
     for (auto app_pair : workload_list)
     {
-        int sm_num = round((float) sm_budget * app_pair.second / total_workload);
+        int sm_num = max(1, (int)round(sm_budget * (double)app_pair.second / (double)total_workload));
         
         for (int i = 0; i < sm_num; i++) 
         {
@@ -461,7 +462,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
     /* Calculates page fault ratio */
     vector<pair<int, double>> PFR_list;
-    for (auto app_pair : NP_list) PFR_list.emplace_back(make_pair(app_pair.first, (NP_list[app_pair.first] - NPA_list[app_pair.first]) / mCPU->mAPPs[app_pair.first]->SM_budget.size()));
+    for (auto app_pair : NP_list) PFR_list.emplace_back(make_pair(app_pair.first, NP_list[app_pair.first] * (double)(NP_list[app_pair.first] - NPA_list[app_pair.first] + 1) / mCPU->mAPPs[app_pair.first]->SM_budget.size()));
     
     /* Sort in non-decreasing order, the smaller PFR has higher allocation priority */
     sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
@@ -521,13 +522,11 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
         }
     }
 
-    PFR_list.clear();
-    for (auto app_pair : ready_kerenls)
+    for (auto app_pair : PFR_list)
     {
-        if (NPA_list[app_pair.first])
+        if (ready_kerenls.find(app_pair.first) != ready_kerenls.end())
         {
-            double PFR = (double)(NP_list[app_pair.first] - NPA_list[app_pair.first] + 1) / (double)(mCPU->mAPPs[app_pair.first]->SM_budget.size());
-            PFR_list.emplace_back(make_pair(app_pair.first, PFR));
+            app_pair.second = NP_list[app_pair.first] * (double)(NP_list[app_pair.first] - NPA_list[app_pair.first] + 1) / (double)(mCPU->mAPPs[app_pair.first]->SM_budget.size() + blocking_SMs.size());
         }
     }
     sort(PFR_list.begin(), PFR_list.end(), [](auto& a, auto& b){ return a.second < b.second; });
@@ -538,9 +537,9 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
      */
     for (auto app_pair : PFR_list)
     {
-        auto kernel_list = ready_kerenls[app_pair.first];
+        if (ready_kerenls.find(app_pair.first) == ready_kerenls.end() ||  NPA_list[app_pair.first] == 0) continue;
 
-        if (NPA_list[app_pair.first] == 0) continue;
+        auto kernel_list = ready_kerenls[app_pair.first];
 
         int batch_size = ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory()));
 
@@ -555,15 +554,15 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
         Kernel* kernel = (sync_kernels.size() == 1) ? sync_kernels.front().first : new KernelGroup(sync_kernels);
         kernel->SM_List = new unordered_set<int> (mCPU->mAPPs[app_pair.first]->SM_budget);
-        if (!blocking_SMs.empty())
+        
+        if (!blocking_SMs.empty() && app_pair == PFR_list.front())
         {
             log("BASIA", "app " + to_string(app_pair.first) + " lending " + to_string(blocking_SMs.size()) + " SMs", Color::Yellow);
             std::cout << "From " << kernel->SM_List->size() << " to ";
             kernel->SM_List->insert(blocking_SMs.begin(), blocking_SMs.end());
             std::cout << kernel->SM_List->size() << std:: endl;
-            blocking_SMs.clear();
         }
-        
+        blocking_SMs.clear();        
 
         if (!kernel->SM_List->empty())
         {
