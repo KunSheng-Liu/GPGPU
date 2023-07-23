@@ -543,7 +543,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
 
         auto kernel_list = ready_kerenls[app_pair.first];
 
-        int batch_size = ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory()));
+        int batch_size = max(1, (int)ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory())));
 
         vector<pair<Kernel*, int>> sync_kernels;
         for (auto k : kernel_list)
@@ -554,7 +554,7 @@ Kernel_Scheduler_API::SALBI (CPU* mCPU)
             }
         }
 
-        Kernel* kernel = (sync_kernels.size() == 1) ? sync_kernels.front().first : new KernelGroup(sync_kernels);
+        Kernel* kernel  = new KernelGroup(sync_kernels);
         kernel->SM_List = new unordered_set<int> (mCPU->mAPPs[app_pair.first]->SM_budget);
         
         if (!blocking_SMs.empty() && app_pair == PFR_list.front())

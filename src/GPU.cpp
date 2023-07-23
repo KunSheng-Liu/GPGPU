@@ -141,17 +141,17 @@ GPU::Check_Finish_Kernel()
 #endif
     for (auto kernel : runningKernels)
     {
-        kernel->finish = true;
-        for (auto sm_id : *kernel->SM_List) kernel->finish &= mSMs[sm_id].checkKernelComplete(kernel);
+        bool finish = true;
+        for (auto sm_id : *kernel->SM_List) finish &= mSMs[sm_id].checkKernelComplete(kernel);
         
-        if (kernel->finish) 
+        if (finish) 
         {
             kernel->endCycle = total_gpu_cycle;
             finishedKernels.push_back(kernel);
         }
     }
 
-    runningKernels.remove_if([](Kernel* k){return k->isFinish();});
+    runningKernels.remove_if([this](Kernel* k){ return find(this->finishedKernels.begin(), this->finishedKernels.end(), k) != this->finishedKernels.end(); });
 }
 
 
