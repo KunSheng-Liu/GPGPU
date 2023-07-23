@@ -280,7 +280,10 @@ Model::getKernelStatus()
 bool
 Model::checkFinish()
 {
-    return kernelContainer.back().isFinish();
+    bool finish = true;
+    for (auto kernel : kernelContainer) finish &= kernel.isFinish();
+    
+    return finish;
 }
 
 
