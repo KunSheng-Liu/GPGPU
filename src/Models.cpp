@@ -307,14 +307,14 @@ Model::getModelInfo(const char* model_type)
     if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
         Info.numOfRequest   = 8494;
-        Info.ioMemCount     = 152288;
-        Info.filterMemCount = 1002208;
+        Info.ioMemCount     = 148864;
+        Info.filterMemCount = 59488;
         Info.numOfRead      = 941088;
         Info.numOfWrite     = 8494;
         Info.numOfCycle     = 6785328;
         Info.inputSize      = {1, 32, 32};
         Info.outputSize     = {1000};
-        Info.totalExecuteTime = 377154;
+        Info.totalExecuteTime = 148864;
         Info.layerExecuteTime = {
             94164, 28278, 28768, 28734, 28380, 97813, 41693, 29314
         };
@@ -322,7 +322,7 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
         Info.numOfRequest   = 158824;
-        Info.ioMemCount     = 2979840;
+        Info.ioMemCount     = 2996224;
         Info.filterMemCount = 80134656;
         Info.numOfRead      = 414969088;
         Info.numOfWrite     = 158824;
@@ -369,8 +369,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
         Info.numOfRequest   = 1198778;
-        Info.ioMemCount     = 20477600;
-        Info.filterMemCount = 712990720;
+        Info.ioMemCount     = 20445216;
+        Info.filterMemCount = 428171264;
         Info.numOfRead      = 1881242784;
         Info.numOfWrite     = 1198778;
         Info.numOfCycle     = 1039974260;
