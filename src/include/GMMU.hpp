@@ -50,6 +50,7 @@ public:
 
     bool terminateModel (int app_id, int model_id);
 
+    void setCGroupType (bool isolation) { MEMORY_ISOLATION = isolation; }
     void setCGroupSize (int app_id, unsigned long long capacity);
     void freeCGroup (int app_id);
     LRU_TLB<unsigned long long, Page*>* getCGroup (int model_id);
@@ -82,6 +83,7 @@ private:
      * \param cgroup        the cgroup, use LRU
      * *******************************************************************
      */
+    bool MEMORY_ISOLATION = false;
 	map<int, LRU_TLB<unsigned long long, Page*>> mCGroups;
 
 friend SM;

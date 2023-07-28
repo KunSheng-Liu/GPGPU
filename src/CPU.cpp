@@ -19,8 +19,20 @@
  * \endcond
  * ================================================================================================
  */
-CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mScheduler(new Scheduler(this))
+CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
 {
+    /* *******************************************************************
+     * Select scheduler
+     * *******************************************************************
+     */
+    if (command.SCHEDULER_MODE == Baseline)     mScheduler = new Scheduler_Baseline(this);
+
+    else if (command.SCHEDULER_MODE == Average) mScheduler = new Scheduler_Average(this);
+
+    else if (command.SCHEDULER_MODE == BARM)    mScheduler = new Scheduler_BARM(this);
+
+    else if (command.SCHEDULER_MODE == SALBI)   mScheduler = new Scheduler_SALBI(this);
+
     /* *******************************************************************
      * Create applications
      * *******************************************************************
@@ -31,10 +43,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
         {
             mAPPs.push_back(new Application ((char*)"LeNet"
                 , {1, 1, 32, 32}
-                , get<0>(task.second)
-                , get<1>(task.second) * GPU_F / 1000
-                , get<2>(task.second) * GPU_F / 1000
-                // , get<3>(task.second) * GPU_F / 1000
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000    //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -42,10 +54,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
         {
             mAPPs.push_back(new Application ((char*)"CaffeNet"
                 , {1, 3, 112, 112}
-                , get<0>(task.second)
-                , get<1>(task.second) * GPU_F / 1000
-                , get<2>(task.second) * GPU_F / 1000
-                // , get<3>(task.second) * GPU_F / 1000
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000     //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -53,10 +65,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
         {
             mAPPs.push_back(new Application ((char*)"ResNet18"
                 , {1, 3, 112, 112}
-                , get<0>(task.second)
-                , get<1>(task.second) * GPU_F / 1000
-                , get<2>(task.second) * GPU_F / 1000
-                // , get<3>(task.second) * GPU_F / 1000
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000     //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -64,10 +76,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
         {
             mAPPs.push_back(new Application ((char*)"GoogleNet"
                 , {1, 3, 112, 112}
-                , get<0>(task.second)
-                , get<1>(task.second) * GPU_F / 1000
-                , get<2>(task.second) * GPU_F / 1000
-                // , get<3>(task.second) * GPU_F / 1000
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000    //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
@@ -75,10 +87,10 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc)), mS
         {
             mAPPs.push_back(new Application ((char*)"VGG16"
                 , {1, 3, 112, 112}
-                , get<0>(task.second)
-                , get<1>(task.second) * GPU_F / 1000
-                , get<2>(task.second) * GPU_F / 1000
-                // , get<3>(task.second) * GPU_F / 1000
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000    //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }

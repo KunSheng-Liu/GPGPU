@@ -233,7 +233,7 @@ GMMU::Page_Fault_Handler()
         list<MemoryAccess*> remaining_MSHRs = {};
         for (auto access : MSHRs)
         {
-            int app_id = (command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : access->app_id;
+            int app_id = MEMORY_ISOLATION ? access->app_id : -1;
 
             list<unsigned long long> page_list = {};
             for (auto page_id : access->pageIDs) if (!getCGroup(app_id)->lookup(page_id)) page_list.push_back(page_id);
@@ -388,7 +388,7 @@ inline bool check (Page* const& page) { return page->location == SPACE_DRAM; }
 void
 GMMU::freeCGroup (int app_id)
 {
-    auto it = mCGroups.find((command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id);
+    auto it = mCGroups.find(MEMORY_ISOLATION ? app_id : -1);
     if (it != mCGroups.end()) 
     {
         int release_count = (*it).second.release( check );
@@ -410,5 +410,5 @@ GMMU::freeCGroup (int app_id)
 LRU_TLB<unsigned long long, Page*>*
 GMMU::getCGroup (int app_id)
 {
-    return &mCGroups[(command.MEM_MODE == MEM_ALLOCATION::None) ? -1 : app_id];
+    return &mCGroups[MEMORY_ISOLATION ? app_id : -1];
 }

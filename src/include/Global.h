@@ -21,20 +21,15 @@
 
 /* Policy*/
 typedef enum {
-	Greedy, Baseline,
-	BARM, LazyB,
-	My, SALBI
+	Baseline,
+	Average,
+	BARM,
+	SALBI
 }SCHEDULER;
 
 typedef enum {
     DISABLE, MAX,
 }BATCH_METHOD;
-
-typedef enum {
-    None, Average,
-	MEMA, R_MEMA,
-	BASLA
-}MEM_ALLOCATION;
 
 typedef enum {
     LeNet, CaffeNet, ResNet18, GoogleNet, VGG16,
@@ -70,10 +65,9 @@ struct RuntimeRecord
 struct Command {
     SCHEDULER    	SCHEDULER_MODE;
     BATCH_METHOD   	BATCH_MODE;
-    MEM_ALLOCATION 	MEM_MODE;
     std::list<std::pair<APPLICATION, std::tuple<int /*batch_size*/, float /*arrival_time*/, float /*period*/, float /*deadline*/>>> TASK_LIST;
 
-    Command() : SCHEDULER_MODE(Greedy), BATCH_MODE(DISABLE), MEM_MODE(None) {}
+    Command() : SCHEDULER_MODE(Baseline), BATCH_MODE(MAX) {}
 };
 
 struct Resource {

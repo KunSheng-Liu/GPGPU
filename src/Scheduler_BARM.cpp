@@ -7,9 +7,43 @@
  */
 #include "include/Scheduler.hpp"
 
+/** ===============================================================================================
+ * \name    Scheduler_BARM
+ * 
+ * \brief   ...
+ * 
+ * \param   cpu     the pointer of CPU
+ * 
+ * \endcond
+ * ================================================================================================
+ */ 
+Scheduler_BARM::Scheduler_BARM (CPU* cpu) : Scheduler_Baseline(cpu)
+{
+
+}
+
 
 /** ===============================================================================================
- * \name    Inference_Admission_API::BARM
+ * \name    Sched
+ * 
+ * \brief   perform schedule
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void 
+Scheduler_BARM::Sched ()
+{
+    BASMD();
+
+    Inference_Launcher();
+
+    TPMEMA();
+}
+
+
+/** ===============================================================================================
+ * \name    BASMD
  * 
  * \brief   Use BARM::SMD scheme to allocate SM
  * 
@@ -17,35 +51,36 @@
  * ================================================================================================
  */
 bool 
-Inference_Admission_API::BARM (CPU* mCPU)
-{  
+Scheduler_BARM::BASMD ()
+{
     log_T("CPU", "Inference_Admission: BARM");
 
+    for (auto app : mCPU->mAPPs) app->runningModels.splice(app->runningModels.end(), app->waitingModels);
+
     /* *******************************************************************
-     * Assign SM to each application according to its model needed pages
+     * Record needed informations
      * *******************************************************************
      */
-    /* Record the total required memory base on the task number */
-    unsigned long long NP_total = 0;
     list<pair<int, unsigned long long>> NP_list;
-    for (auto app : mCPU->mAPPs)
-    {
-        unsigned long long NP = app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount;
+    for (auto app : mCPU->mAPPs) app->SM_budget = {};
+    for (auto app : mCPU->mAPPs) NP_list.emplace_back(make_pair(app->appID, app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount));
 
-        NP_list.emplace_back(make_pair(app->appID, NP));
-        NP_total += NP;
-    }
     if (NP_list.empty()) return false;
 
     /* Sort to non-decreacing order */
     NP_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
 
-    /* Assign SM to each application */
-    int sm_count = 0, sm_budget = system_resource.SM_NUM;
+    /* *******************************************************************
+     * Allocate SM to applications
+     * *******************************************************************
+     */
+    unsigned long long total_NP = 0;
+    for (auto app_pair : NP_list) total_NP += app_pair.second;
 
+    int sm_count = 0, sm_budget = system_resource.SM_NUM;
     for (auto app_pair : NP_list)
     {
-        int sm_num = round((float) sm_budget * app_pair.second / NP_total);
+        int sm_num = max(1, (int)round(sm_budget * (double)app_pair.second / (double)total_NP));
         
         for (int i = 0; i < sm_num; i++) 
         {
@@ -56,33 +91,12 @@ Inference_Admission_API::BARM (CPU* mCPU)
     /* mend up the round to zero issue which remain one SM not allocated */
     if (sm_count < system_resource.SM_NUM) mCPU->mAPPs.front()->SM_budget.insert(sm_count++);
 
-        /* *******************************************************************
-     * Assign SM to each application
-     * *******************************************************************
-     */
-    for (auto app : mCPU->mAPPs)
-    {
-        while(!app->waitingModels.empty())
-        {
-            auto model = app->waitingModels.front();
-            model->SM_budget = unordered_set<int> (app->SM_budget);
-
-#if (PRINT_SM_ALLCOATION_RESULT)
-            std::cout << "APP: " << app->appID << " Model: " << model->modelID << " get SM: ";
-            for (auto sm_id : model->SM_budget) std::cout << sm_id << ", ";
-            std::cout << std::endl;
-#endif
-            app->runningModels.push_back(model);
-            app->waitingModels.pop_front();
-        }
-    }
-
     return true;
 }
 
 
 /** ===============================================================================================
- * \name    MEMA
+ * \name    TPMEMA
  * 
  * \brief   Use BARM::MEMA scheme to allocate memory
  * 
@@ -90,8 +104,10 @@ Inference_Admission_API::BARM (CPU* mCPU)
  * ================================================================================================
  */
 bool 
-Memory_Allocator_API::MEMA (CPU* mCPU)
+Scheduler_BARM::TPMEMA ()
 {
+    mCPU->mGPU->getGMMU()->setCGroupType (true);
+
     map<int, unsigned long long> memory_record;
 
     for (auto kernel : mCPU->mGPU->runningKernels) memory_record[kernel->appID] += ceil(kernel->getKernelInfo().numOfMemory / PAGE_SIZE);
@@ -124,21 +140,6 @@ Memory_Allocator_API::MEMA (CPU* mCPU)
     }
 
     for (auto& memory_pair : memory_budget) mCPU->mGPU->getGMMU()->setCGroupSize(memory_pair.first, memory_pair.second);
-    
-    return true;
-}
 
-
-/** ===============================================================================================
- * \name    R_MEMA
- * 
- * \brief   Use BARM::R_MEMA scheme to allocate memory
- * 
- * \endcond
- * ================================================================================================
- */
-bool 
-Memory_Allocator_API::R_MEMA (CPU* mCPU)
-{  
     return true;
 }
