@@ -135,7 +135,7 @@ Scheduler_Baseline::Inference_Launcher ()
          * Launch kernel to inference
          * *******************************************************************
          */
-        kernelLauncher(kernel);
+        kernelLauncher(move(kernel));
     }
     return true;
 }

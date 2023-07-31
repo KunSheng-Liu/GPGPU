@@ -37,17 +37,19 @@ Scheduler_Average::Scheduler_Average (CPU* cpu) : Scheduler_Baseline(cpu)
 bool 
 Scheduler_Average::Inference_Admission ()
 {
+    for (auto app : mCPU->mAPPs) app->runningModels.splice(app->runningModels.end(), app->waitingModels);
+
     int sm_count = 0, sm_budget = system_resource.SM_NUM;
     while (sm_budget != 0) 
     {
         for (auto app : mCPU->mAPPs) 
         {
+            if (app->runningModels.empty()) continue;
+            
             app->SM_budget.insert(sm_count++);
             if (!(--sm_budget)) break;
         }
     }
-
-    for (auto app : mCPU->mAPPs) app->runningModels.splice(app->runningModels.end(), app->waitingModels);
 
     return true;
 }

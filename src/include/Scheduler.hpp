@@ -149,8 +149,8 @@ public:
     void Sched () override;
 
 private:
-    bool BASMD ();
-    bool TPMEMA  ();
+    bool BASMD  ();
+    bool TPMEMA ();
 };
 
 
@@ -180,9 +180,9 @@ public:
     void Sched () override;
 
 private:
-    bool WASMD    ();
-    bool ORBIS    ();
-    bool BCLA     ();
+    bool WASMD ();
+    bool ORBIS ();
+    bool BCLA  ();
 };
 
 #endif

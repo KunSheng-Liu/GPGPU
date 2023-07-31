@@ -63,7 +63,7 @@ Scheduler_BARM::BASMD ()
      */
     list<pair<int, unsigned long long>> NP_list;
     for (auto app : mCPU->mAPPs) app->SM_budget = {};
-    for (auto app : mCPU->mAPPs) NP_list.emplace_back(make_pair(app->appID, app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount));
+    for (auto app : mCPU->mAPPs) if (!app->runningModels.empty()) NP_list.emplace_back(make_pair(app->appID, app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount));
 
     if (NP_list.empty()) return false;
 

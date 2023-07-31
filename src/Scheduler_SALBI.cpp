@@ -180,11 +180,11 @@ Scheduler_SALBI::ORBIS ()
         {
             unsigned long long NP_diff = NP_list[app_pair.first] - NPA_list[app_pair.first];
 
-            unsigned long long new_allocate = (NP_diff <= memory_budget) ? NP_diff : memory_budget;
+        unsigned long long new_allocate = (NP_diff <= memory_budget) ? NP_diff : memory_budget;
 
             NPA_list[app_pair.first] += new_allocate;
-            
-            memory_budget -= new_allocate;
+        
+        memory_budget -= new_allocate;
         }
         /* This layer of application is going to excute without memory oversubscription */
         else if (NP_list[app_pair.first] <= memory_budget)
@@ -268,17 +268,23 @@ Scheduler_SALBI::ORBIS ()
         }
         blocking_SMs.clear();        
 
-        if (!kernel->SM_List->empty())
-        {
-            if (kernel->compileRequest(&mCPU->mMMU))
-            {
-                ASSERT(mCPU->mGPU->launchKernel(kernel), "Failed launch kernel");
-                kernel->startCycle = total_gpu_cycle;
-                kernel->running    = true;
-            } 
-            else log_I("compileRequest", "kernel: " + to_string(kernel->kernelID) + "has empty requests");
-        }
+        kernelLauncher(move(kernel));
     }
 
+    return true;
+}
+
+
+/** ===============================================================================================
+ * \name    BCLA : Blocking Core Lending Algorithm
+ * 
+ * \brief   ...
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+bool
+Scheduler_SALBI::BCLA ()
+{
     return true;
 }
