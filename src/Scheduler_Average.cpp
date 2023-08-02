@@ -45,10 +45,11 @@ Scheduler_Average::Inference_Admission ()
         for (auto app : mCPU->mAPPs) 
         {
             if (app->runningModels.empty()) continue;
-            
+
             app->SM_budget.insert(sm_count++);
             if (!(--sm_budget)) break;
         }
+        if (sm_budget == system_resource.SM_NUM) break;
     }
 
     return true;
