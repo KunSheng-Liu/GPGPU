@@ -462,9 +462,9 @@ Model::LeNet(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 120));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  84));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  10));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 120));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  84));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(),  10));
 
     numOfLayer = 8;
     
@@ -519,9 +519,9 @@ Model::CaffeNet(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 12;
     
@@ -580,9 +580,9 @@ Model::ResNet18(vector<int> input_size)
     modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), true));
     modelGraph->addLayer(new ResNetBlock18(layer_id, modelGraph->getOFMapSize(), false));
 
-    // int filter_size = modelGraph->getOFMapSize()[WIDTH];
-    // modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    modelGraph->addLayer(new Pooling(layer_id++, modelGraph->getOFMapSize(), {1024, 512, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 28;
 
@@ -661,9 +661,9 @@ Model::VGG16(vector<int> input_size)
                                                       
     modelGraph->addLayer(new Flatten(layer_id++, modelGraph->getOFMapSize()));
                                                         
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 4096));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 22;
     
@@ -749,10 +749,10 @@ Model::GoogleNet(vector<int> input_size)
     modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 256, 160, 320, 32, 128, 128));
     modelGraph->addLayer(new Inception(layer_id, modelGraph->getOFMapSize(), 384, 192, 384, 48, 128, 128));
 
-    // int filter_size = modelGraph->getOFMapSize()[WIDTH];
-    // modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
+    int filter_size = modelGraph->getOFMapSize()[WIDTH];
+    modelGraph->addLayer(new Pooling  (layer_id++, modelGraph->getOFMapSize(), {1024, 1024, filter_size, filter_size}, (char*)"Avg_Pool", 2, 0));
    
-    // modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
+    modelGraph->addLayer(new Dense(layer_id++, modelGraph->getOFMapSize(), 1000));
 
     numOfLayer = 108;
     

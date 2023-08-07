@@ -247,6 +247,8 @@ Scheduler_SALBI::ORBIS ()
 
         int batch_size = max(1, (int)ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory())));
 
+        if (strcmp(kernel_list.front()->srcLayer->layerType, "Dense") == 0) batch_size = kernel_list.size();
+
         vector<pair<Kernel*, int>> sync_kernels;
         for (auto k : kernel_list)
         {
