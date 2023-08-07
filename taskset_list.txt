@@ -1,98 +1,69 @@
-// -S [Greedy | Baseline | LazyB | My] -B [Disable | Max] -M [None | Average]
+// -S [Baseline | Average | BARM | SALBI] -B [Disable | Max]
 // -T [LeNet | CaffeNet | ResNet18 | VGG16 | GoogleNet | ALL |  Light | Heavy | Mix] 
 
 // ------------------ Record the execution time ------------------ //
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     1 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  1 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  1 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T VGG16     1 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 1 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T LeNet     1 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T CaffeNet  1 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T ResNet18  1 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T VGG16     1 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T GoogleNet 1 0 -1 100
 
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     2 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  2 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  2 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T VGG16     2 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 2 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T LeNet     2 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T CaffeNet  2 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T ResNet18  2 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T VGG16     2 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T GoogleNet 2 0 -1 100
 
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     4 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  4 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  4 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T VGG16     4 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 4 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T LeNet     4 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T CaffeNet  4 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T ResNet18  4 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T VGG16     4 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T GoogleNet 4 0 -1 100
 
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     8 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  8 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  8 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T VGG16     8 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 8 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     16 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  16 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  16 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 16 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     32 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  32 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  32 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T GoogleNet 32 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     64 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T CaffeNet  64 0 -1 100
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T ResNet18  64 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     128 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     256 0 -1 100
-
-// ./GPGPU -S Greedy   --sm-num 8   -B Max  -M None  -T LeNet     512 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T LeNet     8 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T CaffeNet  8 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T ResNet18  8 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T VGG16     8 0 -1 100
+// ./GPGPU --sm-num 8   -S Baseline   -B Max  -T GoogleNet 8 0 -1 100
 
 
-// ------------------ Test the SM overhead ------------------ //
-// ./GPGPU -S Greedy    -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S Greedy    -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100  
-// ./GPGPU -S Baseline  -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S Baseline  -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
-// ./GPGPU -S LazyB     -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S LazyB     -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
-// ./GPGPU -S My        -B Disable  -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S My        -B Max      -M None  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ------------------ 5C2V3R ------------------ //
+// ./GPGPU --sm-num 8  --vram-pages 4096  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 4096  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 4096  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 4096  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
 
-// ./GPGPU -S Greedy    -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S Greedy    -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100  
-// ./GPGPU -S Baseline  -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S Baseline  -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
-// ./GPGPU -S LazyB     -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S LazyB     -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
-// ./GPGPU -S My        -B Disable  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU -S My        -B Max      -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100
+// ./GPGPU --sm-num 8  --vram-pages 6144  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 6144  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 6144  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 6144  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
 
-// ------------------ Test the memory overhead ------------------ //
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S My        -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S My        -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S My        -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S LazyB     -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S LazyB     -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S LazyB     -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S Baseline  -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S Baseline  -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 8192  -S Baseline  -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 8192  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 8192  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 8192  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 8192  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S My        -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S My        -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S My        -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S LazyB     -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S LazyB     -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S LazyB     -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S Baseline  -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S Baseline  -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 4096  -S Baseline  -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 10240  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 10240  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 10240  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 8  --vram-pages 10240  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S My        -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S My        -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S My        -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S LazyB     -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S LazyB     -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S LazyB     -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S Baseline  -B Max  -M None     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S Baseline  -B Max  -M MEMA     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
-// ./GPGPU --sm-num 8 --vram-pages 2048  -S Baseline  -B Max  -M Average  -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 4096  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 4096  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 4096  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 4096  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+
+// ./GPGPU --sm-num 16  --vram-pages 6144  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 6144  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 6144  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 6144  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+
+// ./GPGPU --sm-num 16  --vram-pages 8192  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 8192  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 8192  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 8192  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+
+// ./GPGPU --sm-num 16  --vram-pages 10240  -S Baseline    -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 10240  -S Average     -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 10240  -S BARM        -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
+// ./GPGPU --sm-num 16  --vram-pages 10240  -S SALBI       -T CaffeNet 5 0 -1 100  -T VGG16 2 0 -1 100  -T ResNet18 3 0 -1 100 
