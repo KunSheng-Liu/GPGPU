@@ -210,8 +210,8 @@ CPU::Check_Finish_Kernel()
      */
     for (auto app : mAPPs)
     {
-        for (auto model = app->runningModels.begin(); model != app->runningModels.end();) {
-
+        for (auto model = app->runningModels.begin(); model != app->runningModels.end();)
+        {
             if (!(*model)->checkFinish())
             {
                 model++;

@@ -76,7 +76,6 @@ GPGPU::run ()
 			gettimeofday(&end, NULL);
 			std::cout << "MC cycle spend time: " << to_string((1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) * 0.001) << " ms" << std::endl;
 #endif
-
 		}
 		if (clock_mask & GMMU_MASK) {
 #if (PRINT_TIME_STEP)

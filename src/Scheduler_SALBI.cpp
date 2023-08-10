@@ -63,8 +63,9 @@ Scheduler_SALBI::WASMD ()
      * Record needed informations
      * *******************************************************************
      */
-    list<pair<int, unsigned long long>> workload_list;
     for (auto app : mCPU->mAPPs) app->SM_budget = {};
+    
+    list<pair<int, unsigned long long>> workload_list;
     for (auto app : mCPU->mAPPs)
     {
         if (!app->runningModels.empty())
@@ -94,8 +95,8 @@ Scheduler_SALBI::WASMD ()
         
         for (int i = 0; i < sm_num; i++) 
         {
-            mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
             if (sm_count == system_resource.SM_NUM) break;
+            mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
         }
     }
     /* mend up the round to zero issue which remain one SM not allocated */
