@@ -413,11 +413,11 @@ ResNetBlock18::BottleNeckBlock(int& layer_id, vector<int> input_size)
  *     |       Data                       c         n x n
  *  / / \ \  
  * 1 |   | | Conv2D    1 x 1        channel_1x1     n x n      1          0          ReLU
- * | 3   | | Conv2D    3 x 3 channel_reduce_3x3     n x n      1          1          ReLU
+ * | 3   | | Conv2D    1 x 1 channel_reduce_3x3     n x n      1          0          ReLU
  * | 4   | | Conv2D    3 x 3        channel_3x3     n x n      1          1          ReLU
- * | |   6 | Conv2D    5 x 5 channel_reduce_5x5     n x n      1          2          ReLU
+ * | |   6 | Conv2D    1 x 1 channel_reduce_5x5     n x n      1          0          ReLU
  * | |   7 | Conv2D    5 x 5        channel_5x5     n x n      1          2          ReLU
- * | |   | 9   Pool    3 x 3    channel_pooling     n x n      1          1           Max
+ * | |   | 9   Pool    3 x 3              c         n x n      1          1           Max
  * | |   |10 Conv2D    1 x 1    channel_pooling     n x n      1          0          ReLU
  * | |   | |
  * 2 |   | | ByPass    channel_1x1 + channel_3x3 + channel_5x5 + channel_pooling     n x n
@@ -441,18 +441,18 @@ Inception::Inception(int& layer_id, vector<int> input_size, int channel_1x1, int
     sequential_1x1->addLayer(new ByPass(layer_id++, sequential_1x1->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
 
     LayerGroup* sequential_3x3 = new LayerGroup();
-    sequential_3x3->addLayer(new Conv2D(layer_id++, input_size, {channel_reduce_3x3, input_size[CHANNEL], 3, 3} ,  (char*)"ReLU", 1, 1));
+    sequential_3x3->addLayer(new Conv2D(layer_id++, input_size, {channel_reduce_3x3, input_size[CHANNEL], 1, 1} ,  (char*)"ReLU", 1, 0));
     sequential_3x3->addLayer(new Conv2D(layer_id++, sequential_3x3->getOFMapSize(), {channel_3x3, channel_reduce_3x3, 3, 3}        ,  (char*)"ReLU", 1, 1));
     sequential_3x3->addLayer(new ByPass(layer_id++, sequential_3x3->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
     
     LayerGroup* sequential_5x5 = new LayerGroup();
-    sequential_5x5->addLayer(new Conv2D(layer_id++, input_size, {channel_reduce_5x5, input_size[CHANNEL], 5, 5} ,  (char*)"ReLU", 2, 2));
-    sequential_5x5->addLayer(new Conv2D(layer_id++, sequential_5x5->getOFMapSize(), {channel_5x5, channel_reduce_5x5, 5, 5}        ,  (char*)"ReLU", 2, 2));
+    sequential_5x5->addLayer(new Conv2D(layer_id++, input_size, {channel_reduce_5x5, input_size[CHANNEL], 1, 1} ,  (char*)"ReLU", 1, 0));
+    sequential_5x5->addLayer(new Conv2D(layer_id++, sequential_5x5->getOFMapSize(), {channel_5x5, channel_reduce_5x5, 5, 5}        ,  (char*)"ReLU", 1, 2));
     sequential_5x5->addLayer(new ByPass(layer_id++, sequential_5x5->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
     
     LayerGroup* sequential_pooling = new LayerGroup();
-    sequential_pooling->addLayer(new Conv2D(layer_id++, input_size, {channel_pooling, input_size[CHANNEL], 3, 3},  (char*)"Max", 1, 1));
-    sequential_pooling->addLayer(new Conv2D(layer_id++, sequential_pooling->getOFMapSize(), {channel_pooling, channel_pooling, 1, 1},  (char*)"ReLU", 1, 0));
+    sequential_pooling->addLayer(new Pooling(layer_id++, input_size, {3, 3},  (char*)"Max", 1, 1));
+    sequential_pooling->addLayer(new Conv2D(layer_id++, sequential_pooling->getOFMapSize(), {channel_pooling, input_size[CHANNEL], 1, 1},  (char*)"ReLU", 1, 0));
     sequential_pooling->addLayer(new ByPass(layer_id++, sequential_pooling->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
 
     addLayer(sequential_1x1);

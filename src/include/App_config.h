@@ -80,7 +80,7 @@ class Request;
 #define LOG_OUT_PATH                        "./log/"
 #define PRINT_TIME_STEP                     false
 #define PRINT_SM_ALLCOATION_RESULT          true
-#define PRINT_MODEL_DETIAL                  false
+#define PRINT_MODEL_DETIAL                  true
 #define PRINT_MEMORY_ALLOCATION             false
 #define PRINT_DEMAND_PAGE_RECORD            false
 #define PRINT_BLOCK_RECORD                  false

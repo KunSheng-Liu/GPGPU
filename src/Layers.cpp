@@ -370,8 +370,9 @@ Conv2D::Conv2D(int layer_id, char* layer_type, vector<int> input_size, vector<in
         , stride(_stride), padding(_padding)
 {
     calculateOFMapSize();
-    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    // int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 
@@ -453,28 +454,6 @@ Conv2D::calculateOFMapSize()
 
 
 /** ===============================================================================================
- * \name    memoryAllocate
- *
- * \brief   Allocate physical address to the model virtual address.
- * 
- * \param   mmu     the memory management unit
- * 
- * \endcond
- * ================================================================================================
- */
-// void
-// Conv2D::memoryAllocate(MMU* mmu)
-// {
-//     Layer::memoryAllocate(mmu);
-//     if (LOG_LEVEL >= VERBOSE) std::cout << "stride ";
-//     if(stride)  mmu->memoryAllocate(stride)),  stride->size()  * sizeof(DATA_TYPE));
-//     if (LOG_LEVEL >= VERBOSE) std::cout << "padding ";
-//     if(padding)  mmu->memoryAllocate(padding)),  padding->size()  * sizeof(DATA_TYPE));
-
-// }
-
-
-/** ===============================================================================================
  * \name    printInfo
  *
  * \brief   Print the layer information
@@ -546,7 +525,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
                     Request* request = new Request();
 
                     const int h_start = h_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
-                    const int w_start = w_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * stride[STRIDE_PADDING_WIDTH]  - padding[STRIDE_PADDING_WIDTH];
 
                     for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
                     {
@@ -601,7 +580,7 @@ Conv2D::issueLayer(ThreadArg* threadArg)
  * \brief   Construct a pooling layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
+ * \param   _kernel             [height, width]
  * \param   activation_type     the activation type
  * \param   _stride             [height, width]
  * \param   _padding            [height, width]
@@ -609,10 +588,14 @@ Conv2D::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, vector<int> _stride, vector<int> _padding)
-        : Conv2D(layer_id, (char*)"Pooling", input_size, filter_size, activation_type, _stride, _padding)
+Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> _kernel, char* activation_type, vector<int> _stride, vector<int> _padding)
+        : Layer(layer_id, (char*)"Pooling", input_size, {}, activation_type)
+        , kernel(_kernel), stride(_stride), padding(_padding)
 {
-    
+    calculateOFMapSize();
+    // int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 
@@ -622,18 +605,80 @@ Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> filter_size, 
  * \brief   Construct a pooling layer
  * 
  * \param   input_size          [batch, channel, height, width]
- * \param   filter_size         [FILTER_CHANNEL_O, FILTER_CHANNEL_I, height, width]
+ * \param   _kernel             [height, width]
  * \param   activation_type     the activation type
- * \param   _stride             [height, width]
- * \param   _padding            [height, width]
+ * \param   _stride             stride size
+ * \param   _padding            padding size
  * 
  * \endcond
  * ================================================================================================
  */
-Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> filter_size, char* activation_type, int _stride, int _padding)
-        : Conv2D(layer_id, (char*)"Pooling", input_size, filter_size, activation_type, {_stride,_stride}, {_padding, _padding})
+Pooling::Pooling(int layer_id, vector<int> input_size, vector<int> _kernel, char* activation_type, int _stride, int _padding)
+        : Pooling(layer_id, input_size, _kernel, activation_type, {_stride,_stride}, {_padding, _padding})
 {
     
+}
+
+
+/** ===============================================================================================
+ * \name    Pooling
+ *
+ * \brief   Calculate the output feature map dimension
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Pooling::calculateOFMapSize()
+{
+    bool check = !iFMapSize.empty() && !kernel.empty() && !stride.empty() && !padding.empty();
+    ASSERT(check, "Cannot calculate the size of OFMap due to missing parameter.");
+
+    oFMapSize.emplace_back(iFMapSize[BATCH]);
+    oFMapSize.emplace_back(iFMapSize[CHANNEL]);
+    oFMapSize.emplace_back((double) (iFMapSize[HEIGHT] + 2 * padding[STRIDE_PADDING_HEIGHT] - kernel[STRIDE_PADDING_HEIGHT]) / (double) stride[STRIDE_PADDING_HEIGHT] + 1);
+    oFMapSize.emplace_back((double) (iFMapSize[WIDTH]  + 2 * padding[STRIDE_PADDING_WIDTH]  - kernel[STRIDE_PADDING_WIDTH])  / (double) stride[STRIDE_PADDING_WIDTH]  + 1);
+}
+
+
+/** ===============================================================================================
+ * \name    printInfo
+ *
+ * \brief   Print the layer information
+ * 
+ * \endcond
+ * ================================================================================================
+ */
+void
+Pooling::printInfo()
+{
+    std::cout << std::left << std::setw(10) << layerID; 
+    std::cout << std::left << std::setw(16) << layerType; 
+    std::cout << std::left << std::setw(13) << activationType;
+    
+    std::cout << "(" 
+              << std::right << std::setw(4)  << iFMapSize[BATCH]              << ", " \
+              << std::right << std::setw(4)  << iFMapSize[CHANNEL]            << ", " \
+              << std::right << std::setw(3)  << iFMapSize[HEIGHT]             << ", " \
+              << std::right << std::setw(3)  << iFMapSize[WIDTH]                      \
+              << std::left  << std::setw(24) << ")" << "("                            \
+              << std::right << std::setw(2)  << kernel[STRIDE_PADDING_HEIGHT] << ", " \
+              << std::right << std::setw(2)  << kernel[STRIDE_PADDING_WIDTH]          \
+              << std::left  << std::setw(10) << ")" << "("                            \
+              << std::right << std::setw(4)  << oFMapSize[BATCH]              << ", " \
+              << std::right << std::setw(4)  << oFMapSize[CHANNEL]            << ", " \
+              << std::right << std::setw(3)  << oFMapSize[HEIGHT]             << ", " \
+              << std::right << std::setw(3)  << oFMapSize[WIDTH]                      \
+              << std::left  << std::setw(10) << ")"; 
+
+    std::cout << "(" 
+              << std::right << std::setw(2)  << stride[STRIDE_PADDING_HEIGHT]  << ", "
+              << std::right << std::setw(2)  << stride[STRIDE_PADDING_WIDTH]   
+              << std::left  << std::setw(10) << ")" << "("
+              << std::right << std::setw(2)  << padding[STRIDE_PADDING_HEIGHT] << ", "
+              << std::right << std::setw(2)  << padding[STRIDE_PADDING_WIDTH]  << ")";
+                     
+    std::cout << std::endl;
 }
 
 
@@ -659,10 +704,8 @@ Pooling::issueLayer(ThreadArg* threadArg)
     pthread_mutex_lock ( ioMutex );
         vector<unsigned long long> iFMapPages   = mmu->addressTranslate(iFMap.first);
         vector<unsigned long long> oFMapPages   = mmu->addressTranslate(oFMap.first);
-        vector<unsigned long long> filterPages  = mmu->addressTranslate(filter.first);
         log_V("iFMapPages Num"  , to_string(iFMapPages.size()));
         log_V("oFMapPages Num"  , to_string(oFMapPages.size()));
-        log_V("filterPages Num" , to_string(filterPages.size()));
     pthread_mutex_unlock ( ioMutex );
 
     int data_byte = sizeof(DATA_TYPE);
@@ -684,21 +727,15 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     Request* request = new Request();
                     
                     const int h_start = h_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
-                    const int w_start = w_o * stride[STRIDE_PADDING_HEIGHT] - padding[STRIDE_PADDING_HEIGHT];
+                    const int w_start = w_o * stride[STRIDE_PADDING_WIDTH]  - padding[STRIDE_PADDING_WIDTH];
 
-                    for (int c_i = 0; c_i < filterSize[FILTER_CHANNEL_I]; c_i++)
+                    for (int c_i = 0; c_i < iFMapSize[CHANNEL]; c_i++)
                     {
                         /* read filter pages */
-                        for (int h_i = max(0, h_start); h_i < min(h_start + filterSize[HEIGHT], iFMapSize[HEIGHT]); h_i++)
+                        for (int h_i = max(0, h_start); h_i < min(h_start + kernel[STRIDE_PADDING_HEIGHT], iFMapSize[HEIGHT]); h_i++)
                         {
-                            for (int w_i = max(0, w_start); w_i < min(w_start + filterSize[WIDTH], iFMapSize[WIDTH]); w_i++)
-                            {
-                                /* read filter pages */
-                                index = floor((c_i * filterSize[HEIGHT] * filterSize[WIDTH] + h_i * filterSize[WIDTH] + w_i) * data_byte / PAGE_SIZE);
-                                ASSERT(index < filterPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
-
-                                request->readPages.emplace_back(make_pair(filterPages[index], 1));
-                                
+                            for (int w_i = max(0, w_start); w_i < min(w_start + kernel[STRIDE_PADDING_WIDTH], iFMapSize[WIDTH]); w_i++)
+                            {                               
                                 /* read input pages */
                                 index = floor((b * iFMapSize[CHANNEL] * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + c_i * iFMapSize[HEIGHT] * iFMapSize[WIDTH] + h_i * iFMapSize[WIDTH] + w_i) * data_byte / PAGE_SIZE);
                                 ASSERT(index < iFMapPages.size(), "Layer " + to_string(layerID) + " (" + layerType + ") Overflow!");
@@ -709,7 +746,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     }
 
                     // Pooling layer find the maxinum input data in the field masked by filter
-                    request->numOfInstructions = filterSize[HEIGHT] * filterSize[WIDTH];
+                    request->numOfInstructions = kernel[STRIDE_PADDING_HEIGHT] * kernel[STRIDE_PADDING_WIDTH] * 2;
 
                     /* write result to pages */
                     index = floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) * data_byte / PAGE_SIZE);
@@ -747,8 +784,9 @@ Pooling::issueLayer(ThreadArg* threadArg)
 Flatten::Flatten(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)"Flatten", input_size)
 {
     calculateOFMapSize();
-    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    // int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 /** ===============================================================================================
@@ -783,7 +821,6 @@ Flatten::calculateOFMapSize()
 void
 Flatten::printInfo()
 {
-
     std::cout << std::left << std::setw(10) << layerID
               << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
@@ -877,12 +914,14 @@ Flatten::issueLayer(ThreadArg* threadArg)
  * \endcond
  * ================================================================================================
  */
-ByPass::ByPass(int layer_id, vector<int> input_size) : Layer(layer_id, (char*)"ByPass", input_size)
+ByPass::ByPass(int layer_id, vector<int> input_size)
+        : Layer(layer_id, (char*)"ByPass", input_size)
 {
     
     ASSERT(!iFMapSize.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = iFMapSize;
-    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 
@@ -902,7 +941,8 @@ ByPass::ByPass(int layer_id, vector<int> input_size, vector<int> output_size)
 {
     ASSERT(!output_size.empty(), "Cannot calculate the size of OFMap due to missing parameter.");
     oFMapSize = output_size;
-    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(output_size[BATCH] * output_size[CHANNEL] * output_size[HEIGHT] * output_size[WIDTH]));
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH]));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 
@@ -917,7 +957,6 @@ ByPass::ByPass(int layer_id, vector<int> input_size, vector<int> output_size)
 void
 ByPass::printInfo()
 {
-
     std::cout << std::left << std::setw(10) << layerID
               << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
@@ -1038,8 +1077,9 @@ Dense::Dense(int layer_id, vector<int> input_size, int output_width)
         : Dense(layer_id, input_size, {output_width, input_size[CHANNEL], 1, 1}, (char*)"Relu")
 {
     calculateOFMapSize();
-    int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
-    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    // int size = oFMapSize[BATCH] * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH];
+    // oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(size));
+    oFMap = make_pair(++vaCount, new vector<DATA_TYPE>(0));
 }
 
 
@@ -1075,7 +1115,6 @@ Dense::calculateOFMapSize()
 void
 Dense::printInfo()
 {
-
     std::cout << std::left << std::setw(10) << layerID 
               << std::left << std::setw(16) << layerType 
               << std::left << std::setw(13) << activationType;
