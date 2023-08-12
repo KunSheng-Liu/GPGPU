@@ -137,6 +137,7 @@ public:
     void VGG16     (vector<int> = {1, 3, 224, 224});
     // void VGG19  ();
     void GoogleNet (vector<int> = {1, 3, 224, 224});
+    void SqueezeNet (vector<int> = {1, 3, 224, 224});
 
 /* ************************************************************************************************
  * Parameter

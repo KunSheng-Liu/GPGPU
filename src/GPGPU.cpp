@@ -28,6 +28,7 @@ pthread_mutex_t* ioMutex = new pthread_mutex_t;
 GPGPU::GPGPU() : mMC(MemoryController(system_resource.DRAM_SPACE + system_resource.VRAM_SPACE, PAGE_SIZE)), mGPU(GPU(&mMC)), mCPU(CPU(&mMC, &mGPU))
 {
     mGMMU = mGPU.getGMMU();
+	pthread_mutex_init(ioMutex, NULL);
 
 	std::cout << program_name << std::endl;
 

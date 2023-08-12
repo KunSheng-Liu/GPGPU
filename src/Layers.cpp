@@ -746,7 +746,7 @@ Pooling::issueLayer(ThreadArg* threadArg)
                     }
 
                     // Pooling layer find the maxinum input data in the field masked by filter
-                    request->numOfInstructions = kernel[STRIDE_PADDING_HEIGHT] * kernel[STRIDE_PADDING_WIDTH] * 2;
+                    request->numOfInstructions = kernel[STRIDE_PADDING_HEIGHT] * kernel[STRIDE_PADDING_WIDTH];
 
                     /* write result to pages */
                     index = floor((b * oFMapSize[CHANNEL] * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + c_o * oFMapSize[HEIGHT] * oFMapSize[WIDTH] + h_o * oFMapSize[WIDTH] + w_o) * data_byte / PAGE_SIZE);

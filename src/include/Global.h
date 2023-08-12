@@ -32,7 +32,7 @@ typedef enum {
 }BATCH_METHOD;
 
 typedef enum {
-    LeNet, CaffeNet, ResNet18, GoogleNet, VGG16,
+    LeNet, CaffeNet, ResNet18, GoogleNet, VGG16, SqueezeNet,
     ALL,
     LIGHT, HEAVY, MIX,
     TEST1, TEST2,

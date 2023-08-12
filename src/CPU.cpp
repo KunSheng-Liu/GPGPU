@@ -94,6 +94,17 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , GPU_F * SIMULATION_TIME / 1000
             ));
         }
+        else if (task.first == APPLICATION::SqueezeNet)
+        {
+            mAPPs.push_back(new Application ((char*)"SqueezeNet"
+                , {1, 3, 112, 112}
+                , get<0>(task.second)                   // batch size
+                , get<1>(task.second) * GPU_F / 1000    // arrival time
+                , get<2>(task.second) * GPU_F / 1000    // period
+                // , get<3>(task.second) * GPU_F / 1000    //dead;ome
+                , GPU_F * SIMULATION_TIME / 1000
+            ));
+        }
         else if(task.first == APPLICATION::LIGHT)
         {
             command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task.second));

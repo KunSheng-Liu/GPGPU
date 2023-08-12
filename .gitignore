@@ -1,6 +1,6 @@
 .*
 !.gitignore
-GPGPU
-RUN
+GPGPU*
+RUN*
 Docs/*
 

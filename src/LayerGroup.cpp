@@ -461,3 +461,48 @@ Inception::Inception(int& layer_id, vector<int> input_size, int channel_1x1, int
     addLayer(sequential_pooling);
 }
 
+/** ===============================================================================================
+ * \name    Fire
+ *
+ * \brief   The layergroup prototype used in SqueezeNet
+ * 
+ * \param   input_size          [batch, channel, height, width]
+ * \param   channel_s1x1        the channel for squeeze conv 1x1 layers
+ * \param   channel_e1x1        the channel for expand conv 1x1 layers
+ * \param   channel_e3x3        the channel for expand conv 3x3 layers
+ * 
+ * \endcond
+ * 
+ *   #Index   Type   Kernel           Feature     Output    Stride    Padding    Activation
+ *                   Size              Map        Size
+ *    |      Data                       c         n x n
+ *    1    Conv2D    1 x 1        channel_s1x1    n x n        0          0          ReLU
+ *   / \   
+ *  2   |  Conv2D    1 x 1        channel_e1x1    n x n        0          0          ReLU
+ *  |   3  Conv2D    3 x 3        channel_e3x3    n x n        1          1          ReLU
+ *   \ / 
+ *    |   
+ * ================================================================================================
+ */
+Fire::Fire(int& layer_id, vector<int> input_size, int channel_s1x1, int channel_e1x1, int channel_e3x3)
+        : LayerGroup(Group_t::CaseCade, (char*)"Fire"), channel_s1x1(channel_s1x1), channel_e1x1(channel_e1x1), channel_e3x3(channel_e3x3)
+{
+    int height = input_size[HEIGHT];
+    int weight = input_size[WIDTH];
+    int final_dim = this->channel_e1x1 + this->channel_e3x3;
+
+    this->addLayer(new Conv2D(layer_id++, input_size, {this->channel_s1x1, input_size[CHANNEL], 1, 1}, (char*)"None", 1, 0));
+    LayerGroup* sequential_1x1 = new LayerGroup();
+    sequential_1x1->addLayer(new Conv2D(layer_id++, this->getOFMapSize(), {this->channel_e1x1, this->channel_s1x1, 1, 1}, (char*)"None", 1, 0));
+    sequential_1x1->addLayer(new ByPass(layer_id++, sequential_1x1->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+
+    LayerGroup* sequential_3x3 = new LayerGroup();
+    sequential_3x3->addLayer(new Conv2D(layer_id++, this->getOFMapSize(), {this->channel_e3x3, this->channel_s1x1, 3, 3}, (char*)"None", 1, 1));
+    sequential_3x3->addLayer(new ByPass(layer_id++, sequential_3x3->getOFMapSize(), {input_size[BATCH], final_dim, height, weight}));
+
+    LayerGroup* expandConv = new LayerGroup(Group_t::CaseCode, (char*)"Expand Conv");
+    expandConv->addLayer(sequential_1x1);
+    expandConv->addLayer(sequential_3x3);
+
+    this->addLayer(expandConv);
+}
