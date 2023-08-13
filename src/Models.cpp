@@ -307,8 +307,8 @@ Model::getModelInfo(const char* model_type)
     if (strcmp(model_type, "LeNet") == 0) {
         Info.numOfLayers    = 8;
         Info.numOfRequest   = 8494;
-        Info.ioMemCount     = 148864;
-        Info.filterMemCount = 59488;
+        Info.ioMemCount     = 142464;
+        Info.filterMemCount = 40800;
         Info.numOfRead      = 941088;
         Info.numOfWrite     = 8494;
         Info.numOfCycle     = 6785328;
@@ -322,8 +322,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "CaffeNet") == 0) {
         Info.numOfLayers    = 12;
         Info.numOfRequest   = 158824;
-        Info.ioMemCount     = 2996224;
-        Info.filterMemCount = 80134656;
+        Info.ioMemCount     = 2979840;
+        Info.filterMemCount = 59933184;
         Info.numOfRead      = 414969088;
         Info.numOfWrite     = 158824;
         Info.numOfCycle     = 90004668928;
@@ -338,7 +338,7 @@ Model::getModelInfo(const char* model_type)
         Info.numOfLayers    = 28;
         Info.numOfRequest   = 828904;
         Info.ioMemCount     = 10760192;
-        Info.filterMemCount = 201280512;
+        Info.filterMemCount = 200690688;
         Info.numOfRead      = 969416960;
         Info.numOfWrite     = 828904;
         Info.numOfCycle     = 1038660608;
@@ -354,7 +354,7 @@ Model::getModelInfo(const char* model_type)
         Info.numOfLayers    = 22;
         Info.numOfRequest   = 3781608;
         Info.ioMemCount     = 60887040;
-        Info.filterMemCount = 274426880;
+        Info.filterMemCount = 235367424;
         Info.numOfRead      = 7688828928;
         Info.numOfWrite     = 3781608;
         Info.numOfCycle     = 150160280576;
@@ -369,8 +369,8 @@ Model::getModelInfo(const char* model_type)
     } else if (strcmp(model_type, "GoogleNet") == 0) {
         Info.numOfLayers    = 108;
         Info.numOfRequest   = 1198778;
-        Info.ioMemCount     = 20445216;
-        Info.filterMemCount = 428171264;
+        Info.ioMemCount     = 24493856;
+        Info.filterMemCount = 93970432;
         Info.numOfRead      = 1881242784;
         Info.numOfWrite     = 1198778;
         Info.numOfCycle     = 1039974260;
@@ -386,6 +386,24 @@ Model::getModelInfo(const char* model_type)
             30323, 33146, 33359, 48891, 30429, 33313, 54493, 28064, 28417, 28417, 29923, 31335, 38395, 32548, 
             29573, 34515, 28725, 29904, 36258, 27940, 28293, 27940, 28560, 28912, 31031, 30234, 38001, 28890, 
             30235, 38000, 27960, 28293, 27940, 28559, 28912, 31030, 28582, 711412
+        };
+
+    } else if (strcmp(model_type, "SqueezeNet") == 0) {
+        Info.numOfLayers    = 45;
+        Info.numOfRequest   = 1198778;
+        Info.ioMemCount     = 30074368;
+        Info.filterMemCount = 19911168;
+        Info.numOfRead      = 1881242784;
+        Info.numOfWrite     = 1198778;
+        Info.numOfCycle     = 1039974260;
+        Info.inputSize      = {3, 112, 112};
+        Info.outputSize     = {1000};
+        Info.totalExecuteTime = 29026211;
+        Info.layerExecuteTime = {
+            799705, 44094, 61391, 80370, 43575, 36536, 48891, 33972, 37408, 95792, 28151, 28417, 28417, 29923, 
+            34512, 38395, 40585, 95792, 35996, 41457, 117874, 28405, 28747, 30159, 31947, 36536, 48891, 36549, 
+            32347, 43643, 29417, 31541, 44955, 27981, 28313, 27960, 28910, 30322, 33147, 31841, 41019, 29670, 
+            31794, 46267, 28022
         };
 
     }
