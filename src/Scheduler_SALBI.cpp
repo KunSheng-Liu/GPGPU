@@ -157,6 +157,10 @@ Scheduler_SALBI::ORBIS ()
         auto kernel = ready_kerenls[app->appID].front();
         ready_kerenls[app->appID].remove_if([kernel](Kernel*& k){ return k->srcLayer->layerID > kernel->srcLayer->layerID; });
 
+        /* Calculate the batch inference limit */
+        int batch_limit = max(ceil((double)kernel->srcLayer->getFilterMemory() / (kernel->srcLayer->getIFMapMemory() + kernel->srcLayer->getOFMapMemory())), (double)1);
+        ready_kerenls[app->appID].resize(min(batch_limit, (int)ready_kerenls[app->appID].size()));
+        
         /* Record memory usage */
         NP_list[app->appID] += kernel->srcLayer->getFilterMemory();
         NP_list[app->appID] += (kernel->srcLayer->getIFMapMemory() + kernel->srcLayer->getOFMapMemory()) * ready_kerenls[app->appID].size();
@@ -244,20 +248,8 @@ Scheduler_SALBI::ORBIS ()
         auto available_sm = mCPU->mGPU->getIdleSMs();
         for (auto sm_id : mCPU->mAPPs[app_pair.first]->SM_budget) if (!available_sm.count(sm_id)) continue;
 
-        auto kernel_list = ready_kerenls[app_pair.first];
-
-        int batch_size = max(1, (int)ceil((double)(NPA_list[app_pair.first] - kernel_list.front()->srcLayer->getFilterMemory()) / (double)(kernel_list.front()->srcLayer->getIFMapMemory() + kernel_list.front()->srcLayer->getOFMapMemory())));
-
-        if (strcmp(kernel_list.front()->srcLayer->layerType, "Dense") == 0) batch_size = kernel_list.size();
-
         vector<pair<Kernel*, int>> sync_kernels;
-        for (auto k : kernel_list)
-        {
-            if (sync_kernels.size() < batch_size)
-            {
-                sync_kernels.push_back(make_pair(k, 1));
-            }
-        }
+        for (auto kernel : ready_kerenls[app_pair.first]) sync_kernels.push_back(make_pair(kernel, 1));
 
         Kernel* kernel  = new KernelGroup(sync_kernels);
         kernel->SM_List = new unordered_set<int> (mCPU->mAPPs[app_pair.first]->SM_budget);
