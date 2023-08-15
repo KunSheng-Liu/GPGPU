@@ -91,7 +91,8 @@ void parser_cmd (int argc, char** argv)
                 float arrival_time = atof(argv[i++]);
                 float period       = atof(argv[i++]);
                 float deadline     = atof(argv[i++]);
-                auto task_config = make_tuple(batch_size, arrival_time, period, deadline);
+                float num_of_phase = atof(argv[i++]);
+                auto task_config = make_tuple(batch_size, arrival_time, period, deadline, num_of_phase);
                 
                 if (option == "LeNet")          command.TASK_LIST.emplace_back(make_pair(APPLICATION::LeNet,     task_config));
                 else if (option == "CaffeNet")  command.TASK_LIST.emplace_back(make_pair(APPLICATION::CaffeNet,  task_config));

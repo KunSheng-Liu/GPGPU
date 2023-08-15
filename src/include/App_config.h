@@ -93,6 +93,7 @@ class Request;
  * BenchMark
  * ************************************************************************************************
  */
+#define NUM_OF_INFERENCE                    3
 #define SIMULATION_TIME                     10                      // unit (ms)
 #define ENABLE_DEADLINE                     false
 #define DEADLINE_PERCENTAGE                 100                     // unit (ms)

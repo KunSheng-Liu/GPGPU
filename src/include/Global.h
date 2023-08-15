@@ -65,7 +65,7 @@ struct RuntimeRecord
 struct Command {
     SCHEDULER    	SCHEDULER_MODE;
     BATCH_METHOD   	BATCH_MODE;
-    std::list<std::pair<APPLICATION, std::tuple<int /*batch_size*/, float /*arrival_time*/, float /*period*/, float /*deadline*/>>> TASK_LIST;
+    std::list<std::pair<APPLICATION, std::tuple<int /*batch_size*/, float /*arrival_time*/, float /*period*/, float /*deadline*/, float /*num of phase*/>>> TASK_LIST;
 
     Command() : SCHEDULER_MODE(Baseline), BATCH_MODE(MAX) {}
 };

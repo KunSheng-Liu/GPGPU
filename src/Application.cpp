@@ -13,7 +13,7 @@
  * ************************************************************************************************
  */
 int Application::appCount = 0;
-
+int Application::curInference = 0;
 
 /** ===============================================================================================
  * \name    Application
@@ -34,9 +34,9 @@ int Application::appCount = 0;
  * ================================================================================================
  */
 Application::Application(char* model_type, vector<int> input_size, int batch_size, unsigned long long arrival_time
-                                    , unsigned long long  period /* , unsigned long long deadline */, unsigned long long end_time)
+                                    , unsigned long long  period /* , unsigned long long deadline */, unsigned long long end_time, int num_of_phase)
     : appID(appCount++), modelType(model_type), inputSize(input_size), batchSize(batch_size), arrivalTime(arrival_time), period(period)
-    /* , deadline(deadline) */, endTime(end_time), SM_budget({}), modelInfo(Model::getModelInfo(model_type)), finish(false)
+    /* , deadline(deadline) */, endTime(end_time), SM_budget({}), modelInfo(Model::getModelInfo(model_type)), finish(false), numOfPhase(num_of_phase), curPhase(num_of_phase)
 {
     ASSERT(input_size[BATCH] == 1, "Dimension error");
     string name = model_type;
@@ -73,17 +73,15 @@ Application::cycle()
 #if (LOG_LEVEL >= TRACE)
     log_T("Application Cycle", modelInfo.modelName);
 #endif
-    if (arrivalTime < endTime)
+    if(waitingModels.empty() && runningModels.empty())
     {
-        if (total_gpu_cycle >= arrivalTime)
+        if(curPhase++ < numOfPhase)
         {
+            ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+            file << "============= APP " << appID << " arrival " << curPhase-1 << " with " << batchSize <<" batch size is added =============\n";
+            file.close();
             for (int i = 0; i < batchSize; i++) waitingModels.emplace_back(new Model(appID, modelType, Task(total_gpu_cycle, arrivalTime + deadline, inputSize, vector<DATA_TYPE>(inputSize[CHANNEL] * inputSize[HEIGHT] * inputSize[WIDTH], 1))));
-            arrivalTime += period;
         }
-    }
-    
-    /* check application finish */
-    else if(waitingModels.empty() && runningModels.empty()) {
-        finish = true;
+        else finish = true;
     }
 }

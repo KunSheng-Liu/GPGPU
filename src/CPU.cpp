@@ -46,8 +46,9 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<0>(task.second)                   // batch size
                 , get<1>(task.second) * GPU_F / 1000    // arrival time
                 , get<2>(task.second) * GPU_F / 1000    // period
-                // , get<3>(task.second) * GPU_F / 1000    //dead;ome
+                // , get<3>(task.second) * GPU_F / 1000    //deadline
                 , GPU_F * SIMULATION_TIME / 1000
+                , get<4>(task.second)                   //phaseMulti
             ));
         }
         else if (task.first == APPLICATION::CaffeNet)
@@ -59,6 +60,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<2>(task.second) * GPU_F / 1000    // period
                 // , get<3>(task.second) * GPU_F / 1000     //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
+                , get<4>(task.second)                   //phaseMulti
             ));
         }
         else if (task.first == APPLICATION::ResNet18)
@@ -70,6 +72,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<2>(task.second) * GPU_F / 1000    // period
                 // , get<3>(task.second) * GPU_F / 1000     //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
+                , get<4>(task.second)                   //phaseMulti
             ));
         }
         else if (task.first == APPLICATION::GoogleNet)
@@ -81,6 +84,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<2>(task.second) * GPU_F / 1000    // period
                 // , get<3>(task.second) * GPU_F / 1000    //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
+                , get<4>(task.second)                   //phaseMulti
             ));
         }
         else if (task.first == APPLICATION::VGG16)
@@ -92,6 +96,7 @@ CPU::CPU(MemoryController* mc, GPU* gpu) : mMC(mc), mGPU(gpu), mMMU(MMU(mc))
                 , get<2>(task.second) * GPU_F / 1000    // period
                 // , get<3>(task.second) * GPU_F / 1000    //dead;ome
                 , GPU_F * SIMULATION_TIME / 1000
+                , get<4>(task.second)                   //phaseMulti
             ));
         }
         else if(task.first == APPLICATION::LIGHT)
@@ -254,6 +259,19 @@ CPU::Check_All_Applications_Finish()
 {  
     bool finish = true;
     for (auto app : mAPPs) finish &= app->finish;
+
+    if(finish && Application::curInference < NUM_OF_INFERENCE)
+    {
+        ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ios::app);
+            file << "==================================== Inference " << Application::curInference++ << " Start ====================================\n";
+        file.close();
+        for (auto app: mAPPs)
+        {
+            app->finish = false;
+            app->curPhase = 0;
+        }
+        return false;
+    }
 
     return finish;
 }

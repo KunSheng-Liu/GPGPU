@@ -29,6 +29,8 @@ GPGPU::GPGPU() : mMC(MemoryController(system_resource.DRAM_SPACE + system_resour
 {
     mGMMU = mGPU.getGMMU();
 
+	pthread_mutex_init(ioMutex, NULL);
+
 	std::cout << program_name << std::endl;
 
 	ofstream file(LOG_OUT_PATH + program_name + ".txt", std::ofstream::out | std::ofstream::trunc);
