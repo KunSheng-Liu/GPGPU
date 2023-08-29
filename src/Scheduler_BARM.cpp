@@ -55,41 +55,56 @@ Scheduler_BARM::BASMD ()
 {
     log_T("CPU", "Inference_Admission: BARM");
 
+    // for (auto app : mCPU->mAPPs) app->runningModels.splice(app->runningModels.end(), app->waitingModels);
+
+    // /* *******************************************************************
+    //  * Record needed informations
+    //  * *******************************************************************
+    //  */
+    // list<pair<int, unsigned long long>> NP_list;
+    // for (auto app : mCPU->mAPPs) app->SM_budget = {};
+    // for (auto app : mCPU->mAPPs) if (!app->runningModels.empty()) NP_list.emplace_back(make_pair(app->appID, app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount));
+
+    // if (NP_list.empty()) return false;
+
+    // /* Sort to non-decreacing order */
+    // NP_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
+
+    // /* *******************************************************************
+    //  * Allocate SM to applications
+    //  * *******************************************************************
+    //  */
+    // unsigned long long total_NP = 0;
+    // for (auto app_pair : NP_list) total_NP += app_pair.second;
+
+    // int sm_count = 0, sm_budget = system_resource.SM_NUM;
+    // for (auto app_pair : NP_list)
+    // {
+    //     int sm_num = max(1, (int)round(sm_budget * (double)app_pair.second / (double)total_NP));
+        
+    //     for (int i = 0; i < sm_num; i++) 
+    //     {
+    //         mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
+    //         if (sm_count == system_resource.SM_NUM) break;
+    //     }
+    // }
+    // /* mend up the round to zero issue which remain one SM not allocated */
+    // if (sm_count < system_resource.SM_NUM) mCPU->mAPPs.front()->SM_budget.insert(sm_count++);
+
     for (auto app : mCPU->mAPPs) app->runningModels.splice(app->runningModels.end(), app->waitingModels);
 
-    /* *******************************************************************
-     * Record needed informations
-     * *******************************************************************
-     */
-    list<pair<int, unsigned long long>> NP_list;
-    for (auto app : mCPU->mAPPs) app->SM_budget = {};
-    for (auto app : mCPU->mAPPs) if (!app->runningModels.empty()) NP_list.emplace_back(make_pair(app->appID, app->modelInfo.ioMemCount * app->runningModels.size() + app->modelInfo.filterMemCount));
-
-    if (NP_list.empty()) return false;
-
-    /* Sort to non-decreacing order */
-    NP_list.sort([](const auto& a, const auto& b){return a.second < b.second;});
-
-    /* *******************************************************************
-     * Allocate SM to applications
-     * *******************************************************************
-     */
-    unsigned long long total_NP = 0;
-    for (auto app_pair : NP_list) total_NP += app_pair.second;
-
     int sm_count = 0, sm_budget = system_resource.SM_NUM;
-    for (auto app_pair : NP_list)
+    while (sm_budget != 0) 
     {
-        int sm_num = max(1, (int)round(sm_budget * (double)app_pair.second / (double)total_NP));
-        
-        for (int i = 0; i < sm_num; i++) 
+        for (auto app : mCPU->mAPPs) 
         {
-            mCPU->mAPPs[app_pair.first]->SM_budget.insert(sm_count++);
-            if (sm_count == system_resource.SM_NUM) break;
+            if (app->runningModels.empty()) continue;
+
+            app->SM_budget.insert(sm_count++);
+            if (!(--sm_budget)) break;
         }
+        if (sm_budget == system_resource.SM_NUM) break;
     }
-    /* mend up the round to zero issue which remain one SM not allocated */
-    if (sm_count < system_resource.SM_NUM) mCPU->mAPPs.front()->SM_budget.insert(sm_count++);
 
     return true;
 }
