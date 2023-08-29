@@ -1,0 +1,101 @@
+Finish kernel [45] (Conv2D): [2, 6154235]
+Finish kernelGroup [83, 109, 135, ] (Conv2D): [2, 8220032]
+Finish kernel [64] (Conv2D): [6154236, 11262299]
+Finish kernelGroup [84, 110, 136, ] (Pooling): [8220033, 16102340]
+Finish kernelGroup [0, 9, 18, 27, 36, ] (Conv2D): [2, 20048348]
+Finish kernelGroup [85, 111, 137, ] (Conv2D): [16102341, 21240733]
+Finish kernel [1] (Pooling): [20048350, 23059427]
+Finish kernelGroup [86, 112, 138, ] (Conv2D): [21240734, 25998386]
+Finish kernel [10] (Pooling): [23059429, 27980123]
+Finish kernelGroup [87, 113, 139, ] (ByPass): [25998387, 28083024]
+Finish kernel [19] (Pooling): [27980124, 35748113]
+Finish kernelGroup [88, 114, 140, ] (Conv2D): [28083025, 40301573]
+Finish kernel [28] (Pooling): [35748114, 43812775]
+Finish kernelGroup [89, 115, 141, ] (Conv2D): [40301574, 50457486]
+Finish kernel [37] (Pooling): [43812776, 51660227]
+Finish kernelGroup [90, 116, 142, ] (ByPass): [50457487, 51899594]
+Finish kernel [46] (Conv2D): [11262300, 55750946]
+Finish kernelGroup [91, 117, 143, ] (Conv2D): [51899595, 55851678]
+Finish kernelGroup [92, 118, 144, ] (Conv2D): [55851679, 60201081]
+Finish kernelGroup [93, 119, 145, ] (Conv2D): [60201082, 63188199]
+Finish kernelGroup [94, 120, 146, ] (Conv2D): [63188200, 68089937]
+Finish kernelGroup [95, 121, 147, ] (Conv2D): [68089938, 73010471]
+Finish kernelGroup [96, 122, 148, ] (ByPass): [73010472, 73392269]
+Finish kernelGroup [97, 123, 149, ] (Conv2D): [73392270, 75888620]
+Finish kernelGroup [98, 124, 150, ] (Conv2D): [75888621, 80502724]
+Finish kernelGroup [99, 125, 151, ] (Conv2D): [80502725, 85273029]
+Finish kernelGroup [100, 126, 152, ] (Conv2D): [85273030, 89773540]
+Finish kernelGroup [101, 127, 153, ] (Conv2D): [89773541, 94290910]
+Finish kernelGroup [102, 128, 154, ] (ByPass): [94290911, 94527770]
+Finish kernelGroup [2, 11, 20, 29, 38, ] (Conv2D): [51660228, 95305654]
+Finish kernelGroup [103, 129, 155, ] (Conv2D): [95305656, 98856265]
+Finish kernel [65] (Conv2D): [55750947, 120067772]
+Finish kernelGroup [3, 12, 21, 30, 39, ] (Pooling): [98856266, 120203770]
+Finish kernelGroup [4, 13, 22, 31, 40, ] (Conv2D): [120203771, 125134859]
+Finish kernelGroup [104, 130, 156, ] (Conv2D): [125134860, 130130127]
+Finish kernelGroup [47, 66, ] (Pooling): [120067773, 136088607]
+Finish kernelGroup [105, 131, 157, ] (Conv2D): [130130128, 136157867]
+Finish kernelGroup [106, 132, 158, ] (Conv2D): [136157869, 146696070]
+Finish kernelGroup [107, 133, 159, ] (Conv2D): [146696071, 156894597]
+Finish kernelGroup [108, 134, 160, ] (ByPass): [156894598, 157082873]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+26             826880         10760192       201280512      1901183488     1653760        14643200       
+PageRecord: [276109056, 826880, 276935936, 9132]
+App 2 Model 7 ResNet18 with 1 batch size is finished: [1, -1, 1, 157082874]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+26             826880         10760192       0              1901183488     1653760        14643200       
+PageRecord: [92506560, 826880, 93333440, 8862]
+App 2 Model 8 ResNet18 with 1 batch size is finished: [1, -1, 1, 157082874]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+26             826880         10760192       0              1901183488     1653760        14643200       
+PageRecord: [92506560, 826880, 93333440, 8556]
+App 2 Model 9 ResNet18 with 1 batch size is finished: [1, -1, 1, 157082874]
+Finish kernelGroup [48, 67, ] (Conv2D): [136088608, 162812806]
+Finish kernelGroup [5, 14, 23, 32, 41, ] (Conv2D): [156894598, 171267449]
+Finish kernelGroup [6, 15, 24, 33, 42, ] (Conv2D): [171267450, 182638659]
+Finish kernelGroup [7, 16, 25, 34, 43, ] (Pooling): [182638660, 185138687]
+Finish kernelGroup [8, 17, 26, 35, 44, ] (Flatten): [185138688, 185358633]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+9              149632         2996224        80134656       729668096      299264         9323008        
+PageRecord: [139373248, 149632, 139522880, 2277]
+App 0 Model 0 CaffeNet with 1 batch size is finished: [1, -1, 1, 185358634]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+9              149632         2996224        1327104        729668096      299264         9323008        
+PageRecord: [29587648, 149632, 29737280, 2138]
+App 0 Model 1 CaffeNet with 1 batch size is finished: [1, -1, 1, 185358634]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+9              149632         2996224        1327104        729668096      299264         9323008        
+PageRecord: [29587648, 149632, 29737280, 2208]
+App 0 Model 2 CaffeNet with 1 batch size is finished: [1, -1, 1, 185358634]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+9              149632         2996224        1327104        729668096      299264         9323008        
+PageRecord: [29587648, 149632, 29737280, 2384]
+App 0 Model 3 CaffeNet with 1 batch size is finished: [1, -1, 1, 185358634]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+9              149632         2996224        1327104        729668096      299264         9323008        
+PageRecord: [29587648, 149632, 29737280, 2374]
+App 0 Model 4 CaffeNet with 1 batch size is finished: [1, -1, 1, 185358634]
+Finish kernel [49] (Conv2D): [162812807, 192461066]
+Finish kernel [68] (Conv2D): [192461067, 220373753]
+Finish kernelGroup [50, 69, ] (Pooling): [220373754, 229507133]
+Finish kernelGroup [51, 70, ] (Conv2D): [229507134, 248100991]
+Finish kernelGroup [52, 71, ] (Conv2D): [248100992, 283917148]
+Finish kernelGroup [53, 72, ] (Conv2D): [283917150, 319892039]
+Finish kernelGroup [54, 73, ] (Pooling): [319892040, 324740681]
+Finish kernelGroup [55, 74, ] (Conv2D): [324740682, 341943821]
+Finish kernelGroup [56, 75, ] (Conv2D): [341943822, 375974022]
+Finish kernelGroup [57, 76, ] (Conv2D): [375974023, 409990362]
+Finish kernelGroup [58, 77, ] (Pooling): [409990363, 414351707]
+Finish kernelGroup [59, 78, ] (Conv2D): [414351709, 422032406]
+Finish kernelGroup [60, 79, ] (Conv2D): [422032407, 429713106]
+Finish kernelGroup [61, 80, ] (Conv2D): [429713107, 437393803]
+Finish kernelGroup [62, 81, ] (Pooling): [437393805, 438289849]
+Finish kernelGroup [63, 82, ] (Flatten): [438289850, 438370513]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+19             3772416        60960768       274426880      15218667520    7544832        35392512       
+PageRecord: [1774595072, 3772416, 1778367488, 42911]
+App 1 Model 5 VGG16 with 1 batch size is finished: [1, -1, 1, 438370514]
+Num Layer      Request        ioMem          filterMem      Read           Write          Cycle          
+19             3772416        60960768       2976768        15218667520    7544832        35392512       
+PageRecord: [1035500288, 3772416, 1039272704, 48666]
+App 1 Model 6 VGG16 with 1 batch size is finished: [1, -1, 1, 438370514]
